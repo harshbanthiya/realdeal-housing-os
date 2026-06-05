@@ -1,0 +1,85 @@
+name: realdeal-housing-os
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: realdeal-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      N8N_DB: ${N8N_DB}
+      NOCODB_DB: ${NOCODB_DB}
+      TZ: ${TZ:-Asia/Kolkata}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ../data/postgres:/var/lib/postgresql/data
+      - ./postgres/init/001_create_app_databases.sh:/docker-entrypoint-initdb.d/000_create_app_databases.sh:ro
+      - ../schemas/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: ${N8N_IMAGE:-docker.n8n.io/n8nio/n8n:latest}
+    container_name: realdeal-n8n
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${N8N_DB}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_SECURE_COOKIE: "false"
+      WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/
+      GENERIC_TIMEZONE: ${TZ:-Asia/Kolkata}
+      TZ: ${TZ:-Asia/Kolkata}
+    ports:
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
+    volumes:
+      - ../data/n8n:/home/node/.n8n
+      - ../workflows/n8n:/workflows
+
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: realdeal-nocodb
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NC_DB: pg://postgres:5432?u=${POSTGRES_USER}&p=${POSTGRES_PASSWORD}&d=${NOCODB_DB}
+      NC_AUTH_JWT_SECRET: ${NC_AUTH_JWT_SECRET}
+      NC_PUBLIC_URL: http://localhost:${NOCODB_PORT:-8080}
+      NC_ADMIN_EMAIL: ${NC_ADMIN_EMAIL}
+      NC_ADMIN_PASSWORD: ${NC_ADMIN_PASSWORD}
+      TZ: ${TZ:-Asia/Kolkata}
+    ports:
+      - "127.0.0.1:${NOCODB_PORT:-8080}:8080"
+    volumes:
+      - ../data/nocodb:/usr/app/data
+
+  adminer:
+    image: adminer:latest
+    container_name: realdeal-adminer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      TZ: ${TZ:-Asia/Kolkata}
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8081}:8080"

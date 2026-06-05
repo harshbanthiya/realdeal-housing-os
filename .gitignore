@@ -1,0 +1,127 @@
+# macOS, external-drive, and editor noise
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100/
+.Trashes/
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Local environment and secrets
+.env
+.env.*
+*.env
+*.env.*
+docker/.env
+!.env.example
+!*.env.example
+!docker/.env.example
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+
+# Persistent app and database state
+data/
+backups/
+
+# Private imports, client files, and generated outputs
+imports/
+exports/
+clients/
+client-data/
+client-files/
+client_files/
+contact-data/
+contact_data/
+contacts/
+leads/
+owners/
+private/
+raw/
+
+# Private property media
+media/
+*.mp4
+*.mov
+*.m4v
+*.avi
+*.webm
+*.mkv
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.heif
+*.gif
+*.tif
+*.tiff
+*.webp
+*.psd
+*.ai
+
+# Contact/client data files
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.xlsm
+*.ods
+*.vcf
+*.numbers
+
+# Database dumps and local database files
+*.dump
+*.backup
+*.bak
+*.sql.gz
+*.sql.zip
+*.psql
+*.db
+*.sqlite
+*.sqlite3
+*dump*.sql
+*backup*.sql
+
+# Node / Python junk
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# n8n exports can accidentally include credential references or secrets.
+workflows/n8n/*credentials*.json
+workflows/n8n/*secret*.json
+
+# Explicitly keep project configuration and source artifacts trackable.
+!docker/docker-compose.yml
+!docker/.env.example
+!README.md
+!docs/
+!docs/**
+!schemas/
+!schemas/**
+!scripts/
+!scripts/**
+!workflows/
+!workflows/**
+!prompts/
+!prompts/**
+!start.sh
+!stop.sh
