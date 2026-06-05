@@ -37,7 +37,7 @@ if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ] || [ -z "$POSTGRES_DB"
 fi
 
 DB_NAME="${POSTGRES_DB:-realdeal_os}"
-EXPECTED_TABLES="'contacts','buildings','inventory','media_assets','content_items','interactions','tasks','import_batches'"
+EXPECTED_TABLES="'contacts','buildings','inventory','media_assets','content_items','interactions','tasks','import_batches','contact_import_rows','contact_aliases','contact_property_hints','contact_duplicate_candidates'"
 
 echo "Checking Real Deal OS tables in database: $DB_NAME"
 
@@ -52,7 +52,11 @@ WITH expected(table_name) AS (
     ('content_items'),
     ('interactions'),
     ('tasks'),
-    ('import_batches')
+    ('import_batches'),
+    ('contact_import_rows'),
+    ('contact_aliases'),
+    ('contact_property_hints'),
+    ('contact_duplicate_candidates')
 )
 SELECT
   expected.table_name,
@@ -82,4 +86,4 @@ if [ "$MISSING_COUNT" != "0" ]; then
   exit 1
 fi
 
-echo "Database check passed: all expected Phase 2 tables exist."
+echo "Database check passed: all expected Real Deal OS tables exist."

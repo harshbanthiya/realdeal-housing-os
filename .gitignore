@@ -85,6 +85,11 @@ media/
 *.vcf
 *.numbers
 
+# Keep fake example import templates trackable while real imports stay ignored.
+!imports/
+!imports/contacts/
+!imports/contacts/*.csv.example
+
 # Database dumps and local database files
 *.dump
 *.backup

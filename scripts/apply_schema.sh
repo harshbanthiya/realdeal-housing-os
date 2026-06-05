@@ -3,7 +3,10 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$PROJECT_ROOT/docker/.env"
-SCHEMA_FILE="$PROJECT_ROOT/schemas/001_initial_schema.sql"
+SCHEMA_FILES=(
+  "$PROJECT_ROOT/schemas/001_initial_schema.sql"
+  "$PROJECT_ROOT/schemas/002_contact_import_extensions.sql"
+)
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "Missing $ENV_FILE"
@@ -11,10 +14,12 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
-if [ ! -f "$SCHEMA_FILE" ]; then
-  echo "Missing $SCHEMA_FILE"
-  exit 1
-fi
+for schema_file in "${SCHEMA_FILES[@]}"; do
+  if [ ! -f "$schema_file" ]; then
+    echo "Missing $schema_file"
+    exit 1
+  fi
+done
 
 DOCKER_BIN="${DOCKER_BIN:-docker}"
 if ! command -v "$DOCKER_BIN" >/dev/null 2>&1; then
@@ -44,8 +49,11 @@ fi
 
 echo "Applying schema to database: $POSTGRES_DB"
 
-"$DOCKER_BIN" exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" realdeal-postgres \
-  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
-  < "$SCHEMA_FILE"
+for schema_file in "${SCHEMA_FILES[@]}"; do
+  echo "Applying $(basename "$schema_file")"
+  "$DOCKER_BIN" exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" realdeal-postgres \
+    psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
+    < "$schema_file"
+done
 
 echo "Schema apply completed."
