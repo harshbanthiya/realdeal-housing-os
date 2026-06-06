@@ -70,3 +70,28 @@ Apply/check the schema with:
 ```
 
 See `docs/SOURCE_AWARE_SCHEMA.md` for the review flow.
+
+## Phase 3.4 Fake Source-Aware Apply Test
+
+Phase 3.4 adds the first guarded write path for fake `.example` data only. It writes into source-aware import/audit tables and does not create or merge canonical contacts.
+
+Example fake workflow:
+
+```bash
+python3 scripts/profile_contact_file.py imports/contacts/sample_simple_phonebook.csv.example
+python3 scripts/normalize_contact_file.py imports/contacts/sample_simple_phonebook.csv.example --output-dir exports/contacts/phase_3_4_fake
+python3 scripts/clean_contacts.py exports/contacts/phase_3_4_fake/<normalized_file> --output-dir exports/contacts/phase_3_4_fake
+python3 scripts/contact_dedupe_report.py exports/contacts/phase_3_4_fake/<cleaned_file> --output-dir exports/contacts/phase_3_4_fake
+python3 scripts/plan_source_aware_import.py exports/contacts/phase_3_4_fake/<cleaned_file> --output-dir exports/contacts/phase_3_4_fake
+python3 scripts/apply_fake_source_aware_import.py exports/contacts/phase_3_4_fake/<cleaned_file>
+python3 scripts/apply_fake_source_aware_import.py exports/contacts/phase_3_4_fake/<cleaned_file> --apply --fake-ok
+```
+
+Cleanup is also guarded:
+
+```bash
+python3 scripts/cleanup_fake_import_batch.py
+python3 scripts/cleanup_fake_import_batch.py --apply
+```
+
+Real imports remain disabled. Never use this fake apply script with raw samples, raw archives, or real client files.

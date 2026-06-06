@@ -73,3 +73,64 @@ The contact and duplicate views mask phone and email values where possible.
 ## Canonical Contacts Stay Protected
 
 Phase 3.3 deliberately avoids automatic merging into `contacts`. Imported rows remain traceable and reversible until a future reviewed merge workflow is implemented.
+
+## Phase 3.4 Fake Apply Workflow
+
+Phase 3.4 tests the first source-aware DB write path with fake `.example` data only.
+
+The guarded script is:
+
+```bash
+python3 scripts/apply_fake_source_aware_import.py exports/contacts/phase_3_4_fake/<cleaned_file>
+python3 scripts/apply_fake_source_aware_import.py exports/contacts/phase_3_4_fake/<cleaned_file> --apply --fake-ok
+```
+
+It requires both `--apply` and `--fake-ok` before writing. It refuses raw samples, raw archives, non-`exports/contacts` inputs, and cleaned rows whose source files do not look like fake sample/example data.
+
+The fake batch is marked with:
+
+```text
+FAKE_PHASE_3_4_TEST
+```
+
+The script may insert into:
+
+- `import_batches`
+- `source_files`
+- `contact_import_rows`
+- `contact_methods`
+- `contact_aliases`
+- `contact_property_hints`
+- `lead_requirements`
+- `inventory_import_rows`
+- `contact_duplicate_candidates`
+- `import_review_items`
+
+It does not create canonical contacts.
+
+## Phase 3.4 Rollback Workflow
+
+Fake rows can be removed with:
+
+```bash
+python3 scripts/cleanup_fake_import_batch.py
+python3 scripts/cleanup_fake_import_batch.py --apply
+```
+
+The cleanup script targets only batches whose metadata contains `batch_label = FAKE_PHASE_3_4_TEST`, or one explicit fake `--import-batch-id`. It is dry-run by default.
+
+## What To Inspect In NocoDB
+
+After a fake apply, inspect these tables and views:
+
+- `source_files`
+- `contact_methods`
+- `lead_requirements`
+- `inventory_import_rows`
+- `import_review_items`
+- `vw_import_contact_review`
+- `vw_duplicate_review`
+- `vw_inventory_import_review`
+- `vw_lead_requirements_review`
+
+Phone and email review views should show masked values where possible. Real imports remain disabled.

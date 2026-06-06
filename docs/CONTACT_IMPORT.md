@@ -286,6 +286,43 @@ python3 scripts/import_contacts_to_db.py exports/contacts/<cleaned_file>
 
 The plan output goes to ignored `exports/contacts/` and contains aggregate counts only.
 
+## Fake Source-Aware Apply Test
+
+Phase 3.4 allows fake `.example` data to be written into source-aware audit tables for testing. This is not a real contact import and does not merge into canonical `contacts`.
+
+Use a dedicated ignored output folder:
+
+```bash
+python3 scripts/normalize_contact_file.py imports/contacts/sample_simple_phonebook.csv.example --output-dir exports/contacts/phase_3_4_fake
+python3 scripts/clean_contacts.py exports/contacts/phase_3_4_fake/<normalized_file> --output-dir exports/contacts/phase_3_4_fake
+python3 scripts/plan_source_aware_import.py exports/contacts/phase_3_4_fake/<cleaned_file> --output-dir exports/contacts/phase_3_4_fake
+python3 scripts/apply_fake_source_aware_import.py exports/contacts/phase_3_4_fake/<cleaned_file>
+python3 scripts/apply_fake_source_aware_import.py exports/contacts/phase_3_4_fake/<cleaned_file> --apply --fake-ok
+```
+
+The fake apply script refuses raw samples, raw archives, and inputs that do not look like generated fake/example outputs.
+
+Rollback:
+
+```bash
+python3 scripts/cleanup_fake_import_batch.py
+python3 scripts/cleanup_fake_import_batch.py --apply
+```
+
+After fake apply, check these in NocoDB:
+
+- `source_files`
+- `contact_methods`
+- `lead_requirements`
+- `inventory_import_rows`
+- `import_review_items`
+- `vw_import_contact_review`
+- `vw_duplicate_review`
+- `vw_inventory_import_review`
+- `vw_lead_requirements_review`
+
+Real imports are still disabled.
+
 ## Where To Place Real Files
 
 Put real files here:
