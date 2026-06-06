@@ -1,0 +1,3 @@
+id	created_time	ad_id	ad_name	adset_id	campaign_id	form_id	platform	phone_number	email	lead_status	full_name
+1	2026-01-01T00:00:00Z	ad1	Fake Ad	adset1	campaign1	form1	facebook	+91 90000 00014	fake.lead@example.com	new	Fake Meta Lead
+2	2026-01-02T00:00:00Z	ad2	Fake Ad 2	adset2	campaign2	form2	instagram	+91 90000 00015	fake.lead.two@example.com	new	Fake Meta Lead Two

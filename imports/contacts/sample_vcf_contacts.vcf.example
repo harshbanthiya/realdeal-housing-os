@@ -1,0 +1,13 @@
+BEGIN:VCARD
+VERSION:3.0
+FN:Fake VCF Contact
+TEL:+91 90000 00020
+EMAIL:fake.vcf@example.com
+ORG:Fake VCF Org
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+FN:Second Fake VCF Contact
+TEL:+91 90000 00021
+EMAIL:second.fake.vcf@example.com
+END:VCARD

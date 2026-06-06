@@ -1,0 +1,93 @@
+{
+  "source_formats": {
+    "simple_phonebook_csv": {
+      "description": "Phonebook-style CSV with name plus one or more phone/email/comment columns.",
+      "required_any": [["Name"], ["Phone", "Phone Number", "Mobile"]]
+    },
+    "google_contacts_csv": {
+      "description": "Google Contacts CSV with display/name, multiple phone/email columns, organization, notes, and categories.",
+      "required_any": [["First Name", "Last Name", "Display Name"], ["E-mail Address", "Mobile Phone", "Home Phone", "Business Phone"]]
+    },
+    "whatsapp_export_csv": {
+      "description": "WhatsApp export with number, Name, and Push Name.",
+      "required_all": ["number", "Name", "Push Name"]
+    },
+    "vcf_contacts_file": {
+      "description": "VCF/vCard file with BEGIN:VCARD records."
+    },
+    "messy_phonebook_property_csv": {
+      "description": "Messy property phonebook with primary Name/Phone plus Flat No., N, Telephone 1."
+    },
+    "structured_owner_workbook": {
+      "description": "Owner workbook with Wing, Flat No., Contact Person 1/2, Telephone 1/2, Email, Source."
+    },
+    "multi_sheet_project_contacts_workbook": {
+      "description": "Workbook sheets with project contacts, often Typology, Name, Contact Number."
+    },
+    "owner_tenant_all_projects_workbook": {
+      "description": "Multi-project owner/tenant workbook where sheet names imply projects."
+    },
+    "broker_list_workbook": {
+      "description": "Broker-heavy workbook or CSV indicated by filename, sheet name, or headers."
+    },
+    "google_maps_business_csv": {
+      "description": "Google Maps lead CSV with Title, Phone, Industry, Address, Website, optional Rating/Reviews/Maps link."
+    },
+    "meta_facebook_leads_utf16_tsv": {
+      "description": "Meta/Facebook lead export disguised as .csv but encoded UTF-16 LE and tab-delimited."
+    },
+    "portal_property_leads_csv": {
+      "description": "Property portal leads with LeadID, Date, Name, Mobile, Email, PropertyType, Purpose, Locality, City, Budget, Visit."
+    },
+    "property_inventory_csv": {
+      "description": "Inventory sheet with building, wing/flat, area, rent/sale price, contact number."
+    },
+    "property_inventory_workbook": {
+      "description": "Inventory workbook with Typology, Wing, Flat No., Sale Price, Rent, Carpet Area, Salable Area."
+    },
+    "text_extractable_pdf_contacts": {
+      "description": "PDF where pdftotext returns meaningful text."
+    },
+    "scanned_pdf_or_image_only": {
+      "description": "Image-only/scanned PDF or image file needing OCR/manual review."
+    },
+    "docx_text_contacts": {
+      "description": "DOCX with extractable text or tables."
+    },
+    "txt_contacts": {
+      "description": "Plain text file with many non-empty contact-like lines."
+    },
+    "old_xls_workbook": {
+      "description": "Old .xls workbook; currently marked unsupported_xls_needs_conversion."
+    },
+    "building_owner_tenant_workbook": {
+      "description": "Building workbook with SR.NO., DATE, TOWER, FLAT NO., NAME, CONTACT DETAILS, E-MAIL."
+    },
+    "unit_resident_workbook": {
+      "description": "Resident workbook with lessee, primary/secondary contacts, email, and parking fields."
+    },
+    "project_customer_workbook": {
+      "description": "Project customer workbook with flat details, config, client name, phone, and email columns."
+    },
+    "imperial_unit_inventory_workbook": {
+      "description": "Imperial Heights style unit workbook with lower header rows, flat/type/area/contact/broker fields."
+    },
+    "society_member_details_workbook": {
+      "description": "Society/member details workbook with premises, member name/type, occupied-by, mobile, email, and address fields."
+    },
+    "image_only_needs_ocr": {
+      "description": "PNG/JPG screenshot or image-only source requiring future OCR/manual review."
+    },
+    "header_row_detection": {
+      "description": "For XLSX sources, scan the first 10 rows for likely table headers instead of assuming row 1."
+    },
+    "building_level_hints": {
+      "examples": [
+        "--building-name \"Oberoi Esquire\"",
+        "--building-name \"Imperial Heights\"",
+        "--building-name \"Kalpataru Radiance\"",
+        "--building-name \"Windsor Grande Residences\""
+      ]
+    }
+  }
+}

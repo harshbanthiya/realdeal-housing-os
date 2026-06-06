@@ -59,6 +59,26 @@ It does not print phone numbers or emails.
 
 ## Supported Source Formats
 
+### Archive Profiling
+
+Use `scripts/profile_archive.py` for zip archives:
+
+```bash
+python3 scripts/profile_archive.py imports/contacts/raw_archives/Archive.zip
+```
+
+The archive profiler extracts safely into ignored `exports/archive_profiles/`, skips macOS junk such as `__MACOSX/`, `._*`, and `.DS_Store`, prevents path traversal, and writes safe JSON/Markdown reports under `exports/contacts/`.
+
+Recommended archive workflow:
+
+1. Profile archive.
+2. Review source-format counts.
+3. Choose representative files by format.
+4. Normalize selected files.
+5. Clean.
+6. Generate duplicate report.
+7. Run dry-run import only.
+
 ### simple_phonebook_csv
 
 Detected from columns like `Name` and `Phone Number`.
@@ -87,6 +107,66 @@ One source row can become multiple contact rows because two people and two phone
 Detected from columns like `Title`, `Rating`, `Reviews`, `Phone`, `Industry`, `Address`, `Website`, and `Google Maps Link`.
 
 These rows are treated as business leads, not apartment owners.
+
+Reduced Google Maps files with `Title`, `Phone`, `Industry`, `Address`, and `Website` are also supported.
+
+### google_contacts_csv
+
+Google Contacts exports can include multiple phone and email columns. The normalizer preserves these in `raw_phones_json` and `raw_emails_json`.
+
+### whatsapp_export_csv
+
+WhatsApp exports with `number`, `Name`, and `Push Name` are normalized as contact rows. Push names are preserved as aliases/notes.
+
+### vcf_contacts_file
+
+VCF files are parsed with the Python standard library. `FN`, `N`, `TEL`, `EMAIL`, `ORG`, and `NOTE` are preserved where present. Large VCF files are supported without printing raw values.
+
+### meta_facebook_leads_utf16_tsv
+
+Some Meta/Facebook exports have a `.csv` extension but are UTF-16 tab-delimited files. These are detected by encoding/delimiter and normalized as leads, not owners.
+
+### portal_property_leads_csv
+
+Portal leads preserve property type, purpose, locality, city, budget, and visit intent in `requirement_json`.
+
+### property_inventory_csv and property_inventory_workbook
+
+Inventory files preserve building, wing, unit, typology, area, rent, sale price, and purpose in `inventory_hint_json`. Inventory import should be a separate workflow from contact import.
+If no contact name or phone exists, the normalizer writes zero contact rows and reports that the file should go through a future inventory import path.
+
+### Archive 2 Building And Member Workbooks
+
+Archive 2 adds several building-level workbook patterns:
+
+- `building_owner_tenant_workbook`
+- `unit_resident_workbook`
+- `project_customer_workbook`
+- `imperial_unit_inventory_workbook`
+- `society_member_details_workbook`
+
+These files often contain title rows before the actual table. XLSX profiling and normalization scan the first 10 rows for likely headers instead of assuming row 1 is the header.
+
+Rows with contact name plus phone/email can enter the contact import flow while preserving unit, member, occupied-by, parking, typology, broker, and inventory hints. Rows that only contain unit/property/inventory facts should wait for future inventory/member import.
+
+Building-level hints can be supplied later with CLI options such as:
+
+```bash
+--building-name "Oberoi Esquire"
+--building-name "Imperial Heights"
+--building-name "Kalpataru Radiance"
+--building-name "Windsor Grande Residences"
+```
+
+Those options are documented as future workflow hints; current scripts infer from sheets/columns when safe.
+
+### Image And OCR Sources
+
+PNG/JPG screenshots are classified as `image_only_needs_ocr`. Scanned/image-only PDFs are classified as `scanned_pdf_or_image_only`. No OCR is performed in Phase 3.2.
+
+### PDF, DOCX, TXT, XLS
+
+Text-extractable PDFs can be profiled safely. Scanned PDFs and images are marked as needing OCR/manual review; OCR is not implemented. DOCX/TXT files are profiled for extractable text. Old `.xls` files are marked as `unsupported_xls_needs_conversion`.
 
 ### unknown_contact_csv
 
@@ -161,9 +241,10 @@ Structured file hints such as `Source`, Google Maps `Industry`, website, and map
 
 Duplicate reports are conservative:
 
-- Strong: same normalized phone.
-- Medium: same normalized email.
+- Strong: any matching normalized phone.
+- Medium: any matching normalized email.
 - Weak: similar cleaned display name plus same building code/name and unit.
+- Weak business duplicate: same business title and website.
 
 Duplicate candidates are not automatic merges.
 

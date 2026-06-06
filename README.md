@@ -17,3 +17,28 @@ python3 scripts/import_contacts_to_db.py exports/contacts/<cleaned_file>
 Database import is dry-run by default. Apply mode is not implemented yet.
 
 Real input files belong in `imports/contacts/`. Generated outputs belong in `exports/contacts/`. Both folders are ignored by Git.
+
+## Phase 3.2 Archive Workflow
+
+For large archives, profile first and only normalize selected files:
+
+```bash
+python3 scripts/profile_archive.py imports/contacts/raw_archives/Archive.zip
+python3 scripts/profile_contact_file.py exports/archive_profiles/<archive>/extracted/<file>
+python3 scripts/normalize_contact_file.py exports/archive_profiles/<archive>/extracted/<file>
+python3 scripts/clean_contacts.py exports/contacts/<normalized_file>
+python3 scripts/contact_dedupe_report.py exports/contacts/<cleaned_file>
+python3 scripts/import_contacts_to_db.py exports/contacts/<cleaned_file>
+python3 scripts/contact_import_summary.py exports/contacts/<cleaned_file>
+```
+
+The importer remains dry-run by default. Do not use `--apply` until the import policy and review screens are ready.
+
+Warnings:
+
+- Some `.csv` files are actually UTF-16 tab-delimited Meta/Facebook exports.
+- VCF and Google Contacts files can contain multiple phones/emails; preserve all values.
+- PDFs may be text-extractable or scanned/image-only. OCR is not implemented.
+- Property inventory sheets should feed a future inventory import path, not only contact import.
+- Archive 2 adds building/member workbook patterns and image-only screenshot folders. PNG/JPG files are marked `image_only_needs_ocr`; scanned PDFs remain profile-only.
+- XLSX profiling scans the first 10 rows for likely table headers because some workbooks contain title/merged rows before the real table.

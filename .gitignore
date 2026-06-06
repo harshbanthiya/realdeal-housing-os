@@ -88,7 +88,10 @@ media/
 # Keep fake example import templates trackable while real imports stay ignored.
 !imports/
 !imports/contacts/
+imports/contacts/raw_archives/
+imports/contacts/raw_samples/
 !imports/contacts/*.csv.example
+!imports/contacts/*.vcf.example
 
 # Database dumps and local database files
 *.dump
@@ -130,3 +133,6 @@ workflows/n8n/*secret*.json
 !prompts/**
 !start.sh
 !stop.sh
+
+# Re-ignore macOS AppleDouble files even inside allowlisted source folders.
+**/._*
