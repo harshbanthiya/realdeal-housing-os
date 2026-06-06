@@ -37,7 +37,8 @@ if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ] || [ -z "$POSTGRES_DB"
 fi
 
 DB_NAME="${POSTGRES_DB:-realdeal_os}"
-EXPECTED_TABLES="'contacts','buildings','inventory','media_assets','content_items','interactions','tasks','import_batches','contact_import_rows','contact_aliases','contact_property_hints','contact_duplicate_candidates'"
+EXPECTED_TABLES="'contacts','buildings','inventory','media_assets','content_items','interactions','tasks','import_batches','contact_import_rows','contact_aliases','contact_property_hints','contact_duplicate_candidates','source_files','contact_methods','lead_requirements','inventory_import_rows','import_review_items'"
+EXPECTED_VIEWS="'vw_import_contact_review','vw_duplicate_review','vw_inventory_import_review','vw_lead_requirements_review'"
 
 echo "Checking Real Deal OS tables in database: $DB_NAME"
 
@@ -56,7 +57,12 @@ WITH expected(table_name) AS (
     ('contact_import_rows'),
     ('contact_aliases'),
     ('contact_property_hints'),
-    ('contact_duplicate_candidates')
+    ('contact_duplicate_candidates'),
+    ('source_files'),
+    ('contact_methods'),
+    ('lead_requirements'),
+    ('inventory_import_rows'),
+    ('import_review_items')
 )
 SELECT
   expected.table_name,
@@ -86,4 +92,43 @@ if [ "$MISSING_COUNT" != "0" ]; then
   exit 1
 fi
 
-echo "Database check passed: all expected Real Deal OS tables exist."
+echo "Checking Real Deal OS review views in database: $DB_NAME"
+
+"$DOCKER_BIN" exec -e PGPASSWORD="$POSTGRES_PASSWORD" realdeal-postgres \
+  psql -U "$POSTGRES_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "
+WITH expected(view_name) AS (
+  VALUES
+    ('vw_import_contact_review'),
+    ('vw_duplicate_review'),
+    ('vw_inventory_import_review'),
+    ('vw_lead_requirements_review')
+)
+SELECT
+  expected.view_name,
+  CASE WHEN views.table_name IS NULL THEN 'missing' ELSE 'ok' END AS status
+FROM expected
+LEFT JOIN information_schema.views views
+  ON views.table_schema = 'public'
+ AND views.table_name = expected.view_name
+ORDER BY expected.view_name;
+"
+
+MISSING_VIEW_COUNT="$("$DOCKER_BIN" exec -e PGPASSWORD="$POSTGRES_PASSWORD" realdeal-postgres \
+  psql -U "$POSTGRES_USER" -d "$DB_NAME" -At -v ON_ERROR_STOP=1 -c "
+WITH expected(view_name) AS (
+  SELECT unnest(ARRAY[$EXPECTED_VIEWS])
+)
+SELECT count(*)
+FROM expected
+LEFT JOIN information_schema.views views
+  ON views.table_schema = 'public'
+ AND views.table_name = expected.view_name
+WHERE views.table_name IS NULL;
+")"
+
+if [ "$MISSING_VIEW_COUNT" != "0" ]; then
+  echo "Database check failed: $MISSING_VIEW_COUNT expected view(s) are missing."
+  exit 1
+fi
+
+echo "Database check passed: all expected Real Deal OS tables and views exist."

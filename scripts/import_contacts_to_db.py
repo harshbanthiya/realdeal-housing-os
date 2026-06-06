@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from duplicate_utils import duplicate_summary, parse_json_list
+from plan_source_aware_import import summarize_rows
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -56,6 +57,8 @@ def dry_run(cleaned_csv: Path) -> int:
     )
     multi_phone_rows = sum(1 for row in rows if len(parse_json_list(row.get("phones_normalized_json", ""))) > 1)
     multi_email_rows = sum(1 for row in rows if len(parse_json_list(row.get("emails_normalized_json", ""))) > 1)
+    source_aware_plan = summarize_rows([cleaned_csv])
+    planned_counts = source_aware_plan["planned_counts"]
 
     print("Dry run only. No database rows were inserted.")
     print(f"Target database: {postgres_db}")
@@ -79,6 +82,16 @@ def dry_run(cleaned_csv: Path) -> int:
     print(f"Would insert {alias_rows} contact_aliases rows.")
     print(f"Would insert {property_hint_rows} contact_property_hints rows.")
     print(f"Would insert {duplicate_candidate_count} contact_duplicate_candidates rows.")
+    print("Source-aware Phase 3.3 plan:")
+    print(f"Would insert {planned_counts['source_files']} source_files rows.")
+    print(f"Would insert {planned_counts['contact_import_rows']} contact_import_rows rows.")
+    print(f"Would insert {planned_counts['contact_methods']} contact_methods rows.")
+    print(f"Would insert {planned_counts['contact_aliases']} contact_aliases rows.")
+    print(f"Would insert {planned_counts['contact_property_hints']} contact_property_hints rows.")
+    print(f"Would insert {planned_counts['lead_requirements']} lead_requirements rows.")
+    print(f"Would insert {planned_counts['inventory_import_rows']} inventory_import_rows rows.")
+    print(f"Would insert {planned_counts['contact_duplicate_candidates']} contact_duplicate_candidates rows.")
+    print(f"Would insert {planned_counts['import_review_items']} import_review_items rows.")
     return 0
 
 
@@ -92,7 +105,7 @@ def main() -> int:
         print("Cleaned CSV was not found.")
         return 1
     if args.apply:
-        print("Apply mode not implemented yet. Dry-run first, review duplicates, then implement inserts with explicit approval.")
+        print("Apply mode for source-aware import is not implemented yet. Dry-run first, review duplicates and source-aware plans, then implement inserts with explicit approval.")
         return 1
     return dry_run(cleaned_csv)
 

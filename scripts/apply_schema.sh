@@ -6,6 +6,7 @@ ENV_FILE="$PROJECT_ROOT/docker/.env"
 SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/001_initial_schema.sql"
   "$PROJECT_ROOT/schemas/002_contact_import_extensions.sql"
+  "$PROJECT_ROOT/schemas/003_source_aware_import_schema.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

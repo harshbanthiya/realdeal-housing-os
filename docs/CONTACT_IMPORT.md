@@ -252,13 +252,39 @@ Duplicate candidates are not automatic merges.
 
 The database import script is dry-run by default. It counts what would be inserted into:
 
+- `source_files`
 - `contacts`
 - `contact_import_rows`
+- `contact_methods`
 - `contact_aliases`
 - `contact_property_hints`
+- `lead_requirements`
+- `inventory_import_rows`
 - `contact_duplicate_candidates`
+- `import_review_items`
 
 At this MVP stage, `--apply` intentionally says apply mode is not implemented.
+
+## Source-Aware Review Layer
+
+Phase 3.3 adds a review-first database layer around contact imports:
+
+- `source_files` records every raw file, archive member, sheet, row count, detected format, and profile summary.
+- `contact_methods` stores each phone, WhatsApp, landline, email, website, map link, or social profile separately.
+- `lead_requirements` preserves portal/ad/campaign requirements such as purpose, locality, budget, and property type.
+- `inventory_import_rows` stores property/unit rows separately from contacts.
+- `import_review_items` gives NocoDB a human review queue before merging.
+
+Canonical `contacts` should not be merged automatically yet. Imported rows should stay traceable to source file, sheet, row, and import batch until a future approval workflow is built.
+
+For dry-run source-aware planning:
+
+```bash
+python3 scripts/plan_source_aware_import.py exports/contacts/<cleaned_file>
+python3 scripts/import_contacts_to_db.py exports/contacts/<cleaned_file>
+```
+
+The plan output goes to ignored `exports/contacts/` and contains aggregate counts only.
 
 ## Where To Place Real Files
 
