@@ -385,6 +385,38 @@ The real cleanup script refuses batches unless they are marked `source_aware_onl
 
 Inspect the batch in NocoDB before deciding whether to roll it back.
 
+## NocoDB Review Workflow
+
+Phase 3.6 adds masked NocoDB review views for the first real audit batch:
+
+```text
+REAL_PHASE_3_5_TEST_001
+```
+
+Open:
+
+```text
+http://localhost:8080
+```
+
+Review in this order:
+
+1. `vw_review_dashboard_summary`
+2. `vw_review_batch_sources`
+3. `vw_review_business_leads`
+4. `vw_review_contact_methods`
+5. `vw_review_duplicate_candidates`
+6. `vw_review_queue`
+
+Safe commands:
+
+```bash
+python3 scripts/review_batch_summary.py --batch-label REAL_PHASE_3_5_TEST_001
+python3 scripts/list_review_views.py
+```
+
+The review workflow is read-only by default and does not merge canonical contacts.
+
 ## Where To Place Real Files
 
 Put real files here:

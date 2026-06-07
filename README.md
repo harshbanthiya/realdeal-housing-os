@@ -30,6 +30,22 @@ git status --short
 
 Do not diagnose Postgres issues until Docker Desktop and the containers have been restarted and `./scripts/check_db.sh` has been run.
 
+## AppleDouble Troubleshooting
+
+On external drives, macOS may create metadata junk files such as `.DS_Store` and `._*`. If Postgres fails after the standard phase startup checklist, inspect these files with a dry run first:
+
+```bash
+./scripts/clean_appledouble_junk.sh
+```
+
+Delete only after reviewing the dry-run output:
+
+```bash
+./scripts/clean_appledouble_junk.sh --apply
+```
+
+This only removes macOS metadata junk files. It does not repair database corruption.
+
 ## Phase 3 Contact Import MVP
 
 The contact import flow is lossless and review-first:
@@ -146,3 +162,37 @@ python3 scripts/cleanup_real_import_batch.py --batch-label REAL_PHASE_3_5_TEST_0
 ```
 
 Real source-aware imports are tagged with `source_aware_only=true` and `canonical_merge_done=false`. Do not merge canonical contacts until a later reviewed workflow exists.
+
+## Phase 3.6 NocoDB Review Workflow
+
+Phase 3.6 adds masked NocoDB review views for the first real source-aware audit batch:
+
+```text
+REAL_PHASE_3_5_TEST_001
+```
+
+Open NocoDB at:
+
+```text
+http://localhost:8080
+```
+
+Start with these views:
+
+```text
+vw_review_dashboard_summary
+vw_review_batch_sources
+vw_review_business_leads
+vw_review_contact_methods
+vw_review_duplicate_candidates
+vw_review_queue
+```
+
+Safe count-only helpers:
+
+```bash
+python3 scripts/review_batch_summary.py --batch-label REAL_PHASE_3_5_TEST_001
+python3 scripts/list_review_views.py
+```
+
+Reviewing does not merge into canonical contacts. Do not send messages, WhatsApp, or email from this system yet.

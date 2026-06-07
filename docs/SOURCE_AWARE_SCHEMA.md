@@ -24,6 +24,22 @@ git status --short
 
 Do not diagnose Postgres issues until Docker Desktop and the containers have been restarted and `./scripts/check_db.sh` has been run.
 
+## AppleDouble Troubleshooting
+
+On external drives, macOS may create metadata junk files such as `.DS_Store` and `._*`. If Postgres fails after the standard phase startup checklist, inspect these files with a dry run first:
+
+```bash
+./scripts/clean_appledouble_junk.sh
+```
+
+Delete only after reviewing the dry-run output:
+
+```bash
+./scripts/clean_appledouble_junk.sh --apply
+```
+
+This only removes macOS metadata junk files. It does not repair database corruption.
+
 ## Why `source_files` Exists
 
 `source_files` is the audit trail for each raw file or archive member that was profiled. It stores file identity, archive path, detected format, sheet details, row counts, columns, and safe profile metadata.
@@ -221,3 +237,29 @@ For NocoDB review, inspect:
 - `vw_duplicate_review`
 - `vw_inventory_import_review`
 - `vw_lead_requirements_review`
+
+## Phase 3.6 NocoDB Review Views
+
+Phase 3.6 adds a review workflow for the first real source-aware audit batch:
+
+```text
+REAL_PHASE_3_5_TEST_001
+```
+
+New masked review views:
+
+- `vw_review_dashboard_summary`
+- `vw_review_contact_methods`
+- `vw_review_business_leads`
+- `vw_review_duplicate_candidates`
+- `vw_review_queue`
+- `vw_review_batch_sources`
+
+Helper functions:
+
+- `mask_phone(text)`
+- `mask_email(text)`
+
+Use `vw_review_dashboard_summary` first, then sources, business leads, contact methods, duplicate candidates, and finally the review queue.
+
+Reviewing does not merge into canonical contacts. Do not send messages, WhatsApp, or email from this system yet.
