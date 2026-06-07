@@ -2,6 +2,28 @@
 
 Phase 3.3 adds a database layer for traceable, reversible, review-first imports. It does not merge imported people into canonical contacts automatically.
 
+## Before Every Phase
+
+Start Docker Desktop manually if needed, then run this from the project root:
+
+```bash
+./stop.sh
+./start.sh
+docker ps
+./scripts/check_db.sh
+```
+
+Continue only if `realdeal-postgres`, `realdeal-n8n`, `realdeal-nocodb`, and `realdeal-adminer` are running and `./scripts/check_db.sh` passes.
+
+At the end of every phase, run:
+
+```bash
+./scripts/check_db.sh
+git status --short
+```
+
+Do not diagnose Postgres issues until Docker Desktop and the containers have been restarted and `./scripts/check_db.sh` has been run.
+
 ## Why `source_files` Exists
 
 `source_files` is the audit trail for each raw file or archive member that was profiled. It stores file identity, archive path, detected format, sheet details, row counts, columns, and safe profile metadata.
@@ -134,3 +156,68 @@ After a fake apply, inspect these tables and views:
 - `vw_lead_requirements_review`
 
 Phone and email review views should show masked values where possible. Real imports remain disabled.
+
+## Phase 3.5 Real Audit Import
+
+Phase 3.5 introduces the first controlled real import path into source-aware audit/import tables only.
+
+The apply script is:
+
+```bash
+python3 scripts/apply_real_source_aware_import.py exports/contacts/phase_3_5_real/<cleaned_file> --batch-label REAL_PHASE_3_5_TEST_001
+python3 scripts/apply_real_source_aware_import.py exports/contacts/phase_3_5_real/<cleaned_file> --apply --real-ok --batch-label REAL_PHASE_3_5_TEST_001
+```
+
+It refuses to write unless all of these are present:
+
+- `--apply`
+- `--real-ok`
+- `--batch-label`
+
+It also refuses batch labels that start with `FAKE`, inputs outside `exports/contacts/`, and files that do not look like `cleaned_contacts_*.csv`.
+
+The import batch metadata is marked:
+
+```json
+{
+  "is_real_import": true,
+  "canonical_merge_done": false,
+  "source_aware_only": true,
+  "created_by_phase": "3.5"
+}
+```
+
+Canonical contacts are not created or updated.
+
+## Phase 3.5 Real Rollback
+
+Real rollback is dry-run by default:
+
+```bash
+python3 scripts/cleanup_real_import_batch.py --batch-label REAL_PHASE_3_5_TEST_001
+```
+
+Apply cleanup only after review:
+
+```bash
+python3 scripts/cleanup_real_import_batch.py --batch-label REAL_PHASE_3_5_TEST_001 --apply
+```
+
+The cleanup script requires either `--batch-label` or `--import-batch-id`, and refuses to delete unless the target batch metadata says `source_aware_only=true` and `canonical_merge_done=false`.
+
+For NocoDB review, inspect:
+
+- `import_batches`
+- `source_files`
+- `contact_import_rows`
+- `contact_methods`
+- `contact_aliases`
+- `contact_property_hints`
+- `lead_requirements`
+- `inventory_import_rows`
+- `contact_duplicate_candidates`
+- `import_review_items`
+- `vw_import_contact_review`
+- `vw_duplicate_review`
+- `vw_inventory_import_review`
+- `vw_lead_requirements_review`

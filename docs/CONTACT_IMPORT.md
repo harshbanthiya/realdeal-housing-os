@@ -4,6 +4,34 @@ Phase 3 is a lossless import pipeline for old phone exports, messy owner/contact
 
 The pipeline is review-first. It profiles a source file, normalizes it into a standard intermediate CSV, cleans and parses that intermediate file, creates duplicate candidates, and only then allows a database dry-run. Real inserts require an explicit future `--apply` path.
 
+## Before Every Phase
+
+Start Docker Desktop manually if needed, then run this from the project root:
+
+```bash
+./stop.sh
+./start.sh
+docker ps
+./scripts/check_db.sh
+```
+
+Continue only if:
+
+- `realdeal-postgres` is running.
+- `realdeal-n8n` is running.
+- `realdeal-nocodb` is running.
+- `realdeal-adminer` is running.
+- `./scripts/check_db.sh` passes.
+
+At the end of every phase, run:
+
+```bash
+./scripts/check_db.sh
+git status --short
+```
+
+Do not diagnose Postgres issues until Docker Desktop and the containers have been restarted and `./scripts/check_db.sh` has been run.
+
 ## Why This Is Lossless
 
 The pipeline never changes the original file. Every normalized row preserves:
@@ -321,7 +349,41 @@ After fake apply, check these in NocoDB:
 - `vw_inventory_import_review`
 - `vw_lead_requirements_review`
 
-Real imports are still disabled.
+Real canonical imports are still disabled.
+
+## Real Source-Aware Audit Import
+
+Phase 3.5 allows one small real cleaned CSV to be imported into source-aware audit/import tables only.
+
+Guarded dry-run:
+
+```bash
+python3 scripts/apply_real_source_aware_import.py exports/contacts/phase_3_5_real/<cleaned_file> --batch-label REAL_PHASE_3_5_TEST_001
+```
+
+Guarded apply:
+
+```bash
+python3 scripts/apply_real_source_aware_import.py exports/contacts/phase_3_5_real/<cleaned_file> --apply --real-ok --batch-label REAL_PHASE_3_5_TEST_001
+```
+
+This writes only to import/audit tables. It does not create or update canonical contacts.
+
+Rollback dry-run:
+
+```bash
+python3 scripts/cleanup_real_import_batch.py --batch-label REAL_PHASE_3_5_TEST_001
+```
+
+Cleanup apply, only after review:
+
+```bash
+python3 scripts/cleanup_real_import_batch.py --batch-label REAL_PHASE_3_5_TEST_001 --apply
+```
+
+The real cleanup script refuses batches unless they are marked `source_aware_only=true` and `canonical_merge_done=false`.
+
+Inspect the batch in NocoDB before deciding whether to roll it back.
 
 ## Where To Place Real Files
 
