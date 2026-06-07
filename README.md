@@ -196,3 +196,16 @@ python3 scripts/list_review_views.py
 ```
 
 Reviewing does not merge into canonical contacts. Do not send messages, WhatsApp, or email from this system yet.
+
+## Phase 3.7 Review Actions
+
+Phase 3.7 adds status-only review action tools. They update review tables and write `review_action_log`; they do not merge canonical contacts.
+
+```bash
+python3 scripts/review_queue_summary.py --batch-label REAL_PHASE_3_5_TEST_001
+python3 scripts/update_review_item.py --review-item-id <id> --status needs_more_info --reviewed-by admin
+python3 scripts/bulk_update_review_items.py --batch-label REAL_PHASE_3_5_TEST_001 --review-type lead_requirement_review --from-status pending --to-status needs_more_info --reviewed-by admin --limit 2
+python3 scripts/update_duplicate_candidate.py --candidate-id <id> --status needs_more_info --reviewed-by admin
+```
+
+All update scripts are dry-run by default and require `--apply` for writes. See `docs/REVIEW_ACTIONS.md`.

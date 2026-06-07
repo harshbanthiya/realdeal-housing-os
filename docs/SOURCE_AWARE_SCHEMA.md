@@ -263,3 +263,17 @@ Helper functions:
 Use `vw_review_dashboard_summary` first, then sources, business leads, contact methods, duplicate candidates, and finally the review queue.
 
 Reviewing does not merge into canonical contacts. Do not send messages, WhatsApp, or email from this system yet.
+
+## Phase 3.7 Review Action Statuses
+
+Phase 3.7 adds `review_action_log` and expands review statuses for controlled human review.
+
+Review item updates use:
+
+```bash
+python3 scripts/update_review_item.py --review-item-id <id> --status needs_more_info --reviewed-by admin
+```
+
+Bulk review updates and duplicate candidate updates are also dry-run by default. All write actions require `--apply`.
+
+Review actions update source-aware review tables only. They do not create canonical contacts, merge contacts, or send messages.

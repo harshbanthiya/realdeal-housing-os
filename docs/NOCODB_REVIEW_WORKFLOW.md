@@ -110,3 +110,16 @@ python3 scripts/list_review_views.py
 ```
 
 Both commands are read-only and print counts/instructions only.
+
+## Review Actions
+
+Phase 3.7 adds safe status-only action scripts:
+
+```bash
+python3 scripts/review_queue_summary.py --batch-label REAL_PHASE_3_5_TEST_001
+python3 scripts/update_review_item.py --review-item-id <id> --status needs_more_info --reviewed-by admin
+python3 scripts/bulk_update_review_items.py --batch-label REAL_PHASE_3_5_TEST_001 --review-type lead_requirement_review --from-status pending --to-status needs_more_info --reviewed-by admin --limit 2
+python3 scripts/update_duplicate_candidate.py --candidate-id <id> --status needs_more_info --reviewed-by admin
+```
+
+Update scripts are dry-run by default and require `--apply` for writes. They do not merge contacts or send messages. Status changes are logged in `review_action_log`.
