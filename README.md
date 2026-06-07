@@ -30,21 +30,56 @@ git status --short
 
 Do not diagnose Postgres issues until Docker Desktop and the containers have been restarted and `./scripts/check_db.sh` has been run.
 
-## AppleDouble Troubleshooting
+## What `start.sh` does
 
-On external drives, macOS may create metadata junk files such as `.DS_Store` and `._*`. If Postgres fails after the standard phase startup checklist, inspect these files with a dry run first:
+`start.sh` is hardened for the external **exFAT** drive this project runs from:
+
+1. Creates `docker/.env` from `docker/.env.example` on first run (then asks you to fill it in).
+2. **Preflight cleanup:** deletes macOS metadata junk (`.DS_Store` and AppleDouble `._*`,
+   files only) from the project tree via `scripts/clean_appledouble_junk.sh --apply`, and
+   prints the count before/after.
+3. **Hard guard:** if any junk remains under `data/postgres` after cleanup, it aborts
+   *before* `docker compose up` with a clear error (Postgres would otherwise fail).
+4. **Staged startup:** brings up Postgres first and waits for it to be healthy
+   (`docker compose up -d --wait postgres`), retrying up to 3 times — each retry recreates
+   Postgres from a stopped state and re-cleans — then launches the rest of the stack.
+
+## AppleDouble / exFAT Troubleshooting
+
+This project runs from an **exFAT** external volume (`noowners`). macOS stores extended
+attributes on exFAT as AppleDouble `._*` sidecar files (one per real file), and Docker's
+bind mount can re-materialise thousands of them under `data/postgres` during a
+container bring-up. The Postgres entrypoint's permission (`chown`) pass fails on these
+files, so the container exits and the stack reports `dependency ... is unhealthy`.
+
+`start.sh` handles this automatically (preflight clean + guard + staged retry). To inspect
+or clean manually, dry-run first (this prints **counts only**, never file paths):
 
 ```bash
-./scripts/clean_appledouble_junk.sh
+./scripts/clean_appledouble_junk.sh          # dry run: shows how many junk files exist
+./scripts/clean_appledouble_junk.sh --apply  # delete them (files only, never directories)
 ```
 
-Delete only after reviewing the dry-run output:
+This only removes macOS metadata junk files. It does **not** repair database corruption.
 
-```bash
-./scripts/clean_appledouble_junk.sh --apply
-```
+Notes and durable options:
 
-This only removes macOS metadata junk files. It does not repair database corruption.
+- Spotlight indexing was disabled on the volume (`mdutil -i off`, `mdutil -E`, plus a
+  `.metadata_never_index` marker at the volume root). This reduces, but does not fully
+  eliminate, `._*` regeneration during Docker bring-up — hence the retry loop in `start.sh`.
+- The container itself cannot delete `._*` files (Docker's exFAT file sharing returns
+  "Operation not permitted"), so cleanup must happen host-side before/between start attempts.
+- The most robust long-term fix is to move the Postgres data off exFAT (e.g. a Docker named
+  volume on the Docker Desktop VM, or an APFS/HFS+ location), which removes AppleDouble
+  entirely. This requires a data migration and is not done yet.
+
+## Credentials and `docker/.env`
+
+- `docker/.env` holds local secrets and is **ignored by Git — never commit it**.
+- `docker/.env.example` contains placeholders only (`change_me_*`); keep real secrets out of it.
+- Do not store plaintext logins/passwords in comments inside `docker/.env`.
+- If a plaintext credential was ever present in `docker/.env` (it has since been removed),
+  **rotate that password/secret** as a precaution.
 
 ## Phase 3 Contact Import MVP
 

@@ -6,6 +6,12 @@ The pipeline is review-first. It profiles a source file, normalizes it into a st
 
 ## Before Every Phase
 
+> **Running from an exFAT external drive:** `start.sh` auto-cleans macOS AppleDouble
+> junk (`._*`, `.DS_Store`) and stages the Postgres startup with retries. If Postgres
+> reports unhealthy, run `./scripts/clean_appledouble_junk.sh --apply` and start again.
+> See the README (AppleDouble / exFAT) for details. `docker/.env` is ignored and must
+> never be committed.
+
 Start Docker Desktop manually if needed, then run this from the project root:
 
 ```bash
