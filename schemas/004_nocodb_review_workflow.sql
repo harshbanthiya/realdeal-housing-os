@@ -35,6 +35,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
+DROP VIEW IF EXISTS vw_review_batch_sources;
+DROP VIEW IF EXISTS vw_review_queue;
+DROP VIEW IF EXISTS vw_review_duplicate_candidates;
+DROP VIEW IF EXISTS vw_review_business_leads;
+DROP VIEW IF EXISTS vw_review_contact_methods;
+DROP VIEW IF EXISTS vw_review_dashboard_summary;
+
 CREATE OR REPLACE VIEW vw_review_dashboard_summary AS
 SELECT
   ib.id AS import_batch_id,

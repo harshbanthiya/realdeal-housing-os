@@ -123,3 +123,12 @@ python3 scripts/update_duplicate_candidate.py --candidate-id <id> --status needs
 ```
 
 Update scripts are dry-run by default and require `--apply` for writes. They do not merge contacts or send messages. Status changes are logged in `review_action_log`.
+
+## Fake Canonical Merge Review
+
+Phase 3.8 adds fake-only canonical merge test views:
+
+- `vw_canonical_merge_batches`
+- `vw_canonical_merge_links`
+
+These are for verifying test merge audit trails after using fake `.example` data. Real canonical merge is disabled, and the real batch `REAL_PHASE_3_5_TEST_001` remains review-only.

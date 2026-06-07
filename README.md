@@ -209,3 +209,17 @@ python3 scripts/update_duplicate_candidate.py --candidate-id <id> --status needs
 ```
 
 All update scripts are dry-run by default and require `--apply` for writes. See `docs/REVIEW_ACTIONS.md`.
+
+## Phase 3.8 Fake Canonical Merge Workflow
+
+Phase 3.8 tests a review-to-canonical merge path with fake `.example` data only. Real canonical merge is still disabled.
+
+```bash
+python3 scripts/plan_canonical_merge.py --batch-label FAKE_PHASE_3_8_MERGE_TEST --limit 2
+python3 scripts/apply_canonical_merge.py --batch-label FAKE_PHASE_3_8_MERGE_TEST --merge-label FAKE_PHASE_3_8_CANONICAL_MERGE --limit 2
+python3 scripts/apply_canonical_merge.py --batch-label FAKE_PHASE_3_8_MERGE_TEST --merge-label FAKE_PHASE_3_8_CANONICAL_MERGE --limit 2 --apply --test-ok
+python3 scripts/rollback_canonical_merge.py --merge-label FAKE_PHASE_3_8_CANONICAL_MERGE
+python3 scripts/rollback_canonical_merge.py --merge-label FAKE_PHASE_3_8_CANONICAL_MERGE --apply
+```
+
+The apply script refuses real batches and requires fake labels. Rollback is dry-run by default. See `docs/CANONICAL_MERGE_WORKFLOW.md`.

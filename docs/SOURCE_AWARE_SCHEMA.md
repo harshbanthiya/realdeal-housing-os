@@ -277,3 +277,31 @@ python3 scripts/update_review_item.py --review-item-id <id> --status needs_more_
 Bulk review updates and duplicate candidate updates are also dry-run by default. All write actions require `--apply`.
 
 Review actions update source-aware review tables only. They do not create canonical contacts, merge contacts, or send messages.
+
+## Phase 3.8 Canonical Merge Test Schema
+
+Phase 3.8 adds fake-only canonical merge tables and views:
+
+- `canonical_merge_batches`
+- `canonical_merge_links`
+- `vw_canonical_merge_batches`
+- `vw_canonical_merge_links`
+
+It also adds nullable/source fields to `contacts`:
+
+- `is_test`
+- `source_import_batch_id`
+- `source_merge_batch_id`
+- `canonical_status`
+
+The merge apply script only accepts fake/test batches and labels beginning with `FAKE_`. Real canonical merge remains disabled.
+
+Use:
+
+```bash
+python3 scripts/plan_canonical_merge.py --batch-label FAKE_PHASE_3_8_MERGE_TEST --limit 2
+python3 scripts/apply_canonical_merge.py --batch-label FAKE_PHASE_3_8_MERGE_TEST --merge-label FAKE_PHASE_3_8_CANONICAL_MERGE --limit 2 --apply --test-ok
+python3 scripts/rollback_canonical_merge.py --merge-label FAKE_PHASE_3_8_CANONICAL_MERGE --apply
+```
+
+See `docs/CANONICAL_MERGE_WORKFLOW.md`.

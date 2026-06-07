@@ -9,6 +9,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/003_source_aware_import_schema.sql"
   "$PROJECT_ROOT/schemas/004_nocodb_review_workflow.sql"
   "$PROJECT_ROOT/schemas/005_review_action_statuses.sql"
+  "$PROJECT_ROOT/schemas/006_canonical_merge_workflow.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

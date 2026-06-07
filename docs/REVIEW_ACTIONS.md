@@ -128,3 +128,15 @@ REAL_PHASE_3_5_TEST_001
 ```
 
 Review approvals do not send messages and do not merge canonical contacts.
+
+## Phase 3.8 Fake Merge Test
+
+Phase 3.8 uses approved fake `merge_candidate` review items to test canonical merge mechanics. It is fake-only:
+
+```bash
+python3 scripts/plan_canonical_merge.py --batch-label FAKE_PHASE_3_8_MERGE_TEST --limit 2
+python3 scripts/apply_canonical_merge.py --batch-label FAKE_PHASE_3_8_MERGE_TEST --merge-label FAKE_PHASE_3_8_CANONICAL_MERGE --limit 2 --apply --test-ok
+python3 scripts/rollback_canonical_merge.py --merge-label FAKE_PHASE_3_8_CANONICAL_MERGE --apply
+```
+
+Real canonical merge is disabled. The real review batch stays source-aware and review-only.

@@ -205,6 +205,8 @@ def method_rows(row: Dict[str, str], import_row_id: str, source_file_id: str) ->
 
 def review_types(row: Dict[str, str]) -> List[str]:
     types = []
+    if row.get("cleaned_display_name") or row.get("raw_name"):
+        types.append("merge_candidate")
     if str(row.get("needs_review", "")).lower() == "true":
         types.append("merge_candidate")
     if not row.get("cleaned_display_name"):
@@ -568,6 +570,7 @@ def print_counts(prefix: str, counts: Dict[str, int]) -> None:
 
 
 def main() -> int:
+    global BATCH_LABEL
     parser = argparse.ArgumentParser(description="Apply fake Phase 3.4 source-aware import rows. Fake data only.")
     parser.add_argument("cleaned_csv", help="Cleaned CSV generated from fake .example data.")
     parser.add_argument("--apply", action="store_true", help="Write fake rows to Postgres.")
@@ -579,9 +582,10 @@ def main() -> int:
     if not cleaned_csv.exists():
         print("Cleaned CSV was not found.")
         return 1
-    if args.batch_label != BATCH_LABEL:
-        print("Refusing to run: batch label must be FAKE_PHASE_3_4_TEST.")
+    if not args.batch_label.startswith("FAKE_"):
+        print("Refusing to run: fake batch label must start with FAKE_.")
         return 1
+    BATCH_LABEL = args.batch_label
     if not read_env_value("POSTGRES_USER") or not read_env_value("POSTGRES_PASSWORD") or not read_env_value("POSTGRES_DB"):
         print("Refusing to run: docker/.env cannot be read safely.")
         return 1
