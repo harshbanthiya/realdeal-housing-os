@@ -86,3 +86,9 @@ Phase 5.12 then approved that second candidate, so `vw_owner_relationship_dashbo
 now shows **two** active owner relationships (units "Wing A -102" and "Wing A -203"),
 and `vw_property_relationship_revert_readiness` reports both as revert-ready. See
 `docs/PHASE_5_12_SECOND_PROPERTY_RELATIONSHIP_APPROVAL.md`.
+
+Phase 5.13 adds a Milestone 2B data-quality layer on top of these views
+(`vw_milestone_2b_summary`, `vw_owner_unit_batch_quality`, `vw_owner_unit_candidate_queue`,
+`vw_owner_relationship_revert_dashboard`, `vw_duplicate_risk_dashboard`) plus
+`scripts/milestone_2b_summary.py`, to track what is safe vs risky before scaling. See
+`docs/MILESTONE_2B_CHECKPOINT.md`.

@@ -205,6 +205,18 @@ fixed `phase=5.8`, so they handle the `phase=5.11` candidate (no guardrail weake
 Canonical contacts stayed 4 and the Phase 5.4 batch was unchanged; no outreach. See
 `docs/PHASE_5_12_SECOND_PROPERTY_RELATIONSHIP_APPROVAL.md`.
 
+## Phase 5.13: Milestone 2B checkpoint + data-quality dashboard
+
+Phase 5.13 is a read-only checkpoint (no import, no new contacts/relationships, no
+status changes, no outreach). Migration `schemas/010_milestone_2b_data_quality_dashboard.sql`
+adds five masked views — `vw_milestone_2b_summary`, `vw_owner_unit_batch_quality`,
+`vw_owner_unit_candidate_queue`, `vw_owner_relationship_revert_dashboard`,
+`vw_duplicate_risk_dashboard` — plus `scripts/milestone_2b_summary.py`. Snapshot: 4
+canonical contacts, 2 active (revert-ready) owner relationships, 58 owner/unit rows
+(2 linked, 56 queued), 50 safe candidates, 6 duplicate-involved rows, 2 building
+anchors. Recommended next: Phase 5.14 Option A (merge more safe owner/unit
+candidates). See `docs/MILESTONE_2B_CHECKPOINT.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →

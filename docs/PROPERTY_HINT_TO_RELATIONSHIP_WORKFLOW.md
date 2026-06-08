@@ -208,3 +208,11 @@ using `approve_property_relationship_candidate.py` (now phase-agnostic — it ke
 the candidate `source` marker, so it handles `phase=5.11` candidates). One review item
 at a time, no bulk approval, no outreach. See
 `docs/PHASE_5_12_SECOND_PROPERTY_RELATIONSHIP_APPROVAL.md`.
+
+## Phase 5.13: Milestone 2B checkpoint
+
+Phase 5.13 adds a read-only data-quality dashboard over the owner/unit pipeline —
+`vw_owner_unit_candidate_queue` (safe worklist for the next merges),
+`vw_duplicate_risk_dashboard`, and `vw_milestone_2b_summary`. 50 of 58 owner/unit rows
+are safe candidates; 6 are duplicate-involved and held for review. See
+`docs/MILESTONE_2B_CHECKPOINT.md`.

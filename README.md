@@ -493,3 +493,19 @@ approved, +1 action-log row. Active owner relationships **1 → 2**; pending can
 → 0; canonical contacts stay 4; no contacts/source rows changed; no outreach. The
 approve/revert scripts are now phase-agnostic (keyed on the candidate source marker).
 See `docs/PHASE_5_12_SECOND_PROPERTY_RELATIONSHIP_APPROVAL.md`.
+
+## Phase 5.13 Milestone 2B Checkpoint + Data-Quality Dashboard
+
+Phase 5.13 is a read-only milestone checkpoint before scaling. Migration
+`schemas/010_milestone_2b_data_quality_dashboard.sql` adds five masked views
+(`vw_milestone_2b_summary`, `vw_owner_unit_batch_quality`, `vw_owner_unit_candidate_queue`,
+`vw_owner_relationship_revert_dashboard`, `vw_duplicate_risk_dashboard`) and
+`scripts/milestone_2b_summary.py`. No import, no new contacts/relationships, no status
+changes, no outreach.
+
+```bash
+python3 scripts/milestone_2b_summary.py   # counts only
+```
+
+Recommendation: **Phase 5.14 Option A** (merge more safe owner/unit candidates — 50
+queued, 6 duplicate-involved deferred). See `docs/MILESTONE_2B_CHECKPOINT.md`.
