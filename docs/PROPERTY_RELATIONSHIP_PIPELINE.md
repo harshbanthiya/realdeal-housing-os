@@ -104,6 +104,19 @@ python3 scripts/seed_fake_property_hints.py --cleanup --apply
 `apply_fake_property_relationship_candidates.py` refuses non-`FAKE_` batches and
 refuses any hint that resolves to a real (`is_test=false`) contact.
 
+## Phase 5.4: first real owner/unit audit import
+
+Phase 5.4 imported one small real unit-resident source into source-aware audit/import
+tables only under batch `REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001`. It created
+`contact_property_hints` and `inventory_import_rows` for review, but did **not**
+create canonical contacts, buildings, building units, or
+`contact_property_relationships`.
+
+The DB-backed relationship planner considered 116 property/inventory signals for
+the new batch and skipped all 116 as `needs_canonical_contact`. Relationship
+candidate creation remains a later reviewed phase. See
+`docs/PHASE_5_4_IMPERIAL_UNIT_AUDIT_IMPORT.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →
@@ -129,6 +142,7 @@ deletes additionally require the `is_test` marker, so real canonical contacts
 
 ## Warnings
 
-- **Do not import owner/property sheets yet.** This phase is schema + fake test only.
-  Real owner/unit ingestion is a later, explicitly approved phase.
+- **Do not import additional owner/property sheets yet.** Phase 5.4 imported exactly
+  one small real source into audit/import tables only. Further owner/unit ingestion
+  needs a later, explicitly approved phase.
 - **No outreach yet.** No WhatsApp, SMS, email, or message is sent from this pipeline.

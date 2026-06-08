@@ -26,7 +26,7 @@ from duplicate_utils import duplicate_summary, parse_json_list
 from plan_source_aware_import import is_inventory_row, is_lead_requirement, row_has_property_hint, summarize_rows
 
 
-BATCH_MARKER_PHASE = "3.5"
+BATCH_MARKER_PHASE = "5.4"
 
 
 def validate_real_input(path: Path, batch_label: str) -> List[str]:
@@ -114,7 +114,21 @@ def build_sql(cleaned_csv: Path, rows: List[Dict[str, str]], batch_label: str) -
         "import_review_items": 0,
     }
 
-    statements = ["BEGIN;"]
+    statements = [
+        "BEGIN;",
+        """
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM import_batches
+    WHERE source_name = {batch_label}
+       OR metadata->>'batch_label' = {batch_label}
+  ) THEN
+    RAISE EXCEPTION 'batch label already exists';
+  END IF;
+END $$;
+""".format(batch_label=sql_literal(batch_label)),
+    ]
     statements.append(
         """
 INSERT INTO import_batches (
@@ -129,13 +143,14 @@ INSERT INTO import_batches (
             source_path=sql_literal(str(cleaned_csv)),
             total_rows=len(rows),
             processed_rows=len(rows),
-            notes=sql_literal("Real Phase 3.5 source-aware audit/import only. Canonical merge disabled."),
+            notes=sql_literal("Real Phase 5.4 source-aware audit/import only. Canonical merge and relationship creation disabled."),
             metadata=json_sql(
                 {
                     "batch_label": batch_label,
                     "is_real_import": True,
                     "canonical_merge_done": False,
                     "source_aware_only": True,
+                    "relationship_creation_done": False,
                     "created_by_phase": BATCH_MARKER_PHASE,
                 }
             ),
@@ -165,7 +180,7 @@ INSERT INTO source_files (
                 row_count=len(source_rows),
                 column_names=json_sql(column_names),
                 profile_summary=json_sql({"batch_label": batch_label, "source_aware_only": True}),
-                notes=sql_literal("Real source-aware audit/import only."),
+                notes=sql_literal("Real source-aware audit/import only. Relationship creation disabled."),
             )
         )
 
@@ -375,8 +390,8 @@ INSERT INTO import_review_items (
                     contact_import_row_id=sql_literal(import_row_id),
                     review_type=sql_literal(review_type),
                     title=sql_literal(f"Review: {review_type}"),
-                    summary=sql_literal("Real Phase 3.5 source-aware review queue item."),
-                    recommended_action=sql_literal("Review in NocoDB; canonical merge remains disabled."),
+                    summary=sql_literal("Real Phase 5.4 source-aware review queue item."),
+                    recommended_action=sql_literal("Review in NocoDB; canonical merge and relationship creation remain disabled."),
                     raw_context=json_sql({"batch_label": batch_label, "source_format": row.get("source_format")}),
                 )
             )
@@ -417,7 +432,7 @@ INSERT INTO import_review_items (
   title, summary, recommended_action, raw_context
 ) VALUES (
   {id}, {batch_id}, {duplicate_candidate_id}, 'duplicate_contact', 'normal', 'pending',
-  'Duplicate review', 'Real Phase 3.5 duplicate candidate.', 'Review before any merge.',
+  'Duplicate review', 'Real Phase 5.4 duplicate candidate.', 'Review before any merge or relationship creation.',
   {raw_context}
 );
 """.format(

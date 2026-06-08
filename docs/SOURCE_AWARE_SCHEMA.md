@@ -341,3 +341,9 @@ Phase 5.1 (migration `008_property_relationship_pipeline.sql`) builds on this ba
 each contact↔building/unit link traces back to the same source-aware rows. The
 source-aware `contact_property_hints` are the raw signal that becomes a reviewed
 relationship. See `docs/PROPERTY_RELATIONSHIP_PIPELINE.md`.
+
+Phase 5.4 applied one small real unit-resident source into source-aware audit/import
+tables only (`REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001`). The batch created audit rows,
+property hints, inventory import rows, duplicate candidates, and pending review
+items, but did not create canonical contacts, buildings, units, or relationships.
+See `docs/PHASE_5_4_IMPERIAL_UNIT_AUDIT_IMPORT.md`.

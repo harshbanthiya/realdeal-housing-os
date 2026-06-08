@@ -356,3 +356,20 @@ python3 scripts/seed_fake_property_hints.py --cleanup --apply
 ```
 
 See `docs/PROPERTY_HINT_TO_RELATIONSHIP_WORKFLOW.md`.
+
+## Phase 5.4 Imperial Unit Audit Import
+
+Phase 5.4 applied one small real unit-resident source into source-aware audit/import
+tables only under batch `REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001`: 58 contact import
+rows, 116 contact methods, 58 property hints, 58 inventory import rows, 14 duplicate
+candidates, and 188 pending review items. It did not create canonical contacts,
+buildings, units, or property relationships, and no outreach was sent.
+
+Rollback remains dry-run by default:
+
+```bash
+python3 scripts/cleanup_real_import_batch.py \
+  --batch-label REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001
+```
+
+See `docs/PHASE_5_4_IMPERIAL_UNIT_AUDIT_IMPORT.md`.

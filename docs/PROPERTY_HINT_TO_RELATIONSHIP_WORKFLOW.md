@@ -120,7 +120,9 @@ and refuses hints that resolve to real (`is_test=false`) contacts.
 
 ## Future Real Workflow
 
-A later real workflow should be explicitly approved before use. It should:
+Phase 5.4 added the first real source-aware owner/unit audit batch
+(`REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001`) without creating relationships. A later
+relationship workflow should be explicitly approved before use. It should:
 
 - start from reviewed source-aware imports
 - require canonical contact approval before real relationship creation
@@ -132,7 +134,7 @@ A later real workflow should be explicitly approved before use. It should:
 
 ## Warnings
 
-- Do not import real owner/property sheets yet.
+- Do not import additional real owner/property sheets without an explicit phase.
 - Do not create real owner/tenant relationships yet.
 - Do not run canonical contact merges as part of Phase 5.2.
 - Do not send WhatsApp, SMS, emails, or any outreach from this workflow.
