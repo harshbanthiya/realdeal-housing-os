@@ -134,6 +134,16 @@ for those approved rows, but no canonical contacts, buildings, building units,
 created. See
 `docs/PHASE_5_6_OWNER_UNIT_REVIEW_APPROVAL_AND_MERGE_PREP.md`.
 
+## Phase 5.7: first owner/unit canonical contact
+
+Phase 5.7 created exactly one canonical contact from one approved owner/unit review
+item. The relationship planner remains read-only, but now resolves canonical
+contacts through applied canonical merge links when source hint `contact_id` fields
+are still empty. After the merge, the Phase 5.4 batch plans 2 contact-property
+relationship candidates and still skips 114 rows as `needs_canonical_contact`.
+No relationship candidates were applied. See
+`docs/PHASE_5_7_FIRST_OWNER_UNIT_CANONICAL_MERGE.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →

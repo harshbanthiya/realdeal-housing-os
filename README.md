@@ -408,3 +408,21 @@ python3 scripts/plan_canonical_merge.py \
 Future owner/unit canonical contact creation requires an explicit later approval to
 run `scripts/apply_canonical_merge.py --apply --real-ok`. See
 `docs/PHASE_5_6_OWNER_UNIT_REVIEW_APPROVAL_AND_MERGE_PREP.md`.
+
+## Phase 5.7 First Owner/Unit Canonical Merge
+
+Phase 5.7 created exactly one canonical contact from one approved owner/unit
+`merge_candidate` review item in `REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001`, under
+merge label `REAL_PHASE_5_7_OWNER_UNIT_CANONICAL_MERGE_001`. It linked 2 contact
+methods and recorded property/inventory trace counts. Canonical contacts increased
+from 2 to 3. No buildings, units, property relationships, relationship review
+items, or outreach were created.
+
+```bash
+python3 scripts/rollback_canonical_merge.py \
+  --merge-label REAL_PHASE_5_7_OWNER_UNIT_CANONICAL_MERGE_001 \
+  --real-ok \
+  --confirm-real-rollback
+```
+
+See `docs/PHASE_5_7_FIRST_OWNER_UNIT_CANONICAL_MERGE.md`.

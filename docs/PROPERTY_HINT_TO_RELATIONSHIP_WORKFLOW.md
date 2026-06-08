@@ -143,6 +143,13 @@ still does not create canonical contacts, buildings, units, property relationshi
 or outreach. See
 `docs/PHASE_5_6_OWNER_UNIT_REVIEW_APPROVAL_AND_MERGE_PREP.md`.
 
+Phase 5.7 creates exactly one canonical contact from the approved owner/unit review
+set and updates the read-only relationship planner so property hints and inventory
+rows can resolve that contact through the canonical merge audit trail. The post-merge
+planner shows 2 relationship candidates, but Phase 5.7 does not apply them or create
+building/unit/property relationship rows. See
+`docs/PHASE_5_7_FIRST_OWNER_UNIT_CANONICAL_MERGE.md`.
+
 ## Warnings
 
 - Do not import additional real owner/property sheets without an explicit phase.

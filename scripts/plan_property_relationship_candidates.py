@@ -64,7 +64,7 @@ def run_psql(sql: str) -> tuple[int, str]:
 
 PROPERTY_HINTS_SRC = """
 SELECT 'property_hint' AS kind,
-  COALESCE(cph.contact_id, cir.matched_contact_id) AS contact_id,
+  COALESCE(cph.contact_id, cir.matched_contact_id, linked.canonical_contact_id) AS contact_id,
   cph.building_id AS building_id,
   (NULLIF(btrim(cph.building_name), '') IS NOT NULL OR NULLIF(btrim(cph.building_code), '') IS NOT NULL) AS has_bld,
   (NULLIF(btrim(cph.wing), '') IS NOT NULL OR NULLIF(btrim(cph.unit_number), '') IS NOT NULL) AS has_unit,
@@ -75,12 +75,22 @@ SELECT 'property_hint' AS kind,
 FROM contact_property_hints cph
 LEFT JOIN contact_import_rows cir ON cir.id = cph.contact_import_row_id
 LEFT JOIN import_batches ib ON ib.id = cir.import_batch_id
-LEFT JOIN contacts c ON c.id = COALESCE(cph.contact_id, cir.matched_contact_id)
+LEFT JOIN LATERAL (
+  SELECT cml.canonical_contact_id
+  FROM canonical_merge_links cml
+  JOIN canonical_merge_batches cmb ON cmb.id = cml.merge_batch_id
+  WHERE cml.contact_import_row_id = cph.contact_import_row_id
+    AND cml.merge_action = 'create_contact'
+    AND cmb.status = 'applied'
+  ORDER BY cmb.applied_at DESC NULLS LAST, cmb.created_at DESC
+  LIMIT 1
+) linked ON true
+LEFT JOIN contacts c ON c.id = COALESCE(cph.contact_id, cir.matched_contact_id, linked.canonical_contact_id)
 """
 
 IMPORT_ROW_SRC = """
 SELECT 'import_row_parsed' AS kind,
-  cir.matched_contact_id AS contact_id,
+  COALESCE(cir.matched_contact_id, linked.canonical_contact_id) AS contact_id,
   NULL::uuid AS building_id,
   (NULLIF(btrim(cir.parsed_building_name), '') IS NOT NULL OR NULLIF(btrim(cir.parsed_building_code), '') IS NOT NULL) AS has_bld,
   (NULLIF(btrim(cir.parsed_wing), '') IS NOT NULL OR NULLIF(btrim(cir.parsed_unit_number), '') IS NOT NULL) AS has_unit,
@@ -90,7 +100,17 @@ SELECT 'import_row_parsed' AS kind,
   COALESCE(c.is_test, false) AS is_test
 FROM contact_import_rows cir
 LEFT JOIN import_batches ib ON ib.id = cir.import_batch_id
-LEFT JOIN contacts c ON c.id = cir.matched_contact_id
+LEFT JOIN LATERAL (
+  SELECT cml.canonical_contact_id
+  FROM canonical_merge_links cml
+  JOIN canonical_merge_batches cmb ON cmb.id = cml.merge_batch_id
+  WHERE cml.contact_import_row_id = cir.id
+    AND cml.merge_action = 'create_contact'
+    AND cmb.status = 'applied'
+  ORDER BY cmb.applied_at DESC NULLS LAST, cmb.created_at DESC
+  LIMIT 1
+) linked ON true
+LEFT JOIN contacts c ON c.id = COALESCE(cir.matched_contact_id, linked.canonical_contact_id)
 WHERE (
     NULLIF(btrim(cir.parsed_building_name), '') IS NOT NULL
     OR NULLIF(btrim(cir.parsed_building_code), '') IS NOT NULL
@@ -106,7 +126,7 @@ WHERE (
 
 INVENTORY_SRC = """
 SELECT 'inventory' AS kind,
-  COALESCE(iir.owner_contact_id, iir.broker_contact_id) AS contact_id,
+  COALESCE(iir.owner_contact_id, iir.broker_contact_id, linked.canonical_contact_id) AS contact_id,
   iir.building_id AS building_id,
   (NULLIF(btrim(iir.building_name), '') IS NOT NULL OR NULLIF(btrim(iir.building_code), '') IS NOT NULL) AS has_bld,
   (NULLIF(btrim(iir.wing), '') IS NOT NULL OR NULLIF(btrim(iir.unit_number), '') IS NOT NULL) AS has_unit,
@@ -116,12 +136,22 @@ SELECT 'inventory' AS kind,
   COALESCE(c.is_test, false) AS is_test
 FROM inventory_import_rows iir
 LEFT JOIN import_batches ib ON ib.id = iir.import_batch_id
-LEFT JOIN contacts c ON c.id = COALESCE(iir.owner_contact_id, iir.broker_contact_id)
+LEFT JOIN LATERAL (
+  SELECT cml.canonical_contact_id
+  FROM canonical_merge_links cml
+  JOIN canonical_merge_batches cmb ON cmb.id = cml.merge_batch_id
+  WHERE cml.contact_import_row_id = iir.owner_contact_import_row_id
+    AND cml.merge_action = 'create_contact'
+    AND cmb.status = 'applied'
+  ORDER BY cmb.applied_at DESC NULLS LAST, cmb.created_at DESC
+  LIMIT 1
+) linked ON true
+LEFT JOIN contacts c ON c.id = COALESCE(iir.owner_contact_id, iir.broker_contact_id, linked.canonical_contact_id)
 """
 
 LEAD_REQ_SRC = """
 SELECT 'lead_requirement' AS kind,
-  lr.contact_id AS contact_id,
+  COALESCE(lr.contact_id, linked.canonical_contact_id) AS contact_id,
   NULL::uuid AS building_id,
   false AS has_bld,
   false AS has_unit,
@@ -134,7 +164,17 @@ SELECT 'lead_requirement' AS kind,
 FROM lead_requirements lr
 LEFT JOIN contact_import_rows cir ON cir.id = lr.contact_import_row_id
 LEFT JOIN import_batches ib ON ib.id = cir.import_batch_id
-LEFT JOIN contacts c ON c.id = lr.contact_id
+LEFT JOIN LATERAL (
+  SELECT cml.canonical_contact_id
+  FROM canonical_merge_links cml
+  JOIN canonical_merge_batches cmb ON cmb.id = cml.merge_batch_id
+  WHERE cml.contact_import_row_id = lr.contact_import_row_id
+    AND cml.merge_action = 'create_contact'
+    AND cmb.status = 'applied'
+  ORDER BY cmb.applied_at DESC NULLS LAST, cmb.created_at DESC
+  LIMIT 1
+) linked ON true
+LEFT JOIN contacts c ON c.id = COALESCE(lr.contact_id, linked.canonical_contact_id)
 """
 
 

@@ -121,3 +121,17 @@ initial) alongside the building/unit and `relationship_type`/`relationship_statu
 and `vw_contact_building_unit_trace` traces it back to the source file/row. This is
 schema + fake test only for now — no real owner sheets are imported and no outreach is
 sent. See `docs/PROPERTY_RELATIONSHIP_PIPELINE.md`.
+
+## Phase 5.7 — first owner/unit canonical contact
+
+As of Phase 5.7 (2026-06-08) there are **3** real canonical contacts. The third was
+created from one approved owner/unit `merge_candidate` review item under merge label
+`REAL_PHASE_5_7_OWNER_UNIT_CANONICAL_MERGE_001`. Use the same masked canonical
+review views and filter by that merge label. Expect: 1 contact, 2 methods, 0 lead
+requirements, 3 merge links, `communication_sent=false`, and
+`relationship_creation_done=false`.
+
+No building, unit, or property relationship rows were created in Phase 5.7. The
+relationship planner can now see 2 possible relationship candidates for the Phase
+5.4 owner/unit batch, but candidate application is deferred to a later explicit
+phase. See `docs/PHASE_5_7_FIRST_OWNER_UNIT_CANONICAL_MERGE.md`.

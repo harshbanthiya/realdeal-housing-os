@@ -140,3 +140,16 @@ For each approved item, dry-run planning returns 1 planned contact, 2 methods, 0
 aliases, 0 lead requirements, 1 property hint trace, 1 inventory row trace, and 0
 skips. No buildings, units, property relationships, or outreach are created. See
 `docs/PHASE_5_6_OWNER_UNIT_REVIEW_APPROVAL_AND_MERGE_PREP.md`.
+
+## First Owner/Unit Canonical Merge (Phase 5.7)
+
+Phase 5.7 applies exactly one of the approved owner/unit review items under merge
+label `REAL_PHASE_5_7_OWNER_UNIT_CANONICAL_MERGE_001`. It creates 1 canonical
+contact, links 2 contact methods, records 3 canonical merge links, and traces 1
+property hint plus 1 inventory row through merge metadata. It remains contact-only:
+no buildings, building units, property relationships, or outreach are created.
+
+The rollback path was verified in dry-run mode only and would delete 1 contact,
+unlink 2 methods, mark 3 merge links, and change the merge batch status from
+`applied` to `rolled_back`. See
+`docs/PHASE_5_7_FIRST_OWNER_UNIT_CANONICAL_MERGE.md`.
