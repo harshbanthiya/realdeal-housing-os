@@ -144,6 +144,20 @@ relationship candidates and still skips 114 rows as `needs_canonical_contact`.
 No relationship candidates were applied. See
 `docs/PHASE_5_7_FIRST_OWNER_UNIT_CANONICAL_MERGE.md`.
 
+## Phase 5.8: first real relationship candidate (review-gated)
+
+Phase 5.8 applied the first *real* relationship candidate chain for the Phase 5.7
+canonical contact: a building anchor, a `pending_review` building alias, a
+`needs_review` building unit, a `pending_review` `contact_property_relationship`
+(type `owner`), and a `pending` `property_relationship_review_item` — exactly one
+of each, all visible in the five NocoDB review views. Nothing was approved or
+activated. New scripts `scripts/apply_real_property_relationship_candidates.py`
+(dry-run default; needs `--real-ok --apply`) and
+`scripts/rollback_real_property_relationship_candidates.py` (dry-run default;
+refuses if a relationship is already approved/active) manage it. Canonical contacts
+stayed 3 and the Phase 5.4 audit batch was unchanged. See
+`docs/PHASE_5_8_FIRST_REAL_RELATIONSHIP_CANDIDATE.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →

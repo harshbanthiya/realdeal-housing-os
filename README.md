@@ -426,3 +426,19 @@ python3 scripts/rollback_canonical_merge.py \
 ```
 
 See `docs/PHASE_5_7_FIRST_OWNER_UNIT_CANONICAL_MERGE.md`.
+
+## Phase 5.8 First Real Relationship Candidate
+
+Phase 5.8 created the first real, review-gated owner/unit relationship candidate
+from the Phase 5.7 canonical contact: building anchor → `pending_review` alias →
+`needs_review` unit → `pending_review` `owner` relationship → `pending` review item
+(one each). Nothing is approved/active; no outreach.
+
+```bash
+# Dry-run, then apply (needs --real-ok --apply); rollback is dry-run by default
+python3 scripts/apply_real_property_relationship_candidates.py \
+  --contact-id <canonical_contact_id> --review-item-id <import_review_item_id> --apply --real-ok
+python3 scripts/rollback_real_property_relationship_candidates.py --rel-label REAL_PHASE_5_8_OWNER_UNIT_RELATIONSHIP_001
+```
+
+See `docs/PHASE_5_8_FIRST_REAL_RELATIONSHIP_CANDIDATE.md`.

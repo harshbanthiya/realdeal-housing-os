@@ -158,3 +158,17 @@ building/unit/property relationship rows. See
 - Do not send WhatsApp, SMS, emails, or any outreach from this workflow.
 - Do not print raw names, phone numbers, emails, websites, addresses, or private
   client/property data in reports.
+
+## Phase 5.8: first real candidate apply (review-gated)
+
+Phase 5.8 promotes the read-only plan into the first *real* relationship candidate
+for one Phase 5.7 canonical contact, using
+`scripts/apply_real_property_relationship_candidates.py` (dry-run default; writes
+only with `--real-ok --apply`). It creates one building anchor, one `pending_review`
+building alias, one `needs_review` building unit, one `pending_review` `owner`
+`contact_property_relationship`, and one `pending` `property_relationship_review_item`,
+then surfaces them in the five NocoDB review views. Nothing is approved/activated,
+no outreach is sent, and `scripts/rollback_real_property_relationship_candidates.py`
+(dry-run default) can remove the tagged candidate rows while refusing to delete any
+already-approved/active relationship. See
+`docs/PHASE_5_8_FIRST_REAL_RELATIONSHIP_CANDIDATE.md`.
