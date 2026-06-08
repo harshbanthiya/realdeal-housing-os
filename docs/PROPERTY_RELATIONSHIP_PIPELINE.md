@@ -172,6 +172,18 @@ stayed 3; the Phase 5.4 batch was unchanged), and no outreach was sent. Managed 
 review state without deleting rows, refusing if communications were sent). See
 `docs/PHASE_5_9_FIRST_PROPERTY_RELATIONSHIP_APPROVAL.md`.
 
+## Phase 5.10: owner/building/unit dashboard
+
+Phase 5.10 is dashboard/view polish only — no data import, no new contacts or
+relationships, no approvals, no outreach. Migration
+`schemas/009_owner_building_unit_dashboard.sql` adds four masked read-only views:
+`vw_owner_relationship_dashboard`, `vw_building_unit_owner_summary`,
+`vw_contact_property_trace_full` (contact → relationship → building/unit → source
+import → canonical merge → review), and `vw_property_relationship_revert_readiness`
+(`revert_allowed` + reason). `scripts/owner_relationship_dashboard_summary.py` prints
+counts only. For the first active owner relationship every view returns one row and
+`revert_allowed=true`. See `docs/OWNER_BUILDING_UNIT_DASHBOARD.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →

@@ -142,3 +142,10 @@ contact — visible (with the contact name masked) in
 `vw_contact_property_relationship_review` (`active`) and
 `vw_contact_building_unit_trace`. No outreach was sent. See
 `docs/PHASE_5_9_FIRST_PROPERTY_RELATIONSHIP_APPROVAL.md`.
+
+Phase 5.10 adds masked owner/building/unit dashboard views
+(`vw_owner_relationship_dashboard`, `vw_contact_property_trace_full`,
+`vw_property_relationship_revert_readiness`, `vw_building_unit_owner_summary`) for
+inspecting and auditing that active owner relationship — including a full trace back
+to its source batch and canonical merge, and a revert-readiness flag. See
+`docs/OWNER_BUILDING_UNIT_DASHBOARD.md`.

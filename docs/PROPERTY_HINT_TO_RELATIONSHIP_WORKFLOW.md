@@ -184,3 +184,10 @@ transitions the review item to `approved`, the relationship to `active`, the uni
 (dry-run default) restores the review state without deleting rows. Contacts,
 contact_methods, and source-aware audit rows are never modified, and no outreach is
 sent. See `docs/PHASE_5_9_FIRST_PROPERTY_RELATIONSHIP_APPROVAL.md`.
+
+## Phase 5.10: owner/building/unit dashboard
+
+Phase 5.10 adds masked read-only dashboard views and a counts-only summary script to
+inspect, trace, and revert-check the resulting active owner relationship before
+scaling — view/script polish only (no import, no new contacts/relationships, no
+approvals, no outreach). See `docs/OWNER_BUILDING_UNIT_DASHBOARD.md`.

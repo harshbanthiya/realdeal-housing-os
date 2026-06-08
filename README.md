@@ -459,3 +459,18 @@ python3 scripts/revert_property_relationship_approval.py \
 ```
 
 See `docs/PHASE_5_9_FIRST_PROPERTY_RELATIONSHIP_APPROVAL.md`.
+
+## Phase 5.10 Owner/Building/Unit Dashboard
+
+Phase 5.10 adds masked read-only dashboard views over the first active owner
+relationship (view/script polish only — no import, no new contacts/relationships, no
+approvals, no outreach). Migration `schemas/009_owner_building_unit_dashboard.sql`
+adds `vw_owner_relationship_dashboard`, `vw_building_unit_owner_summary`,
+`vw_contact_property_trace_full`, and `vw_property_relationship_revert_readiness`.
+
+```bash
+# Counts-only summary (no DB writes)
+python3 scripts/owner_relationship_dashboard_summary.py
+```
+
+See `docs/OWNER_BUILDING_UNIT_DASHBOARD.md`.
