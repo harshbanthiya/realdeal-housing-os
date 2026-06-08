@@ -300,7 +300,17 @@ def real_merge_sql(batch_label: str, merge_label: str, review_item_id: str) -> s
     return f"""
 BEGIN;
 
-CREATE TEMP TABLE tmp_merge_batch AS SELECT gen_random_uuid() AS id;
+-- Compute "is this the first applied real merge?" BEFORE any insert in this
+-- transaction, so both the batch metadata and the contact metadata agree.
+-- The flag is true only when no non-test canonical_merge_batches with
+-- status='applied' existed before this merge.
+CREATE TEMP TABLE tmp_merge_batch AS
+SELECT
+  gen_random_uuid() AS id,
+  (NOT EXISTS (
+    SELECT 1 FROM canonical_merge_batches
+    WHERE is_test = false AND status = 'applied'
+  )) AS is_first_real;
 
 INSERT INTO canonical_merge_batches (
   id, merge_label, import_batch_id, is_test, source_description, status, metadata
@@ -310,12 +320,12 @@ SELECT
   {mlabel},
   ib.id,
   false,
-  'Phase 4 first real canonical merge (single approved review item).',
+  'Phase 4 real canonical merge (single approved review item).',
   'applied',
   jsonb_build_object(
     'batch_label', {label},
     'phase', '4',
-    'first_real_canonical_merge', true,
+    'first_real_canonical_merge', t.is_first_real,
     'source_aware_only', false,
     'communication_sent', false,
     'review_item_id', {rid}
@@ -368,11 +378,11 @@ SELECT
   {label},
   'active',
   ARRAY['real', 'phase_4', 'canonical_merge']::text[],
-  'Real canonical contact created by Phase 4 first real canonical merge.',
+  'Real canonical contact created by a Phase 4 real canonical merge.',
   import_batch_id,
   jsonb_build_object(
     'phase', '4',
-    'first_real_canonical_merge', true,
+    'first_real_canonical_merge', (SELECT is_first_real FROM tmp_merge_batch),
     'source_import_row_id', contact_import_row_id,
     'review_item_id', review_item_id
   ),

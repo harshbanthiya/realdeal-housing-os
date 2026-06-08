@@ -160,3 +160,9 @@ file/import row/review item, and confirm `communication_sent=false`. Names are
 masked to an initial and phones/emails are masked. Filter by
 `merge_label = REAL_PHASE_4_CANONICAL_MERGE_001`. Full guide:
 `docs/CANONICAL_CONTACT_REVIEW.md`.
+
+Phase 4.2 (2026-06-08) added a second canonical contact under merge label
+`REAL_PHASE_4_CANONICAL_MERGE_002`. The same five views now show 2 canonical
+contacts; filter by either merge label to isolate one. Review statuses are now
+40 pending / 4 approved / 1 needs_more_info. See
+`docs/PHASE_4_2_SECOND_REAL_CANONICAL_MERGE.md`.

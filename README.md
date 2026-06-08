@@ -301,3 +301,21 @@ python3 scripts/canonical_contact_summary.py --merge-label REAL_PHASE_4_CANONICA
 ```
 
 No outreach is sent in this phase. See `docs/CANONICAL_CONTACT_REVIEW.md`.
+
+## Phase 4.2 Second Real Canonical Merge
+
+Phase 4.2 (2026-06-08) created a **second** real canonical contact from one more
+approved `merge_candidate` review item (`14bc4ad4-013e-43bf-b32f-0d3310de7623`,
+`google_maps_business_csv`) in `REAL_PHASE_3_5_TEST_001`, under merge label
+`REAL_PHASE_4_CANONICAL_MERGE_002` — 1 contact, 3 methods, 1 lead requirement,
+5 merge links. Same guardrails as Phase 4 (one approved item at a time, no bulk
+merge, no duplicate merge, no outreach). Canonical contacts: 1 → 2; review statuses:
+40 pending / 4 approved / 1 needs_more_info.
+
+```bash
+# Rollback dry-run (does not run destructively)
+python3 scripts/rollback_canonical_merge.py \
+  --merge-label REAL_PHASE_4_CANONICAL_MERGE_002 --real-ok --confirm-real-rollback
+```
+
+See `docs/PHASE_4_2_SECOND_REAL_CANONICAL_MERGE.md`.

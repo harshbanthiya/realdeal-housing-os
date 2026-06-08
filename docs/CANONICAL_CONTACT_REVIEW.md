@@ -99,3 +99,15 @@ python3 scripts/canonical_contact_summary.py --merge-label REAL_PHASE_4_CANONICA
 Phase 4.1 is review and traceability only. **Do not send any WhatsApp, SMS, email,
 or message** to the canonical contact. Outreach is out of scope until a later,
 explicitly approved phase.
+
+## Phase 4.2 — second canonical contact
+
+As of Phase 4.2 (2026-06-08) there are **2** real canonical contacts. The same
+views work for the second merge — filter `merge_label = REAL_PHASE_4_CANONICAL_MERGE_002`
+in `vw_canonical_contacts_review`, `vw_canonical_source_trace`, and
+`vw_canonical_merge_audit` (or list both with no filter). Expect: 1 contact,
+3 methods, 1 lead requirement, 5 source-trace rows, `status=applied`,
+`communication_sent=false`, `rollback_allowed=true`. Counts-only summary:
+`python3 scripts/canonical_contact_summary.py --merge-label REAL_PHASE_4_CANONICAL_MERGE_002`.
+The no-outreach warning above applies equally. See
+`docs/PHASE_4_2_SECOND_REAL_CANONICAL_MERGE.md`.

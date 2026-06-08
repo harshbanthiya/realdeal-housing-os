@@ -104,3 +104,15 @@ added by `schemas/007_canonical_review_dashboard.sql` — `vw_canonical_contacts
 `communication_sent=false`. A counts-only summary is available via
 `python3 scripts/canonical_contact_summary.py --merge-label <label>`. Full details:
 `docs/CANONICAL_CONTACT_REVIEW.md`.
+
+Real merges applied so far (one approved review item each):
+
+| Merge label | Review item | Contact | Methods | Lead reqs |
+|---|---|---|---|---|
+| `REAL_PHASE_4_CANONICAL_MERGE_001` | `0da30fd3-…` | 1 | 2 | 1 |
+| `REAL_PHASE_4_CANONICAL_MERGE_002` | `14bc4ad4-…` (`google_maps_business_csv`) | 1 | 3 | 1 |
+
+A `needs_more_info` candidate may be promoted to `approved` via
+`scripts/update_review_item.py` only after safe-metadata verification (complete
+`merge_candidate`, has method + lead, no existing link, no unresolved duplicate).
+See `docs/PHASE_4_2_SECOND_REAL_CANONICAL_MERGE.md`.
