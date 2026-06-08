@@ -132,6 +132,11 @@ relationship workflow should be explicitly approved before use. It should:
 - expose only masked/safe review views in NocoDB
 - provide dry-run rollback before any destructive cleanup
 
+Phase 5.5 plans the canonical-contact step needed before those relationship
+candidates can be created. It selects safe owner/unit `merge_candidate` review items
+but does not approve them or create contacts. See
+`docs/PHASE_5_5_OWNER_UNIT_CANONICAL_CONTACT_PLAN.md`.
+
 ## Warnings
 
 - Do not import additional real owner/property sheets without an explicit phase.

@@ -117,6 +117,13 @@ the new batch and skipped all 116 as `needs_canonical_contact`. Relationship
 candidate creation remains a later reviewed phase. See
 `docs/PHASE_5_4_IMPERIAL_UNIT_AUDIT_IMPORT.md`.
 
+## Phase 5.5: canonical contact planning before relationships
+
+Phase 5.5 analyzed the Phase 5.4 owner/unit audit rows and selected two safe
+`merge_candidate` review items for a later canonical-contact approval phase. No
+statuses were changed and no contacts or relationships were created. See
+`docs/PHASE_5_5_OWNER_UNIT_CANONICAL_CONTACT_PLAN.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →

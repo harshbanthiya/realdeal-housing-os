@@ -373,3 +373,19 @@ python3 scripts/cleanup_real_import_batch.py \
 ```
 
 See `docs/PHASE_5_4_IMPERIAL_UNIT_AUDIT_IMPORT.md`.
+
+## Phase 5.5 Owner/Unit Canonical Contact Plan
+
+Phase 5.5 analyzes `REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001` for future canonical
+contact creation without changing review statuses or creating contacts. The first
+candidate pass found 52 safe rows and 6 duplicate-involved rows; two safe
+`merge_candidate` review items were selected for a later approval phase.
+
+```bash
+python3 scripts/owner_unit_candidate_summary.py \
+  --batch-label REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001 \
+  --limit 2 \
+  --source-format unit_resident_workbook
+```
+
+See `docs/PHASE_5_5_OWNER_UNIT_CANONICAL_CONTACT_PLAN.md`.

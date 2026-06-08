@@ -116,3 +116,13 @@ A `needs_more_info` candidate may be promoted to `approved` via
 `scripts/update_review_item.py` only after safe-metadata verification (complete
 `merge_candidate`, has method + lead, no existing link, no unresolved duplicate).
 See `docs/PHASE_4_2_SECOND_REAL_CANONICAL_MERGE.md`.
+
+## Owner/Unit Canonical Contact Planning (Phase 5.5)
+
+Phase 5.5 does not run canonical merge. It analyzes owner/unit audit rows from
+`REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001` and selects a tiny set of safe pending
+`merge_candidate` review items for a later approval phase. Existing merge scripts
+can create one canonical contact from one approved review item, but Phase 5.6 needs
+an explicit owner/unit batch allowlist decision and should remain contact-only: no
+buildings, building units, or property relationships. See
+`docs/PHASE_5_5_OWNER_UNIT_CANONICAL_CONTACT_PLAN.md`.
