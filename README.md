@@ -442,3 +442,20 @@ python3 scripts/rollback_real_property_relationship_candidates.py --rel-label RE
 ```
 
 See `docs/PHASE_5_8_FIRST_REAL_RELATIONSHIP_CANDIDATE.md`.
+
+## Phase 5.9 First Real Relationship Approval
+
+Phase 5.9 approved one Phase 5.8 candidate and activated one owner relationship:
+review item → approved, relationship → active, building unit → active, building
+alias → approved, plus one action-log row. One at a time (no bulk approval), no
+contacts/source rows changed, no outreach.
+
+```bash
+# Dry-run, then apply (--real-ok --apply); revert is dry-run by default
+python3 scripts/approve_property_relationship_candidate.py \
+  --review-item-id <REVIEW_ITEM_ID> --reviewed-by "h b" --decision-notes "..." --real-ok --apply
+python3 scripts/revert_property_relationship_approval.py \
+  --review-item-id <REVIEW_ITEM_ID> --reviewed-by "h b" --decision-notes "..." --real-ok
+```
+
+See `docs/PHASE_5_9_FIRST_PROPERTY_RELATIONSHIP_APPROVAL.md`.

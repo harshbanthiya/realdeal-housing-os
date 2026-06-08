@@ -158,6 +158,20 @@ refuses if a relationship is already approved/active) manage it. Canonical conta
 stayed 3 and the Phase 5.4 audit batch was unchanged. See
 `docs/PHASE_5_8_FIRST_REAL_RELATIONSHIP_CANDIDATE.md`.
 
+## Phase 5.9: first real relationship approval
+
+Phase 5.9 approved exactly one Phase 5.8 candidate and activated one owner
+relationship: review item `pending -> approved`, relationship
+`pending_review -> active`, building unit `needs_review -> active`, building alias
+`pending_review -> approved`, plus one `property_relationship_action_log` row. No
+contacts, contact_methods, or source-aware rows were changed (canonical contacts
+stayed 3; the Phase 5.4 batch was unchanged), and no outreach was sent. Managed by
+`scripts/approve_property_relationship_candidate.py` (dry-run default; needs
+`--real-ok --apply`; one review item at a time, no bulk approval) and
+`scripts/revert_property_relationship_approval.py` (dry-run default; restores the
+review state without deleting rows, refusing if communications were sent). See
+`docs/PHASE_5_9_FIRST_PROPERTY_RELATIONSHIP_APPROVAL.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →

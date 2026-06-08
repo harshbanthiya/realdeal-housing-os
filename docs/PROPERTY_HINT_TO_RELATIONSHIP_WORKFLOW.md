@@ -172,3 +172,15 @@ no outreach is sent, and `scripts/rollback_real_property_relationship_candidates
 (dry-run default) can remove the tagged candidate rows while refusing to delete any
 already-approved/active relationship. See
 `docs/PHASE_5_8_FIRST_REAL_RELATIONSHIP_CANDIDATE.md`.
+
+## Phase 5.9: first real relationship approval
+
+Phase 5.9 closes the loop by approving one Phase 5.8 candidate and activating one
+owner relationship, using `scripts/approve_property_relationship_candidate.py`
+(dry-run default; `--real-ok --apply` to write; one review item at a time). It
+transitions the review item to `approved`, the relationship to `active`, the unit to
+`active`, and the alias to `approved`, and logs the decision in
+`property_relationship_action_log`. `scripts/revert_property_relationship_approval.py`
+(dry-run default) restores the review state without deleting rows. Contacts,
+contact_methods, and source-aware audit rows are never modified, and no outreach is
+sent. See `docs/PHASE_5_9_FIRST_PROPERTY_RELATIONSHIP_APPROVAL.md`.

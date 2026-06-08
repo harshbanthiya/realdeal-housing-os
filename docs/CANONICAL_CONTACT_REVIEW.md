@@ -135,3 +135,10 @@ No building, unit, or property relationship rows were created in Phase 5.7. The
 relationship planner can now see 2 possible relationship candidates for the Phase
 5.4 owner/unit batch, but candidate application is deferred to a later explicit
 phase. See `docs/PHASE_5_7_FIRST_OWNER_UNIT_CANONICAL_MERGE.md`.
+
+In Phase 5.8 the first real relationship candidate was created (review-gated) and in
+Phase 5.9 it was approved into one active `owner` relationship for this canonical
+contact — visible (with the contact name masked) in
+`vw_contact_property_relationship_review` (`active`) and
+`vw_contact_building_unit_trace`. No outreach was sent. See
+`docs/PHASE_5_9_FIRST_PROPERTY_RELATIONSHIP_APPROVAL.md`.
