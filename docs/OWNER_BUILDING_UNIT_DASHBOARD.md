@@ -81,3 +81,8 @@ plus one more review-gated relationship **candidate** (`pending_review`). The ow
 dashboard still shows one **active** relationship (candidates do not appear until
 approved), while `vw_property_relationship_review_queue` and the other review views
 now show two rows. See `docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.
+
+Phase 5.12 then approved that second candidate, so `vw_owner_relationship_dashboard`
+now shows **two** active owner relationships (units "Wing A -102" and "Wing A -203"),
+and `vw_property_relationship_revert_readiness` reports both as revert-ready. See
+`docs/PHASE_5_12_SECOND_PROPERTY_RELATIONSHIP_APPROVAL.md`.

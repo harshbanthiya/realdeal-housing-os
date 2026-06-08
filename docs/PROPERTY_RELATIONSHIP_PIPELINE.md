@@ -195,6 +195,16 @@ one more canonical contact (`REAL_PHASE_5_11_OWNER_UNIT_CANONICAL_MERGE_002`, co
 rollback dry-runs verified; no outreach. See
 `docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.
 
+## Phase 5.12: second relationship approval
+
+Phase 5.12 approved the Phase 5.11 candidate and activated a second owner
+relationship (active owner relationships **1 → 2**; pending candidates 1 → 0; approved
+review items 1 → 2; action log 1 → 2). The approve/revert scripts were made
+phase-agnostic — they now identify a candidate by its `source` marker rather than a
+fixed `phase=5.8`, so they handle the `phase=5.11` candidate (no guardrail weakened).
+Canonical contacts stayed 4 and the Phase 5.4 batch was unchanged; no outreach. See
+`docs/PHASE_5_12_SECOND_PROPERTY_RELATIONSHIP_APPROVAL.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →

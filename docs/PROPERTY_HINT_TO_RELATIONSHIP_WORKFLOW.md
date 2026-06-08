@@ -200,3 +200,11 @@ plus one review-gated relationship candidate
 same guarded `apply_real_property_relationship_candidates.py`. It was not approved or
 activated, and no outreach was sent. See
 `docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.
+
+## Phase 5.12: second relationship approval
+
+Phase 5.12 approved the Phase 5.11 candidate into a second active owner relationship,
+using `approve_property_relationship_candidate.py` (now phase-agnostic — it keys on
+the candidate `source` marker, so it handles `phase=5.11` candidates). One review item
+at a time, no bulk approval, no outreach. See
+`docs/PHASE_5_12_SECOND_PROPERTY_RELATIONSHIP_APPROVAL.md`.

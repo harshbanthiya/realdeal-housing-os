@@ -23,7 +23,9 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-EXPECTED_PHASE = "5.8"
+# Identify a genuine review-gated relationship candidate by its source marker rather
+# than a specific phase value, so the script works for any phase (5.8, 5.11, ...).
+CANDIDATE_SOURCE = "real_property_relationship_candidate"
 
 
 def read_env_value(key: str) -> str:
@@ -73,7 +75,7 @@ SELECT
   COALESCE((SELECT count(*) FROM building_aliases ba
      JOIN contact_property_relationships cpr ON cpr.building_id = ba.building_id AND cpr.raw_context->>'rel_label' = ba.metadata->>'rel_label'
      JOIN pr ON pr.contact_property_relationship_id = cpr.id
-     WHERE ba.metadata->>'phase' = '{EXPECTED_PHASE}' AND ba.status = 'approved'), 0),
+     WHERE ba.metadata->>'source' = '{CANDIDATE_SOURCE}' AND ba.status = 'approved'), 0),
   (SELECT count(*) FROM property_relationship_action_log pal JOIN pr ON pr.contact_property_relationship_id = pal.contact_property_relationship_id
      WHERE pal.action_type NOT IN ('approve_property_relationship', 'revert_property_relationship'));
 """
@@ -91,7 +93,7 @@ SELECT pr.id AS review_item_id, cpr.id AS relationship_id, cpr.building_unit_id,
 FROM property_relationship_review_items pr
 JOIN contact_property_relationships cpr ON cpr.id = pr.contact_property_relationship_id
 WHERE pr.id = {r} AND pr.status = 'approved' AND cpr.relationship_status = 'active'
-  AND pr.raw_context->>'phase' = '{EXPECTED_PHASE}';
+  AND pr.raw_context->>'source' = '{CANDIDATE_SOURCE}';
 
 DO $$
 BEGIN
@@ -119,12 +121,12 @@ UPDATE contact_property_relationships cpr
 UPDATE building_units bu
   SET canonical_status = 'needs_review', updated_at = now()
   FROM tmp_rev t WHERE bu.id = t.building_unit_id
-    AND bu.canonical_status = 'active' AND bu.metadata->>'phase' = '{EXPECTED_PHASE}';
+    AND bu.canonical_status = 'active' AND bu.metadata->>'source' = '{CANDIDATE_SOURCE}';
 
 UPDATE building_aliases ba
   SET status = 'pending_review', updated_at = now()
   FROM tmp_rev t WHERE ba.building_id = t.building_id
-    AND ba.metadata->>'rel_label' = t.rel_label AND ba.metadata->>'phase' = '{EXPECTED_PHASE}'
+    AND ba.metadata->>'rel_label' = t.rel_label AND ba.metadata->>'source' = '{CANDIDATE_SOURCE}'
     AND ba.status = 'approved';
 
 INSERT INTO property_relationship_action_log (
@@ -146,7 +148,7 @@ ORDER BY item;
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Revert ONE Phase 5.9 property relationship approval. Dry-run by default.")
+    parser = argparse.ArgumentParser(description="Revert ONE property relationship approval (review-gated). Dry-run by default.")
     parser.add_argument("--review-item-id", required=True)
     parser.add_argument("--reviewed-by", required=True)
     parser.add_argument("--decision-notes", required=True)
@@ -154,7 +156,7 @@ def main() -> int:
     parser.add_argument("--real-ok", action="store_true")
     args = parser.parse_args()
 
-    print(f"Phase 5.9 property relationship approval REVERT. review_item={args.review_item_id}. Counts only.")
+    print(f"Property relationship approval REVERT. review_item={args.review_item_id}. Counts only.")
     code, probe = run_psql(probe_sql(args.review_item_id))
     if code != 0:
         print(probe)

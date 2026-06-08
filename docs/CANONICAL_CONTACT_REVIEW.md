@@ -154,3 +154,7 @@ Phase 5.11 added a fourth canonical contact (second owner/unit merge,
 `REAL_PHASE_5_11_OWNER_UNIT_CANONICAL_MERGE_002`) and one review-gated relationship
 candidate for it (`pending_review`, not active). See
 `docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.
+
+Phase 5.12 approved that second candidate into a second active `owner` relationship
+(two canonical contacts now own a unit each in Imperial Heights). See
+`docs/PHASE_5_12_SECOND_PROPERTY_RELATIONSHIP_APPROVAL.md`.

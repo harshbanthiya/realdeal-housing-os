@@ -484,3 +484,12 @@ canonical contacts 3 → 4) and created one review-gated relationship **candidat
 `pending_review` — not approved/active (active owner relationships stay 1) — and no
 outreach was sent. Both rollback dry-runs verified. See
 `docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.
+
+## Phase 5.12 Second Property Relationship Approval
+
+Phase 5.12 approved the Phase 5.11 candidate and activated a second owner
+relationship: review item → approved, relationship → active, unit → active, alias →
+approved, +1 action-log row. Active owner relationships **1 → 2**; pending candidates
+→ 0; canonical contacts stay 4; no contacts/source rows changed; no outreach. The
+approve/revert scripts are now phase-agnostic (keyed on the candidate source marker).
+See `docs/PHASE_5_12_SECOND_PROPERTY_RELATIONSHIP_APPROVAL.md`.

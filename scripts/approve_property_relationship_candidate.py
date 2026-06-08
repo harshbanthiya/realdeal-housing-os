@@ -22,7 +22,9 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-EXPECTED_PHASE = "5.8"
+# Identify a genuine review-gated relationship candidate by its source marker rather
+# than a specific phase value, so the script works for any phase (5.8, 5.11, ...).
+CANDIDATE_SOURCE = "real_property_relationship_candidate"
 
 
 def read_env_value(key: str) -> str:
@@ -64,7 +66,7 @@ WITH pr AS (SELECT * FROM property_relationship_review_items WHERE id = {r})
 SELECT
   (SELECT count(*) FROM pr),
   COALESCE((SELECT status = 'pending' FROM pr), false),
-  COALESCE((SELECT raw_context->>'phase' = '{EXPECTED_PHASE}' FROM pr), false),
+  COALESCE((SELECT raw_context->>'source' = '{CANDIDATE_SOURCE}' FROM pr), false),
   (SELECT count(*) FROM contact_property_relationships cpr JOIN pr ON pr.contact_property_relationship_id = cpr.id
      WHERE cpr.relationship_status = 'pending_review'),
   (SELECT count(*) FROM contact_property_relationships cpr JOIN pr ON pr.contact_property_relationship_id = cpr.id
@@ -77,7 +79,7 @@ SELECT
   COALESCE((SELECT count(*) FROM building_aliases ba JOIN pr ON true
      JOIN contact_property_relationships cpr ON cpr.id = pr.contact_property_relationship_id
      WHERE ba.building_id = cpr.building_id AND ba.metadata->>'rel_label' = cpr.raw_context->>'rel_label'
-       AND ba.metadata->>'phase' = '{EXPECTED_PHASE}' AND ba.status = 'pending_review'), 0);
+       AND ba.metadata->>'source' = '{CANDIDATE_SOURCE}' AND ba.status = 'pending_review'), 0);
 """
 
 
@@ -95,7 +97,7 @@ JOIN contact_property_relationships cpr ON cpr.id = pr.contact_property_relation
 JOIN contacts c ON c.id = cpr.contact_id AND c.is_test = false AND c.canonical_status = 'active'
 WHERE pr.id = {r} AND pr.status = 'pending'
   AND cpr.relationship_status = 'pending_review'
-  AND pr.raw_context->>'phase' = '{EXPECTED_PHASE}';
+  AND pr.raw_context->>'source' = '{CANDIDATE_SOURCE}';
 
 DO $$
 BEGIN
@@ -119,12 +121,12 @@ UPDATE contact_property_relationships cpr
 UPDATE building_units bu
   SET canonical_status = 'active', updated_at = now()
   FROM tmp_appr t WHERE bu.id = t.building_unit_id
-    AND bu.canonical_status = 'needs_review' AND bu.metadata->>'phase' = '{EXPECTED_PHASE}';
+    AND bu.canonical_status = 'needs_review' AND bu.metadata->>'source' = '{CANDIDATE_SOURCE}';
 
 UPDATE building_aliases ba
   SET status = 'approved', updated_at = now()
   FROM tmp_appr t WHERE ba.building_id = t.building_id
-    AND ba.metadata->>'rel_label' = t.rel_label AND ba.metadata->>'phase' = '{EXPECTED_PHASE}'
+    AND ba.metadata->>'rel_label' = t.rel_label AND ba.metadata->>'source' = '{CANDIDATE_SOURCE}'
     AND ba.status = 'pending_review';
 
 INSERT INTO property_relationship_action_log (
@@ -153,7 +155,7 @@ ORDER BY item;
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Approve ONE Phase 5.9 property relationship candidate. Dry-run by default.")
+    parser = argparse.ArgumentParser(description="Approve ONE property relationship candidate (review-gated). Dry-run by default.")
     parser.add_argument("--review-item-id", required=True)
     parser.add_argument("--reviewed-by", required=True)
     parser.add_argument("--decision-notes", required=True)
@@ -161,7 +163,7 @@ def main() -> int:
     parser.add_argument("--real-ok", action="store_true")
     args = parser.parse_args()
 
-    print(f"Phase 5.9 property relationship approval. review_item={args.review_item_id}. Counts only.")
+    print(f"Property relationship approval. review_item={args.review_item_id}. Counts only.")
     code, probe = run_psql(probe_sql(args.review_item_id))
     if code != 0:
         print(probe)
@@ -172,7 +174,7 @@ def main() -> int:
         return 1
     exists = int(f[0] or 0)
     is_pending = f[1].strip() == "t"
-    is_phase58 = f[2].strip() == "t"
+    is_candidate = f[2].strip() == "t"
     rel_pending = int(f[3] or 0)
     rel_active = int(f[4] or 0)
     contact_ok = int(f[5] or 0)
@@ -186,8 +188,8 @@ def main() -> int:
     if not is_pending:
         print("Refusing: review item status is not 'pending'.")
         return 1
-    if not is_phase58:
-        print(f"Refusing: review item is not a Phase {EXPECTED_PHASE} candidate (raw_context marker missing).")
+    if not is_candidate:
+        print("Refusing: review item is not a real relationship candidate (source marker missing).")
         return 1
     if rel_active > 0:
         print("Refusing: the relationship is already active/approved.")
