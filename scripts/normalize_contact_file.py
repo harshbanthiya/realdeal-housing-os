@@ -552,10 +552,28 @@ def write_output(rows: List[Dict[str, str]], source_file: Path, output_dir: Path
     return output_path
 
 
+def apply_default_hints(
+    rows: List[Dict[str, str]],
+    building_name: str,
+    building_code: str,
+    relationship_hint: str,
+) -> None:
+    for row in rows:
+        if building_name and not row.get("building_name_hint"):
+            row["building_name_hint"] = building_name
+        if building_code and not row.get("building_code_hint"):
+            row["building_code_hint"] = building_code
+        if relationship_hint:
+            row["relationship_hint"] = relationship_hint
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Normalize contact source files into a standard intermediate CSV.")
     parser.add_argument("source_file", help="CSV, XLSX, VCF, or simple TXT source file.")
     parser.add_argument("--output-dir", default=str(PROJECT_ROOT / "exports" / "contacts"), help="Output directory. Defaults to exports/contacts.")
+    parser.add_argument("--building-name", default="", help="Optional safe building name hint to apply when rows lack one.")
+    parser.add_argument("--building-code", default="", help="Optional safe building code hint to apply when rows lack one.")
+    parser.add_argument("--relationship-hint", default="", help="Optional relationship hint to apply when rows lack one.")
     args = parser.parse_args()
 
     path = Path(args.source_file)
@@ -564,6 +582,7 @@ def main() -> int:
         return 1
 
     rows = normalize_file(path)
+    apply_default_hints(rows, args.building_name.strip(), args.building_code.strip(), args.relationship_hint.strip())
     output_path = write_output(rows, path, Path(args.output_dir))
     print(f"Normalized rows written: {len(rows)}")
     print(f"Normalized output: {output_path}")
