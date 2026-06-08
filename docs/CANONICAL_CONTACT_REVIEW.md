@@ -149,3 +149,8 @@ Phase 5.10 adds masked owner/building/unit dashboard views
 inspecting and auditing that active owner relationship — including a full trace back
 to its source batch and canonical merge, and a revert-readiness flag. See
 `docs/OWNER_BUILDING_UNIT_DASHBOARD.md`.
+
+Phase 5.11 added a fourth canonical contact (second owner/unit merge,
+`REAL_PHASE_5_11_OWNER_UNIT_CANONICAL_MERGE_002`) and one review-gated relationship
+candidate for it (`pending_review`, not active). See
+`docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.

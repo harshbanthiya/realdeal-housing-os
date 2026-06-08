@@ -184,6 +184,17 @@ import → canonical merge → review), and `vw_property_relationship_revert_rea
 counts only. For the first active owner relationship every view returns one row and
 `revert_allowed=true`. See `docs/OWNER_BUILDING_UNIT_DASHBOARD.md`.
 
+## Phase 5.11: second canonical contact + relationship candidate
+
+Phase 5.11 repeated the per-row flow for the second approved owner/unit review item:
+one more canonical contact (`REAL_PHASE_5_11_OWNER_UNIT_CANONICAL_MERGE_002`, contacts
+3 → 4) and one review-gated relationship **candidate**
+(`REAL_PHASE_5_11_PROPERTY_REL_CANDIDATE_002`, unit "Wing A -203"). The candidate is
+`pending_review` (building alias `pending_review`, unit `needs_review`, review item
+`pending`); active owner relationships stay 1 and nothing was approved/activated. Both
+rollback dry-runs verified; no outreach. See
+`docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →

@@ -474,3 +474,13 @@ python3 scripts/owner_relationship_dashboard_summary.py
 ```
 
 See `docs/OWNER_BUILDING_UNIT_DASHBOARD.md`.
+
+## Phase 5.11 Second Owner/Unit Canonical Contact + Relationship Candidate
+
+Phase 5.11 merged the second approved owner/unit review item
+(`75bb7bad-…`) into a new canonical contact (`REAL_PHASE_5_11_OWNER_UNIT_CANONICAL_MERGE_002`;
+canonical contacts 3 → 4) and created one review-gated relationship **candidate**
+(`REAL_PHASE_5_11_PROPERTY_REL_CANDIDATE_002`, unit "Wing A -203"). The candidate is
+`pending_review` — not approved/active (active owner relationships stay 1) — and no
+outreach was sent. Both rollback dry-runs verified. See
+`docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.

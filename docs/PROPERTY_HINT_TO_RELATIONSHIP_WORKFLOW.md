@@ -191,3 +191,12 @@ Phase 5.10 adds masked read-only dashboard views and a counts-only summary scrip
 inspect, trace, and revert-check the resulting active owner relationship before
 scaling — view/script polish only (no import, no new contacts/relationships, no
 approvals, no outreach). See `docs/OWNER_BUILDING_UNIT_DASHBOARD.md`.
+
+## Phase 5.11: second canonical contact + relationship candidate
+
+Phase 5.11 ran the per-row flow a second time: one more owner/unit canonical contact
+plus one review-gated relationship candidate
+(`REAL_PHASE_5_11_PROPERTY_REL_CANDIDATE_002`, `pending_review`), created with the
+same guarded `apply_real_property_relationship_candidates.py`. It was not approved or
+activated, and no outreach was sent. See
+`docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.

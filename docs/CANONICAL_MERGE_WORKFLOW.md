@@ -153,3 +153,9 @@ The rollback path was verified in dry-run mode only and would delete 1 contact,
 unlink 2 methods, mark 3 merge links, and change the merge batch status from
 `applied` to `rolled_back`. See
 `docs/PHASE_5_7_FIRST_OWNER_UNIT_CANONICAL_MERGE.md`.
+
+Phase 5.11 repeated the same guarded owner/unit merge for the second approved review
+item under label `REAL_PHASE_5_11_OWNER_UNIT_CANONICAL_MERGE_002` (canonical contacts
+3 → 4; 1 contact, 2 methods, 3 merge links, 1 property hint + 1 inventory row traced;
+`first_real_canonical_merge=false`). One approved review item at a time — no bulk
+merge. See `docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.

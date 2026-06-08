@@ -17,6 +17,7 @@ person names, phones, emails, websites, or addresses. No communications are sent
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 from pathlib import Path
 
@@ -58,9 +59,20 @@ def run_psql(sql: str) -> tuple[int, str]:
     return result.returncode, result.stdout.strip() or result.stderr.strip()
 
 
-def tag(rel_label: str, extra: str = "") -> str:
+def resolve_phase(rel_label: str, phase: str | None) -> str:
+    """Explicit --phase wins; otherwise infer from a REAL_PHASE_<maj>_<min> rel_label;
+    otherwise fall back to '5.8' for backward compatibility."""
+    if phase:
+        return phase
+    match = re.search(r"PHASE_(\d+)_(\d+)", rel_label)
+    if match:
+        return f"{match.group(1)}.{match.group(2)}"
+    return "5.8"
+
+
+def tag(rel_label: str, phase: str, extra: str = "") -> str:
     base = (
-        "jsonb_build_object('phase','5.8','rel_label'," + sql_literal(rel_label)
+        "jsonb_build_object('phase'," + sql_literal(phase) + ",'rel_label'," + sql_literal(rel_label)
         + ",'source','real_property_relationship_candidate'"
     )
     return base + (extra + ")" if extra else ")")
@@ -97,18 +109,18 @@ SELECT
   (SELECT count(*) FROM ctx WHERE cir_id IS NOT NULL),
   COALESCE((SELECT (building_name IS NOT NULL OR building_code IS NOT NULL) FROM sig), false),
   COALESCE((SELECT (unit_number IS NOT NULL) FROM sig), false),
-  EXISTS (SELECT 1 FROM contact_property_relationships WHERE contact_id = {cid} AND raw_context->>'phase' = '5.8'),
+  EXISTS (SELECT 1 FROM contact_property_relationships WHERE contact_id = {cid} AND raw_context->>'source' = 'real_property_relationship_candidate'),
   EXISTS (SELECT 1 FROM contact_property_relationships WHERE raw_context->>'rel_label' = {sql_literal(rel_label)}),
   COALESCE((SELECT building_name FROM sig), ''),
   COALESCE((SELECT unit_number FROM sig), '');
 """
 
 
-def apply_sql(contact_id: str, rel_label: str, review_item_id: str | None) -> str:
+def apply_sql(contact_id: str, rel_label: str, review_item_id: str | None, phase: str) -> str:
     cid = sql_literal(contact_id)
     rl = sql_literal(rel_label)
-    rl_tag = tag(rel_label)
-    rel_tag = tag(rel_label, ",'review_item_id'," + sql_literal(review_item_id)) if review_item_id else rl_tag
+    rl_tag = tag(rel_label, phase)
+    rel_tag = tag(rel_label, phase, ",'review_item_id'," + sql_literal(review_item_id)) if review_item_id else rl_tag
     return f"""
 BEGIN;
 CREATE TEMP TABLE tmp_sig AS
@@ -194,10 +206,11 @@ ORDER BY item;
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Apply ONE real Phase 5.8 owner/unit relationship candidate. Dry-run by default.")
+    parser = argparse.ArgumentParser(description="Apply ONE real owner/unit relationship candidate (review-gated). Dry-run by default.")
     parser.add_argument("--contact-id", required=True)
     parser.add_argument("--rel-label", default=DEFAULT_REL_LABEL)
     parser.add_argument("--review-item-id")
+    parser.add_argument("--phase", help="Phase tag for metadata/raw_context. Defaults to inference from the rel-label (PHASE_<maj>_<min>), else 5.8.")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--real-ok", action="store_true")
     args = parser.parse_args()
@@ -206,7 +219,8 @@ def main() -> int:
         print("Refusing: --rel-label must not start with FAKE_ (this is the real candidate path).")
         return 1
 
-    print(f"Phase 5.8 real relationship candidate apply. contact={args.contact_id}; rel_label={args.rel_label}. Counts only.")
+    phase = resolve_phase(args.rel_label, args.phase)
+    print(f"Real relationship candidate apply (phase {phase}). contact={args.contact_id}; rel_label={args.rel_label}. Counts only.")
 
     code, probe = run_psql(probe_sql(args.contact_id, args.rel_label))
     if code != 0:
@@ -222,7 +236,7 @@ def main() -> int:
     has_row = int(f[3] or 0)
     has_building = f[4].strip() == "t"
     has_unit = f[5].strip() == "t"
-    existing_phase58 = f[6].strip() == "t"
+    existing_for_contact = f[6].strip() == "t"
     rel_label_used = f[7].strip() == "t"
     building_name = f[8]
     unit_number = f[9]
@@ -245,8 +259,8 @@ def main() -> int:
     if not has_unit:
         print("Refusing: no unit signal (owner/unit relationship needs a unit).")
         return 1
-    if existing_phase58 or rel_label_used:
-        print("Refusing: a Phase 5.8 relationship candidate already exists for this contact/label. Use rollback first.")
+    if existing_for_contact or rel_label_used:
+        print("Refusing: a real relationship candidate already exists for this contact/label. Use rollback first.")
         return 1
 
     print(f"signals: building={building_name!r} unit={unit_number!r} relationship_type=owner (all review-gated)")
@@ -257,7 +271,7 @@ def main() -> int:
         print("Writing requires --apply and --real-ok.")
         return 0
 
-    code, output = run_psql(apply_sql(args.contact_id, args.rel_label, args.review_item_id))
+    code, output = run_psql(apply_sql(args.contact_id, args.rel_label, args.review_item_id, phase))
     print("Phase 5.8 candidate chain created (all review-gated):")
     print(output)
     return code

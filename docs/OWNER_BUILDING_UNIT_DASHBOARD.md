@@ -75,3 +75,9 @@ cleanly, the full trace resolves to source + merge + review, revert readiness is
 green, and the masking holds (no raw personal values anywhere). Then the same
 guarded per-row flow (candidate → review → approve) can be repeated one row at a
 time — there is deliberately no bulk path.
+
+Phase 5.11 exercised exactly that next step: a second owner/unit canonical contact
+plus one more review-gated relationship **candidate** (`pending_review`). The owner
+dashboard still shows one **active** relationship (candidates do not appear until
+approved), while `vw_property_relationship_review_queue` and the other review views
+now show two rows. See `docs/PHASE_5_11_SECOND_OWNER_UNIT_CANONICAL_AND_REL_CANDIDATE.md`.
