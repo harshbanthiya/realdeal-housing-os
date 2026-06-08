@@ -322,3 +322,9 @@ methods and 1 lead requirement via `canonical_merge_links`. **These source-aware
 rows are never mutated or deleted by merge or rollback** — only `contacts` and the
 `contact_id` foreign keys on methods/leads change. See
 `docs/PHASE_4_FIRST_REAL_CANONICAL_MERGE.md`.
+
+Phase 4.1 (migration `007_canonical_review_dashboard.sql`) adds masked review views
+that read this source-aware base read-only — `vw_canonical_source_trace` joins a
+canonical contact back through `canonical_merge_links` to its `source_files` /
+`contact_import_rows` / `import_review_items` row without exposing raw values. See
+`docs/CANONICAL_CONTACT_REVIEW.md`.

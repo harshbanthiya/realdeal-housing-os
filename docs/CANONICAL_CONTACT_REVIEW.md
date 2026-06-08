@@ -1,0 +1,101 @@
+# Canonical Contact Review (Phase 4.1)
+
+A safe, NocoDB-friendly review layer for the first real canonical contact. Every
+view masks raw personal values: names are reduced to a single initial via
+`mask_name()`, phone/email go through `mask_phone()` / `mask_email()`, and
+websites/links become `[LINK_PRESENT]`. No view exposes a full name, phone, email,
+website, or address.
+
+Added by migration `schemas/007_canonical_review_dashboard.sql`.
+
+---
+
+## Views to open in NocoDB
+
+Open NocoDB (see `docs/NOCODB_REVIEW_WORKFLOW.md` for the URL) and add these views
+from the `realdeal_os` Postgres source:
+
+| View | Purpose |
+|---|---|
+| `vw_canonical_contacts_review` | One row per canonical contact: masked display hint, status, provenance ids, method/lead/source-file counts, merge label + status. |
+| `vw_canonical_contact_methods_review` | Masked contact methods linked to canonical contacts (type, masked value, validation, source file/row). |
+| `vw_canonical_source_trace` | Canonical contact → merge link → source file / import row / review item. |
+| `vw_canonical_lead_requirements_review` | Lead requirement metadata (purpose, property_type, locality, city, budget) linked to canonical contacts. |
+| `vw_canonical_merge_audit` | Merge batch status, counts, `rollback_allowed`, and `communication_sent`. |
+
+## Filter by merge label
+
+In every relevant view, filter on the merge label to isolate the Phase 4 contact:
+
+```
+merge_label = REAL_PHASE_4_CANONICAL_MERGE_001
+```
+
+`vw_canonical_contacts_review`, `vw_canonical_source_trace`, and
+`vw_canonical_merge_audit` carry `merge_label` directly. For
+`vw_canonical_contact_methods_review` and `vw_canonical_lead_requirements_review`,
+filter by `contact_id` (copy the `contact_id` from `vw_canonical_contacts_review`).
+
+## Trace a canonical contact back to its source
+
+1. In `vw_canonical_contacts_review`, find the row (filter `merge_label`). Note its
+   `contact_id`, `method_count` (2), `lead_requirement_count` (1),
+   `source_file_count` (1).
+2. In `vw_canonical_source_trace`, filter that `contact_id`. You will see the
+   merge actions (`create_contact`, `link_method` ×2, `link_lead_requirement`),
+   each tied to a `source_file`, `source_row_number`, `contact_import_row_id`, and
+   the originating `review_item_id` / `review_type` / `review_status` /
+   `reviewed_by` / `reviewed_at`.
+3. The `review_item_id` should be `0da30fd3-84a8-450a-b759-1d71a18db0f9` with
+   `review_type = merge_candidate` and `review_status = approved`.
+
+## Confirm contact methods
+
+In `vw_canonical_contact_methods_review`, filter the `contact_id`. Expect **2**
+rows. Values are masked (e.g. `[MASKED]1234` for phones, `x[MASKED]@domain` for
+emails) — this is correct; raw values are intentionally never shown here.
+
+## Confirm lead requirements
+
+In `vw_canonical_lead_requirements_review`, filter the `contact_id`. Expect **1**
+row showing the requirement metadata (purpose, property_type, locality, city,
+budget range, `lead_status`, `needs_review`) and its `source_file` /
+`source_row_number`. No raw contact identifiers appear.
+
+## Confirm no communications were sent
+
+In `vw_canonical_merge_audit`, filter `merge_label`. Confirm:
+
+- `status = applied`
+- `communication_sent = false`
+- `rollback_allowed = true`
+
+`communication_sent` is read from the merge batch metadata; Phase 4 recorded it as
+`false` and no script sends outreach.
+
+## Rollback dry-run
+
+The merge is reversible. The dry-run reports what *would* change and makes **no**
+changes (it omits `--apply`):
+
+```bash
+python3 scripts/rollback_canonical_merge.py \
+  --merge-label REAL_PHASE_4_CANONICAL_MERGE_001 --real-ok --confirm-real-rollback
+```
+
+Expected dry-run counts: 1 contact to delete, 2 methods to unlink, 1 lead to
+unlink, 4 merge links to mark, status `applied -> rolled_back`. Real rollback
+(`--apply`) is refused if `communication_sent = true`, never deletes source audit
+rows or `review_action_log`, and preserves merge links as audit.
+
+A quick counts-only summary (no DB writes) is available via:
+
+```bash
+python3 scripts/canonical_contact_summary.py --merge-label REAL_PHASE_4_CANONICAL_MERGE_001
+```
+
+## Warning — no outreach yet
+
+Phase 4.1 is review and traceability only. **Do not send any WhatsApp, SMS, email,
+or message** to the canonical contact. Outreach is out of scope until a later,
+explicitly approved phase.

@@ -285,3 +285,19 @@ python3 scripts/rollback_canonical_merge.py \
 
 Real merge is enabled for only one approved review item at a time — no bulk merge,
 no duplicate merge. See `docs/PHASE_4_FIRST_REAL_CANONICAL_MERGE.md`.
+
+## Phase 4.1 Canonical Contact Review
+
+Phase 4.1 adds a safe, masked review layer so the real canonical contact can be
+inspected and traced to its import source without exposing raw personal values.
+Migration `schemas/007_canonical_review_dashboard.sql` adds five NocoDB views:
+`vw_canonical_contacts_review`, `vw_canonical_contact_methods_review`,
+`vw_canonical_source_trace`, `vw_canonical_lead_requirements_review`,
+`vw_canonical_merge_audit` (names masked to an initial, phones/emails masked).
+
+```bash
+# Counts-only summary (no DB writes)
+python3 scripts/canonical_contact_summary.py --merge-label REAL_PHASE_4_CANONICAL_MERGE_001
+```
+
+No outreach is sent in this phase. See `docs/CANONICAL_CONTACT_REVIEW.md`.

@@ -146,3 +146,17 @@ review-only (40 pending / 3 approved / 2 needs_more_info, the applied item kept 
 `approved` status). Use `vw_canonical_merge_batches` and `vw_canonical_merge_links`
 to inspect the audit trail (counts/hints only — no raw contact values). See
 `docs/PHASE_4_FIRST_REAL_CANONICAL_MERGE.md`.
+
+Phase 4.1 adds five masked canonical-review views (migration 007):
+
+- `vw_canonical_contacts_review`
+- `vw_canonical_contact_methods_review`
+- `vw_canonical_source_trace`
+- `vw_canonical_lead_requirements_review`
+- `vw_canonical_merge_audit`
+
+Open these to review the real canonical contact, trace it to its source
+file/import row/review item, and confirm `communication_sent=false`. Names are
+masked to an initial and phones/emails are masked. Filter by
+`merge_label = REAL_PHASE_4_CANONICAL_MERGE_001`. Full guide:
+`docs/CANONICAL_CONTACT_REVIEW.md`.

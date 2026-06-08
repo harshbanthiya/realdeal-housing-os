@@ -10,6 +10,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/004_nocodb_review_workflow.sql"
   "$PROJECT_ROOT/schemas/005_review_action_statuses.sql"
   "$PROJECT_ROOT/schemas/006_canonical_merge_workflow.sql"
+  "$PROJECT_ROOT/schemas/007_canonical_review_dashboard.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

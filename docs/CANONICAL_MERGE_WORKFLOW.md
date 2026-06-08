@@ -93,3 +93,14 @@ python3 scripts/apply_canonical_merge.py \
 python3 scripts/rollback_canonical_merge.py \
   --merge-label <REAL_..._MERGE_label> --real-ok --confirm-real-rollback
 ```
+
+## Reviewing a Canonical Contact (Phase 4.1)
+
+After a real merge, review and trace the canonical contact through the masked views
+added by `schemas/007_canonical_review_dashboard.sql` — `vw_canonical_contacts_review`,
+`vw_canonical_contact_methods_review`, `vw_canonical_source_trace`,
+`vw_canonical_lead_requirements_review`, `vw_canonical_merge_audit`. Use
+`vw_canonical_merge_audit` to confirm `status=applied`, `rollback_allowed=true`, and
+`communication_sent=false`. A counts-only summary is available via
+`python3 scripts/canonical_contact_summary.py --merge-label <label>`. Full details:
+`docs/CANONICAL_CONTACT_REVIEW.md`.
