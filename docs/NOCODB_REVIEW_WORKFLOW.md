@@ -137,4 +137,12 @@ Phase 3.8 adds fake-only canonical merge test views:
 - `vw_canonical_merge_batches`
 - `vw_canonical_merge_links`
 
-These are for verifying test merge audit trails after using fake `.example` data. Real canonical merge is disabled, and the real batch `REAL_PHASE_3_5_TEST_001` remains review-only.
+These are for verifying merge audit trails. As of Phase 4 (2026-06-08), real
+canonical merge is enabled for one approved `merge_candidate` review item at a time
+(behind `--real-ok`); the first real merge under label
+`REAL_PHASE_4_CANONICAL_MERGE_001` created one canonical contact from batch
+`REAL_PHASE_3_5_TEST_001`. The remaining review items in that batch stay
+review-only (40 pending / 3 approved / 2 needs_more_info, the applied item kept its
+`approved` status). Use `vw_canonical_merge_batches` and `vw_canonical_merge_links`
+to inspect the audit trail (counts/hints only — no raw contact values). See
+`docs/PHASE_4_FIRST_REAL_CANONICAL_MERGE.md`.

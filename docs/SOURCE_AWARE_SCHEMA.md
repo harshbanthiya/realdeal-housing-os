@@ -311,3 +311,14 @@ python3 scripts/rollback_canonical_merge.py --merge-label FAKE_PHASE_3_8_CANONIC
 ```
 
 See `docs/CANONICAL_MERGE_WORKFLOW.md`.
+
+## Phase 4 — first real canonical merge
+
+The source-aware tables (`source_files`, `contact_import_rows`, `contact_methods`,
+`lead_requirements`) are the immutable audit base for canonical merges. Phase 4
+(2026-06-08) created the first real canonical contact from one approved
+`merge_candidate` review item in `REAL_PHASE_3_5_TEST_001`, linking 2 contact
+methods and 1 lead requirement via `canonical_merge_links`. **These source-aware
+rows are never mutated or deleted by merge or rollback** — only `contacts` and the
+`contact_id` foreign keys on methods/leads change. See
+`docs/PHASE_4_FIRST_REAL_CANONICAL_MERGE.md`.

@@ -4,13 +4,17 @@ Phase 3.8 introduces a fake-only review-to-canonical merge workflow. It proves t
 
 ## Safety Rules
 
-- Real canonical merge is disabled.
-- Merge scripts refuse real batches.
-- Merge scripts only allow labels starting with `FAKE_`.
+- Fake/test mode is the default; real canonical merge is gated behind `--real-ok`.
+- In fake mode, merge scripts refuse real batches and only allow `FAKE_` labels.
+- In real mode (Phase 4+), merge is allowed for **one** approved `merge_candidate`
+  review item at a time, only for batch `REAL_PHASE_3_5_TEST_001` (unless
+  `--allow-other-batch`), and creates at most one canonical contact. See the
+  Real Merge Policy section below.
 - Only approved `merge_candidate` review items are eligible.
-- Dry-run is the default for rollback.
+- Dry-run is the default for rollback; real rollback also needs
+  `--confirm-real-rollback` and is refused if `communication_sent=true`.
 - No messages, WhatsApp, or email are sent.
-- Raw names, phone numbers, and emails should not be printed during merge testing.
+- Raw names, phone numbers, and emails are never printed (counts only).
 
 ## Migration 006
 
@@ -67,4 +71,25 @@ Rollback unlinks test methods and lead requirements, deletes test canonical cont
 
 ## Real Merge Policy
 
-Real canonical merge is not enabled yet. The real batch `REAL_PHASE_3_5_TEST_001` remains review-only until a separate, explicit real merge workflow is designed and approved.
+Real canonical merge is enabled **only** for one approved `merge_candidate` review
+item at a time, behind `--real-ok` plus the full guard matrix in
+`scripts/apply_canonical_merge.py`. As of Phase 4 (2026-06-08) the first real merge
+has been applied for review item `0da30fd3-84a8-450a-b759-1d71a18db0f9` from batch
+`REAL_PHASE_3_5_TEST_001` under merge label `REAL_PHASE_4_CANONICAL_MERGE_001`,
+creating exactly one canonical contact. There is no bulk merge and no duplicate
+merge, and no communications are sent. See
+[PHASE_4_FIRST_REAL_CANONICAL_MERGE.md](PHASE_4_FIRST_REAL_CANONICAL_MERGE.md) for
+the exact commands, guardrails, and rollback procedure.
+
+```bash
+# Dry-run apply (no writes): omit --apply
+python3 scripts/apply_canonical_merge.py \
+  --batch-label REAL_PHASE_3_5_TEST_001 \
+  --review-item-id <approved_merge_candidate_id> \
+  --merge-label <REAL_..._MERGE_label> --real-ok
+# add --apply to write exactly one canonical contact
+
+# Rollback dry-run (default): add --apply only when explicitly approved
+python3 scripts/rollback_canonical_merge.py \
+  --merge-label <REAL_..._MERGE_label> --real-ok --confirm-real-rollback
+```

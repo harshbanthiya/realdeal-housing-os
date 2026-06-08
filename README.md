@@ -258,3 +258,30 @@ python3 scripts/rollback_canonical_merge.py --merge-label FAKE_PHASE_3_8_CANONIC
 ```
 
 The apply script refuses real batches and requires fake labels. Rollback is dry-run by default. See `docs/CANONICAL_MERGE_WORKFLOW.md`.
+
+## Phase 4 First Real Canonical Merge
+
+Phase 4 (2026-06-08) promotes **one** approved `merge_candidate` review item from
+the real audit batch `REAL_PHASE_3_5_TEST_001` into a single canonical contact,
+behind `--real-ok` plus a strict guard matrix. Counts only are printed; no raw
+personal data is shown and **no outreach (WhatsApp / SMS / email / message) is sent.**
+
+```bash
+# Plan (read-only)
+python3 scripts/plan_canonical_merge.py --batch-label REAL_PHASE_3_5_TEST_001 \
+  --review-item-id 0da30fd3-84a8-450a-b759-1d71a18db0f9 --approved-only
+# Dry-run apply (no writes): omit --apply
+python3 scripts/apply_canonical_merge.py --batch-label REAL_PHASE_3_5_TEST_001 \
+  --review-item-id 0da30fd3-84a8-450a-b759-1d71a18db0f9 \
+  --merge-label REAL_PHASE_4_CANONICAL_MERGE_001 --real-ok
+# Real apply (creates exactly 1 canonical contact): add --apply
+python3 scripts/apply_canonical_merge.py --batch-label REAL_PHASE_3_5_TEST_001 \
+  --review-item-id 0da30fd3-84a8-450a-b759-1d71a18db0f9 \
+  --merge-label REAL_PHASE_4_CANONICAL_MERGE_001 --real-ok --apply
+# Rollback dry-run (default; add --apply only when explicitly approved)
+python3 scripts/rollback_canonical_merge.py \
+  --merge-label REAL_PHASE_4_CANONICAL_MERGE_001 --real-ok --confirm-real-rollback
+```
+
+Real merge is enabled for only one approved review item at a time — no bulk merge,
+no duplicate merge. See `docs/PHASE_4_FIRST_REAL_CANONICAL_MERGE.md`.

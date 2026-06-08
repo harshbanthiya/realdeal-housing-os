@@ -52,15 +52,23 @@ def run_psql(sql: str) -> int:
     return subprocess.run(command, input=sql, text=True, check=False).returncode
 
 
-def plan_sql(batch_label: str, approved_only: bool, limit: int | None) -> str:
+def plan_sql(batch_label: str, approved_only: bool, limit: int | None, review_item_id: str | None) -> str:
     label = sql_literal(batch_label)
     review_filter = "iri.status = 'approved'" if approved_only else "iri.status IN ('approved', 'pending')"
     limit_sql = f"LIMIT {limit}" if limit else ""
+    # When a single review item is targeted, scope the whole plan to its one row.
+    # This keeps Phase 4 plans to exactly one approved merge_candidate at a time.
+    row_filter = ""
+    if review_item_id:
+        row_filter = (
+            "AND cir.id = (SELECT contact_import_row_id FROM import_review_items "
+            f"WHERE id = {sql_literal(review_item_id)})"
+        )
     return f"""
 WITH batch AS (
   SELECT id, metadata
   FROM import_batches
-  WHERE metadata->>'batch_label' = {label}
+  WHERE metadata->>'batch_label' = {label} OR source_name = {label}
 ),
 eligible AS (
   SELECT cir.id
@@ -69,6 +77,7 @@ eligible AS (
   JOIN import_review_items iri ON iri.contact_import_row_id = cir.id
   WHERE iri.review_type = 'merge_candidate'
     AND {review_filter}
+    {row_filter}
     AND (NULLIF(cir.cleaned_display_name, '') IS NOT NULL OR NULLIF(cir.raw_name, '') IS NOT NULL)
     AND (
       EXISTS (SELECT 1 FROM contact_methods cm WHERE cm.contact_import_row_id = cir.id)
@@ -93,6 +102,7 @@ skips AS (
     ON iri.contact_import_row_id = cir.id
    AND iri.review_type = 'merge_candidate'
   WHERE cir.id NOT IN (SELECT id FROM eligible)
+    {row_filter}
 )
 SELECT 'batch_count' AS item, count(*) FROM batch
 UNION ALL SELECT 'is_real_import', count(*) FILTER (WHERE metadata->>'is_real_import' = 'true') FROM batch
@@ -109,19 +119,22 @@ ORDER BY item;
 def main() -> int:
     parser = argparse.ArgumentParser(description="Plan canonical merge. No database writes.")
     parser.add_argument("--batch-label", required=True)
-    parser.add_argument("--approved-only", default="true", choices=["true", "false"])
+    parser.add_argument("--review-item-id", help="Scope the plan to a single approved merge_candidate review item.")
+    parser.add_argument("--approved-only", action="store_true", help="Only plan approved merge_candidate review items (required).")
     parser.add_argument("--limit", type=int)
     args = parser.parse_args()
-    approved_only = args.approved_only == "true"
+    approved_only = args.approved_only
     if not approved_only:
-        print("Refusing non-approved planning for real batches. Use approved-only review flow.")
+        print("Refusing non-approved planning for real batches. Pass --approved-only.")
         return 1
     if args.limit is not None and args.limit < 1:
         print("--limit must be positive.")
         return 1
     print("Canonical merge plan. Counts only; no raw contact values are printed.")
     print(f"batch_label: {args.batch_label}")
-    return run_psql(plan_sql(args.batch_label, approved_only, args.limit))
+    if args.review_item_id:
+        print(f"review_item_id: {args.review_item_id} (single-item scope)")
+    return run_psql(plan_sql(args.batch_label, approved_only, args.limit, args.review_item_id))
 
 
 if __name__ == "__main__":
