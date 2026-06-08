@@ -338,3 +338,21 @@ python3 scripts/cleanup_fake_property_relationships.py --apply
 ```
 
 See `docs/PROPERTY_RELATIONSHIP_PIPELINE.md`.
+
+## Phase 5.2 Property Hint To Relationship Candidates
+
+Phase 5.2 adds a guarded fake-only workflow for turning source-aware property hints
+into reviewable relationship candidates. The planner is read-only and counts-only;
+the fake apply path refuses non-`FAKE_` batches and real contacts. No real owner
+sheets are imported, no canonical merge runs, and no outreach is sent.
+
+```bash
+python3 scripts/plan_property_relationship_candidates.py --fake-only
+python3 scripts/seed_fake_property_hints.py --apply --fake-ok
+python3 scripts/apply_fake_property_relationship_candidates.py \
+  --batch-label FAKE_PHASE_5_2_PROPERTY_HINTS --apply --fake-ok
+python3 scripts/cleanup_fake_property_relationship_candidates.py --apply
+python3 scripts/seed_fake_property_hints.py --cleanup --apply
+```
+
+See `docs/PROPERTY_HINT_TO_RELATIONSHIP_WORKFLOW.md`.

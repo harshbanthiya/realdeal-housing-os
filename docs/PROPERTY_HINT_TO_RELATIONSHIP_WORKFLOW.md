@@ -1,0 +1,140 @@
+# Property Hint To Relationship Workflow (Phase 5.2)
+
+Phase 5.2 turns source-aware property hints into reviewable building, unit, and
+contact relationship candidates. This is still review-first and guarded: no real
+owner sheet import, no canonical contact merge, and no outreach.
+
+## What Property Hints Are
+
+Property hints are non-canonical clues captured during source-aware imports. They
+live in `contact_property_hints` or in parsed fields on source rows, such as:
+
+- building name or building code
+- wing
+- unit number
+- relationship type, such as owner, tenant, broker, buyer, or business lead
+- source row and source file references
+
+Hints are evidence, not facts. They preserve what the source appeared to say while
+keeping the final building/unit/contact relationship behind review.
+
+## How Hints Become Candidates
+
+`scripts/plan_property_relationship_candidates.py` is the read-only planner. It
+counts possible candidate rows from:
+
+- `contact_property_hints`
+- parsed building/unit fields from `contact_import_rows` that do not already have
+  a `contact_property_hints` row
+- `inventory_import_rows`
+- `lead_requirements`
+
+The planner prints counts only. It does not create buildings, aliases, units,
+relationships, review items, contacts, messages, or tasks.
+
+Candidate logic:
+
+- A building name/code without a canonical building can become a building alias
+  candidate.
+- Wing/unit details can become a building unit candidate.
+- A hint with a canonical/test contact and enough building/unit evidence can become
+  a `contact_property_relationships` candidate.
+- Every materialized relationship remains `pending_review` and gets a
+  `property_relationship_review_items` queue item.
+
+## Why A Canonical Contact Is Required
+
+Real relationships must point to a reviewed canonical `contacts` row. Source rows
+can contain duplicates, old values, partial names, or unrelated business records.
+Creating real property relationships before canonical contact approval would make
+the relationship graph hard to trust and hard to roll back.
+
+For this reason, the planner skips rows with no canonical contact as
+`skip:needs_canonical_contact`. The fake Phase 5.2 harness uses only a tagged
+`is_test=true` contact so the path can be tested without touching real people.
+
+## Building Alias Review
+
+Imported building labels can be inconsistent. A source might use a code, short name,
+spelling variant, sheet tab label, or map business name. Building alias candidates
+go into `building_aliases` with `status = pending_review`.
+
+Reviewers decide whether an alias should map to an existing canonical building, be
+rejected, or lead to a later canonical building creation step. Aliases are not
+auto-approved.
+
+## Unit Matching
+
+Unit candidates go into `building_units` with review-oriented status. Unit matching
+uses building, wing, and unit number signals when available. The schema intentionally
+allows non-unique `(building_id, wing, unit_number)` rows because imported sheets can
+contain duplicates, stale unit labels, or uncertain building matches.
+
+Review should confirm the building and unit before a relationship is treated as a
+real owner/tenant fact.
+
+## Stronger Evidence For Owner/Tenant Links
+
+Owner, tenant, landlord, seller, buyer, broker, and agent relationships are higher
+impact than generic lead interest. Phase 5.2 therefore requires stronger evidence,
+especially unit-level evidence, before materializing owner/tenant-style candidates.
+
+Rows with owner/tenant-style relationship types but no usable unit detail are skipped
+as `skip:owner_tenant_needs_unit`. Business lead or interested buyer/tenant signals
+may be building-level candidates when the source supports that weaker relationship.
+
+## Fake Workflow Commands
+
+All fake scripts are dry-run by default and print counts only.
+
+```bash
+# Read-only planning
+python3 scripts/plan_property_relationship_candidates.py --fake-only
+
+# Seed one fake source-aware property hint
+python3 scripts/seed_fake_property_hints.py
+python3 scripts/seed_fake_property_hints.py --apply --fake-ok
+
+# Confirm the seeded hint plans as exactly one candidate path
+python3 scripts/plan_property_relationship_candidates.py \
+  --batch-label FAKE_PHASE_5_2_PROPERTY_HINTS --fake-only
+
+# Materialize one fake candidate chain
+python3 scripts/apply_fake_property_relationship_candidates.py \
+  --batch-label FAKE_PHASE_5_2_PROPERTY_HINTS
+python3 scripts/apply_fake_property_relationship_candidates.py \
+  --batch-label FAKE_PHASE_5_2_PROPERTY_HINTS --apply --fake-ok
+
+# Inspect counts only
+python3 scripts/property_relationship_summary.py
+
+# Clean up fake candidate rows, then fake seed rows
+python3 scripts/cleanup_fake_property_relationship_candidates.py
+python3 scripts/cleanup_fake_property_relationship_candidates.py --apply
+python3 scripts/seed_fake_property_hints.py --cleanup
+python3 scripts/seed_fake_property_hints.py --cleanup --apply
+```
+
+`apply_fake_property_relationship_candidates.py` refuses non-`FAKE_` source batches
+and refuses hints that resolve to real (`is_test=false`) contacts.
+
+## Future Real Workflow
+
+A later real workflow should be explicitly approved before use. It should:
+
+- start from reviewed source-aware imports
+- require canonical contact approval before real relationship creation
+- plan counts before writes
+- materialize candidates as `pending_review`, never auto-approved
+- keep source file, source row, property hint, and inventory row traceability
+- expose only masked/safe review views in NocoDB
+- provide dry-run rollback before any destructive cleanup
+
+## Warnings
+
+- Do not import real owner/property sheets yet.
+- Do not create real owner/tenant relationships yet.
+- Do not run canonical contact merges as part of Phase 5.2.
+- Do not send WhatsApp, SMS, emails, or any outreach from this workflow.
+- Do not print raw names, phone numbers, emails, websites, addresses, or private
+  client/property data in reports.

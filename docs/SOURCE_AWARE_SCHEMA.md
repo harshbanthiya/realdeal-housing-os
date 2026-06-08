@@ -152,6 +152,12 @@ The script may insert into:
 
 It does not create canonical contacts.
 
+`contact_property_hints` are later consumed by the Phase 5.2 property hint to
+relationship candidate workflow. That workflow is still guarded and review-first:
+it plans counts from hints, requires a canonical/test contact before materializing
+relationship candidates, and does not import real owner sheets or send outreach.
+See `docs/PROPERTY_HINT_TO_RELATIONSHIP_WORKFLOW.md`.
+
 ## Phase 3.4 Rollback Workflow
 
 Fake rows can be removed with:

@@ -1,4 +1,4 @@
-# Property Relationship Pipeline (Phase 5.1)
+# Property Relationship Pipeline (Phases 5.1-5.2)
 
 Schema foundation for linking canonical contacts to buildings and units with a
 reviewed relationship type. **Schema + fake test only** — no real owner or property
@@ -58,7 +58,53 @@ business data and shown as-is. No phones, emails, websites, or addresses are exp
 | `vw_property_relationship_review_queue` | The relationship review queue (status/priority/title). |
 | `vw_contact_building_unit_trace` | Trace contact → relationship → building/unit → source file/row. |
 
-## Fake workflow (test only)
+## Phase 5.2: property hints -> relationship candidates
+
+Phase 5.2 adds a guarded candidate workflow that turns source-aware property hints
+into reviewable building/unit/contact relationship candidates. It does **not** import
+real owner sheets, create canonical contacts, merge contacts, or send outreach.
+
+Candidate planning is read-only and prints counts only:
+
+```bash
+python3 scripts/plan_property_relationship_candidates.py
+python3 scripts/plan_property_relationship_candidates.py --fake-only
+python3 scripts/plan_property_relationship_candidates.py --batch-label FAKE_PHASE_5_2_PROPERTY_HINTS --fake-only
+```
+
+The planner considers:
+
+- `contact_property_hints`
+- parsed building/unit fields from `contact_import_rows` that do not already have
+  a `contact_property_hints` row
+- `inventory_import_rows`
+- `lead_requirements`
+
+Rows without a canonical/test contact are skipped as `needs_canonical_contact`, and
+owner/tenant-style rows without unit detail are skipped as `owner_tenant_needs_unit`.
+Every materialized relationship remains `pending_review` and receives a
+`property_relationship_review_items` queue item.
+
+Phase 5.2 includes a fake-only end-to-end harness:
+
+```bash
+# Seed one fake source-aware property hint (dry-run by default)
+python3 scripts/seed_fake_property_hints.py
+python3 scripts/seed_fake_property_hints.py --apply --fake-ok
+
+# Materialize one fake candidate chain (dry-run by default)
+python3 scripts/apply_fake_property_relationship_candidates.py --batch-label FAKE_PHASE_5_2_PROPERTY_HINTS
+python3 scripts/apply_fake_property_relationship_candidates.py --batch-label FAKE_PHASE_5_2_PROPERTY_HINTS --apply --fake-ok
+
+# Remove only tagged Phase 5.2 fake candidate rows, then the fake seed
+python3 scripts/cleanup_fake_property_relationship_candidates.py --apply
+python3 scripts/seed_fake_property_hints.py --cleanup --apply
+```
+
+`apply_fake_property_relationship_candidates.py` refuses non-`FAKE_` batches and
+refuses any hint that resolves to a real (`is_test=false`) contact.
+
+## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →
 review item), every row tagged `fake_batch = FAKE_PHASE_5_1_REL_001` plus `is_test`
