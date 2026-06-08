@@ -347,3 +347,10 @@ tables only (`REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001`). The batch created audit 
 property hints, inventory import rows, duplicate candidates, and pending review
 items, but did not create canonical contacts, buildings, units, or relationships.
 See `docs/PHASE_5_4_IMPERIAL_UNIT_AUDIT_IMPORT.md`.
+
+Phase 5.6 approved exactly two owner/unit `merge_candidate` review items from that
+batch and prepared contact-only canonical merge guardrails for a later phase.
+Planning now reports source-aware `contact_property_hints` and
+`inventory_import_rows` trace counts for each approved row, but Phase 5.6 did not
+run canonical merge apply and did not create contacts or relationships. See
+`docs/PHASE_5_6_OWNER_UNIT_REVIEW_APPROVAL_AND_MERGE_PREP.md`.

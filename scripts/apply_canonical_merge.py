@@ -3,10 +3,10 @@
 
 Two modes:
   * Fake/test mode (FAKE_ labels, --test-ok): unchanged Phase 3.8 behaviour.
-  * Real mode (Phase 4, --real-ok): creates AT MOST ONE canonical contact from a
-    single approved 'merge_candidate' review item, behind strict guards. Counts
-    only are printed; no raw contact values are ever emitted. No communications
-    are sent by this script under any flag.
+  * Real mode (Phase 4+ / Phase 5.7 prep, --real-ok): creates AT MOST ONE
+    canonical contact from a single approved 'merge_candidate' review item,
+    behind strict guards. Counts only are printed; no raw contact values are ever
+    emitted. No communications are sent by this script under any flag.
 
 Real mode requires ALL of: --apply --real-ok --batch-label --merge-label
 --review-item-id. See main() for the full refusal matrix.
@@ -243,9 +243,11 @@ ORDER BY item;
 
 # --- Phase 4 real-mode: single approved review item, maximum guardrails --------
 
-# The one real batch real canonical merge is currently allowed for. Any other
-# batch requires the explicit --allow-other-batch escape hatch.
+# Real canonical merge is allowlisted by batch and still one approved review item
+# at a time. Phase 5.6 only prepares the owner/unit batch path; do not run apply
+# for owner/unit rows until the next explicitly approved phase.
 ALLOWED_REAL_BATCH = "REAL_PHASE_3_5_TEST_001"
+OWNER_UNIT_REAL_BATCH = "REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001"
 
 
 def real_guard_sql(batch_label: str, merge_label: str, review_item_id: str) -> str:
@@ -269,7 +271,11 @@ SELECT
   COALESCE((SELECT review_type = 'merge_candidate' FROM ri), false),
   COALESCE((SELECT status = 'approved' FROM ri), false),
   COALESCE((SELECT ri.import_batch_id = b.id FROM ri, b), false),
-  COALESCE((SELECT source_name = '{ALLOWED_REAL_BATCH}' FROM b), false),
+  COALESCE((
+    SELECT source_name IN ('{ALLOWED_REAL_BATCH}', '{OWNER_UNIT_REAL_BATCH}')
+      OR batch_label IN ('{ALLOWED_REAL_BATCH}', '{OWNER_UNIT_REAL_BATCH}')
+    FROM b
+  ), false),
   EXISTS (
     SELECT 1 FROM canonical_merge_links cml
     JOIN contacts c ON c.id = cml.canonical_contact_id
@@ -288,7 +294,10 @@ SELECT
   ),
   EXISTS (SELECT 1 FROM canonical_merge_batches WHERE merge_label = {mlabel}),
   COALESCE((SELECT count(*) FROM contact_methods WHERE contact_import_row_id = (SELECT row_id FROM ri)), 0),
-  COALESCE((SELECT count(*) FROM lead_requirements WHERE contact_import_row_id = (SELECT row_id FROM ri)), 0);
+  COALESCE((SELECT count(*) FROM lead_requirements WHERE contact_import_row_id = (SELECT row_id FROM ri)), 0),
+  0,
+  COALESCE((SELECT count(*) FROM contact_property_hints WHERE contact_import_row_id = (SELECT row_id FROM ri)), 0),
+  COALESCE((SELECT count(*) FROM inventory_import_rows WHERE owner_contact_import_row_id = (SELECT row_id FROM ri)), 0);
 """
 
 
@@ -297,6 +306,24 @@ def real_merge_sql(batch_label: str, merge_label: str, review_item_id: str) -> s
     label = sql_literal(batch_label)
     rid = sql_literal(review_item_id)
     mlabel = sql_literal(merge_label)
+    is_owner_unit = batch_label == OWNER_UNIT_REAL_BATCH
+    phase = "5.7" if is_owner_unit else "4"
+    source_description = (
+        "Phase 5.7 owner/unit canonical merge (single approved review item; contact-only)."
+        if is_owner_unit
+        else "Phase 4 real canonical merge (single approved review item)."
+    )
+    contact_tags = (
+        "ARRAY['real', 'phase_5_7', 'canonical_merge', 'owner_unit']::text[]"
+        if is_owner_unit
+        else "ARRAY['real', 'phase_4', 'canonical_merge']::text[]"
+    )
+    contact_notes = (
+        "Real canonical contact created by a Phase 5.7 owner/unit canonical merge. "
+        "No building, unit, property relationship, or outreach was created by this step."
+        if is_owner_unit
+        else "Real canonical contact created by a Phase 4 real canonical merge."
+    )
     return f"""
 BEGIN;
 
@@ -320,14 +347,15 @@ SELECT
   {mlabel},
   ib.id,
   false,
-  'Phase 4 real canonical merge (single approved review item).',
+  {sql_literal(source_description)},
   'applied',
   jsonb_build_object(
     'batch_label', {label},
-    'phase', '4',
+    'phase', {sql_literal(phase)},
     'first_real_canonical_merge', t.is_first_real,
     'source_aware_only', false,
     'communication_sent', false,
+    'relationship_creation_done', false,
     'review_item_id', {rid}
   )
 FROM tmp_merge_batch t
@@ -377,14 +405,16 @@ SELECT
   NULL,
   {label},
   'active',
-  ARRAY['real', 'phase_4', 'canonical_merge']::text[],
-  'Real canonical contact created by a Phase 4 real canonical merge.',
+  {contact_tags},
+  {sql_literal(contact_notes)},
   import_batch_id,
   jsonb_build_object(
-    'phase', '4',
+    'phase', {sql_literal(phase)},
     'first_real_canonical_merge', (SELECT is_first_real FROM tmp_merge_batch),
     'source_import_row_id', contact_import_row_id,
-    'review_item_id', review_item_id
+    'review_item_id', review_item_id,
+    'relationship_creation_done', false,
+    'communication_sent', false
   ),
   false,
   import_batch_id,
@@ -401,7 +431,7 @@ SELECT
   import_batch_id, contact_import_row_id, canonical_contact_id, source_file_id,
   'create_contact', review_item_id, 1.0,
   'Created real canonical contact from approved real review item.',
-  jsonb_build_object('phase', '4')
+  jsonb_build_object('phase', {sql_literal(phase)}, 'relationship_creation_done', false)
 FROM tmp_merge_eligible;
 
 UPDATE contact_methods cm
@@ -418,7 +448,7 @@ SELECT
   t.import_batch_id, t.contact_import_row_id, t.canonical_contact_id, t.source_file_id,
   'link_method', t.review_item_id, 1.0,
   'Linked real contact method to real canonical contact.',
-  jsonb_build_object('phase', '4', 'contact_method_id', cm.id)
+  jsonb_build_object('phase', {sql_literal(phase)}, 'contact_method_id', cm.id)
 FROM tmp_merge_eligible t
 JOIN contact_methods cm ON cm.contact_import_row_id = t.contact_import_row_id;
 
@@ -436,7 +466,7 @@ SELECT
   t.import_batch_id, t.contact_import_row_id, t.canonical_contact_id, t.source_file_id,
   'link_lead_requirement', t.review_item_id, 1.0,
   'Linked real lead requirement to real canonical contact.',
-  jsonb_build_object('phase', '4', 'lead_requirement_id', lr.id)
+  jsonb_build_object('phase', {sql_literal(phase)}, 'lead_requirement_id', lr.id)
 FROM tmp_merge_eligible t
 JOIN lead_requirements lr ON lr.contact_import_row_id = t.contact_import_row_id;
 
@@ -452,9 +482,24 @@ SET
     SELECT count(*) FROM lead_requirements lr
     WHERE lr.contact_import_row_id IN (SELECT contact_import_row_id FROM tmp_merge_eligible)
   ),
-  inventory_hints_linked = 0,
+  inventory_hints_linked = (
+    SELECT count(*) FROM inventory_import_rows iir
+    WHERE iir.owner_contact_import_row_id IN (SELECT contact_import_row_id FROM tmp_merge_eligible)
+  ),
   applied_at = now(),
-  metadata = cmb.metadata || jsonb_build_object('canonical_merge_real_enabled', true)
+  metadata = cmb.metadata || jsonb_build_object(
+    'canonical_merge_real_enabled', true,
+    'relationship_creation_done', false,
+    'communication_sent', false,
+    'contact_property_hints_traced', (
+      SELECT count(*) FROM contact_property_hints cph
+      WHERE cph.contact_import_row_id IN (SELECT contact_import_row_id FROM tmp_merge_eligible)
+    ),
+    'inventory_import_rows_traced', (
+      SELECT count(*) FROM inventory_import_rows iir
+      WHERE iir.owner_contact_import_row_id IN (SELECT contact_import_row_id FROM tmp_merge_eligible)
+    )
+  )
 WHERE cmb.id = (SELECT id FROM tmp_merge_batch);
 
 COMMIT;
@@ -462,6 +507,8 @@ COMMIT;
 SELECT 'canonical_contacts_created' AS item, canonical_contacts_created FROM canonical_merge_batches WHERE merge_label = {mlabel}
 UNION ALL SELECT 'contact_methods_linked', contact_methods_linked FROM canonical_merge_batches WHERE merge_label = {mlabel}
 UNION ALL SELECT 'lead_requirements_linked', lead_requirements_linked FROM canonical_merge_batches WHERE merge_label = {mlabel}
+UNION ALL SELECT 'inventory_import_rows_traced', inventory_hints_linked FROM canonical_merge_batches WHERE merge_label = {mlabel}
+UNION ALL SELECT 'contact_property_hints_traced', COALESCE((metadata->>'contact_property_hints_traced')::integer, 0) FROM canonical_merge_batches WHERE merge_label = {mlabel}
 UNION ALL SELECT 'canonical_merge_links', count(*)::integer FROM canonical_merge_links cml JOIN canonical_merge_batches cmb ON cmb.id = cml.merge_batch_id WHERE cmb.merge_label = {mlabel}
 ORDER BY item;
 """
@@ -489,7 +536,7 @@ def run_real_merge(args) -> int:
         print(status)
         return code
     f = status.split("|") if status else []
-    if len(f) < 12:
+    if len(f) < 15:
         print("Refusing real merge: guard query returned no usable result.")
         return 1
 
@@ -508,6 +555,9 @@ def run_real_merge(args) -> int:
     merge_label_used = b(9)
     methods_for_row = int(f[10] or 0)
     leads_for_row = int(f[11] or 0)
+    aliases_for_row = int(f[12] or 0)
+    property_hints_for_row = int(f[13] or 0)
+    inventory_rows_for_row = int(f[14] or 0)
 
     if ri_exists != 1:
         print("Refusing real merge: review item id not found (expected exactly 1).")
@@ -525,7 +575,10 @@ def run_real_merge(args) -> int:
         print("Refusing real merge: review item does not belong to the named batch.")
         return 1
     if not is_allowed_batch and not args.allow_other_batch:
-        print(f"Refusing real merge: batch is not {ALLOWED_REAL_BATCH}. Pass --allow-other-batch to override.")
+        print(
+            "Refusing real merge: batch is not in the real merge allowlist "
+            f"({ALLOWED_REAL_BATCH}, {OWNER_UNIT_REAL_BATCH}). Pass --allow-other-batch to override."
+        )
         return 1
     if canonical_already_linked or contact_already_for_row:
         print("Refusing real merge: a canonical contact is already linked for that import row.")
@@ -543,8 +596,12 @@ def run_real_merge(args) -> int:
         print("item|count")
         print("planned_canonical_contacts|1")
         print(f"planned_contact_methods_to_link|{methods_for_row}")
+        print(f"planned_aliases_to_link|{aliases_for_row}")
         print(f"planned_lead_requirements_to_link|{leads_for_row}")
+        print(f"planned_contact_property_hints_to_trace|{property_hints_for_row}")
+        print(f"planned_inventory_import_rows_to_trace|{inventory_rows_for_row}")
         print(f"planned_canonical_merge_links|{planned_links}")
+        print("relationship_creation_done|false")
         print("communication_sent|false")
         print("Applying requires --apply.")
         return 0

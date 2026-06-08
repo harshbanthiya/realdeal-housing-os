@@ -137,6 +137,12 @@ candidates can be created. It selects safe owner/unit `merge_candidate` review i
 but does not approve them or create contacts. See
 `docs/PHASE_5_5_OWNER_UNIT_CANONICAL_CONTACT_PLAN.md`.
 
+Phase 5.6 approves exactly two of those owner/unit `merge_candidate` review items
+and prepares the canonical merge scripts for a later contact-only apply phase. It
+still does not create canonical contacts, buildings, units, property relationships,
+or outreach. See
+`docs/PHASE_5_6_OWNER_UNIT_REVIEW_APPROVAL_AND_MERGE_PREP.md`.
+
 ## Warnings
 
 - Do not import additional real owner/property sheets without an explicit phase.

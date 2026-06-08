@@ -124,6 +124,16 @@ Phase 5.5 analyzed the Phase 5.4 owner/unit audit rows and selected two safe
 statuses were changed and no contacts or relationships were created. See
 `docs/PHASE_5_5_OWNER_UNIT_CANONICAL_CONTACT_PLAN.md`.
 
+## Phase 5.6: owner/unit review approval and merge prep
+
+Phase 5.6 approved exactly two selected owner/unit `merge_candidate` review items
+and prepared the canonical merge scripts for a future contact-only apply phase. The
+planning path now traces `contact_property_hints` and `inventory_import_rows` counts
+for those approved rows, but no canonical contacts, buildings, building units,
+`contact_property_relationships`, or property relationship review items were
+created. See
+`docs/PHASE_5_6_OWNER_UNIT_REVIEW_APPROVAL_AND_MERGE_PREP.md`.
+
 ## Phase 5.1 fake workflow (test only)
 
 A self-contained fake chain (building → alias → unit → contact → relationship →

@@ -126,3 +126,17 @@ can create one canonical contact from one approved review item, but Phase 5.6 ne
 an explicit owner/unit batch allowlist decision and should remain contact-only: no
 buildings, building units, or property relationships. See
 `docs/PHASE_5_5_OWNER_UNIT_CANONICAL_CONTACT_PLAN.md`.
+
+## Owner/Unit Review Approval And Merge Prep (Phase 5.6)
+
+Phase 5.6 approves exactly two selected owner/unit `merge_candidate` review items
+from `REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001` and prepares the merge scripts for a
+future contact-only owner/unit canonical merge phase. `plan_canonical_merge.py`
+requires `--review-item-id` for this batch and refuses non-approved or wrong-batch
+review items. `apply_canonical_merge.py` recognizes the batch in dry-run and records
+future property/inventory trace counts, but Phase 5.6 does **not** run apply.
+
+For each approved item, dry-run planning returns 1 planned contact, 2 methods, 0
+aliases, 0 lead requirements, 1 property hint trace, 1 inventory row trace, and 0
+skips. No buildings, units, property relationships, or outreach are created. See
+`docs/PHASE_5_6_OWNER_UNIT_REVIEW_APPROVAL_AND_MERGE_PREP.md`.

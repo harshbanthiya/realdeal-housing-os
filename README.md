@@ -389,3 +389,22 @@ python3 scripts/owner_unit_candidate_summary.py \
 ```
 
 See `docs/PHASE_5_5_OWNER_UNIT_CANONICAL_CONTACT_PLAN.md`.
+
+## Phase 5.6 Owner/Unit Review Approval And Merge Prep
+
+Phase 5.6 approved exactly two owner/unit `merge_candidate` review items from
+`REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001` and updated canonical merge planning/apply
+guardrails for a later contact-only owner/unit merge phase. No canonical merge apply
+was run, no canonical contacts/buildings/units/relationships were created, and no
+outreach was sent.
+
+```bash
+python3 scripts/plan_canonical_merge.py \
+  --batch-label REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001 \
+  --review-item-id <approved_owner_unit_merge_candidate_id> \
+  --approved-only
+```
+
+Future owner/unit canonical contact creation requires an explicit later approval to
+run `scripts/apply_canonical_merge.py --apply --real-ok`. See
+`docs/PHASE_5_6_OWNER_UNIT_REVIEW_APPROVAL_AND_MERGE_PREP.md`.
