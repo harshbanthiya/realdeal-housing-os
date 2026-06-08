@@ -319,3 +319,22 @@ python3 scripts/rollback_canonical_merge.py \
 ```
 
 See `docs/PHASE_4_2_SECOND_REAL_CANONICAL_MERGE.md`.
+
+## Phase 5.1 Property Relationship Pipeline
+
+Phase 5.1 (Milestone 2) adds the schema foundation for linking canonical contacts to
+buildings/units with reviewed relationship types (owner / tenant / broker / buyer /
+lead …). Migration `schemas/008_property_relationship_pipeline.sql` adds 5 tables
+(`building_aliases`, `building_units`, `contact_property_relationships`,
+`property_relationship_review_items`, `property_relationship_action_log`) and 5 masked
+NocoDB views. **Schema + fake test only** — no real owner/property sheets are imported
+and no outreach is sent.
+
+```bash
+# Fake test workflow (counts only; dry-run by default)
+python3 scripts/apply_fake_property_relationships.py --apply --fake-ok
+python3 scripts/property_relationship_summary.py
+python3 scripts/cleanup_fake_property_relationships.py --apply
+```
+
+See `docs/PROPERTY_RELATIONSHIP_PIPELINE.md`.

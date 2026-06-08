@@ -328,3 +328,10 @@ that read this source-aware base read-only — `vw_canonical_source_trace` joins
 canonical contact back through `canonical_merge_links` to its `source_files` /
 `contact_import_rows` / `import_review_items` row without exposing raw values. See
 `docs/CANONICAL_CONTACT_REVIEW.md`.
+
+Phase 5.1 (migration `008_property_relationship_pipeline.sql`) builds on this base:
+`contact_property_relationships` references `source_contact_import_row_id`,
+`source_property_hint_id`, `source_inventory_import_row_id`, and `source_file_id`, so
+each contact↔building/unit link traces back to the same source-aware rows. The
+source-aware `contact_property_hints` are the raw signal that becomes a reviewed
+relationship. See `docs/PROPERTY_RELATIONSHIP_PIPELINE.md`.

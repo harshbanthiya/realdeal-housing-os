@@ -111,3 +111,13 @@ in `vw_canonical_contacts_review`, `vw_canonical_source_trace`, and
 `python3 scripts/canonical_contact_summary.py --merge-label REAL_PHASE_4_CANONICAL_MERGE_002`.
 The no-outreach warning above applies equally. See
 `docs/PHASE_4_2_SECOND_REAL_CANONICAL_MERGE.md`.
+
+## Linking contacts to properties (Phase 5.1)
+
+Canonical contacts can be linked to buildings/units via the Phase 5.1 property
+relationship pipeline (`contact_property_relationships`). The masked view
+`vw_contact_property_relationship_review` shows a canonical contact (name masked to an
+initial) alongside the building/unit and `relationship_type`/`relationship_status`,
+and `vw_contact_building_unit_trace` traces it back to the source file/row. This is
+schema + fake test only for now — no real owner sheets are imported and no outreach is
+sent. See `docs/PROPERTY_RELATIONSHIP_PIPELINE.md`.
