@@ -14,16 +14,23 @@ if [ ! -f "$DOCKER_DIR/.env" ]; then
 fi
 
 CLEANER="$PROJECT_ROOT/scripts/clean_appledouble_junk.sh"
-PG_DATA_DIR="$PROJECT_ROOT/data/postgres"
+
+# Phase 3.9C: the live Postgres cluster now lives on an APFS sparsebundle, not
+# the exFAT data/postgres bind mount. APFS stores xattrs natively, so no
+# AppleDouble ._* sidecars are generated under the data dir and the old
+# preflight-clean/retry workaround is no longer load-bearing for Postgres.
+SPARSEBUNDLE='/Volumes/RDH 5TB/rdh-postgres-data.sparsebundle'
+APFS_VOLUME='/Volumes/RDH_POSTGRES_DATA'
+APFS_PG_DIR="$APFS_VOLUME/postgres"
 
 # Count macOS metadata junk (.DS_Store and AppleDouble ._*) under a directory, files only.
 junk_count() {
   find "$1" -type f \( -name '.DS_Store' -o -name '._*' \) 2>/dev/null | wc -l | tr -d ' '
 }
 
-# Remove macOS metadata junk from the whole project tree, then refuse to continue
-# if any remain under the Postgres data dir. On external / exFAT volumes these
-# files break the Postgres container's entrypoint permission pass.
+# Remove macOS metadata junk from the project tree. This still protects the rest
+# of the repo (and the preserved data/postgres rollback copy); the live Postgres
+# data dir is now on APFS (see ensure_apfs_postgres) and no longer depends on it.
 preflight_clean() {
   if [ -x "$CLEANER" ]; then
     "$CLEANER" --apply
@@ -33,19 +40,45 @@ preflight_clean() {
     find "$PROJECT_ROOT" -type f \( -name '.DS_Store' -o -name '._*' \) ! -path "$DOCKER_DIR/.env" -delete 2>/dev/null || true
     echo "macOS metadata junk after: $(junk_count "$PROJECT_ROOT")"
   fi
+}
 
-  if [ -d "$PG_DATA_DIR" ]; then
-    pg_junk="$(junk_count "$PG_DATA_DIR")"
-    echo "macOS metadata junk under data/postgres: $pg_junk"
-    if [ "$pg_junk" != "0" ]; then
-      echo "ERROR: $pg_junk macOS metadata junk file(s) remain under data/postgres after cleanup." >&2
-      echo "Postgres would fail its entrypoint permission pass; aborting before docker compose up." >&2
-      echo "Confirm Spotlight indexing is off for this volume (mdutil -s), then re-run" >&2
-      echo "./scripts/clean_appledouble_junk.sh --apply. See README.md (AppleDouble / exFAT)." >&2
+# Ensure the APFS sparsebundle holding the live Postgres cluster is mounted and
+# populated BEFORE Docker starts. Critical safety: if the volume is missing or
+# empty, Docker would bind-mount an empty dir and Postgres would initialise a
+# brand-new empty cluster (silent apparent data loss). Abort instead.
+ensure_apfs_postgres() {
+  if ! mount | grep -qF " on $APFS_VOLUME "; then
+    echo "APFS Postgres volume not mounted; attaching sparsebundle..."
+    if [ ! -e "$SPARSEBUNDLE" ]; then
+      echo "ERROR: sparsebundle missing: $SPARSEBUNDLE" >&2
+      echo "Cannot start Postgres without its APFS data volume. Aborting." >&2
       exit 1
     fi
+    hdiutil attach "$SPARSEBUNDLE" >/dev/null || {
+      echo "ERROR: failed to attach sparsebundle $SPARSEBUNDLE" >&2
+      exit 1
+    }
   fi
+
+  if [ ! -d "$APFS_PG_DIR" ]; then
+    echo "ERROR: $APFS_PG_DIR is missing after mount; aborting before docker compose up." >&2
+    exit 1
+  fi
+  if [ -z "$(ls -A "$APFS_PG_DIR" 2>/dev/null)" ]; then
+    echo "ERROR: $APFS_PG_DIR is empty; refusing to start so Postgres cannot" >&2
+    echo "initialise a fresh empty cluster over your data. Aborting." >&2
+    exit 1
+  fi
+  if [ ! -f "$APFS_PG_DIR/PG_VERSION" ]; then
+    echo "ERROR: $APFS_PG_DIR/PG_VERSION not found; this is not a valid Postgres" >&2
+    echo "cluster directory. Aborting before docker compose up." >&2
+    exit 1
+  fi
+  echo "APFS Postgres volume ready: $APFS_PG_DIR (cluster version $(cat "$APFS_PG_DIR/PG_VERSION"))."
 }
+
+# Mount + validate the APFS data volume before any docker compose call.
+ensure_apfs_postgres
 
 cd "$DOCKER_DIR"
 

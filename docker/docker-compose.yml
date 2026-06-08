@@ -15,7 +15,12 @@ services:
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - ../data/postgres:/var/lib/postgresql/data
+      # Phase 3.9C: Postgres data now lives on an APFS sparsebundle (mounted at
+      # /Volumes/RDH_POSTGRES_DATA), not the exFAT ../data/postgres bind mount.
+      # APFS stores xattrs natively, so no AppleDouble ._* sidecars are generated.
+      # start.sh mounts the sparsebundle and aborts if it is missing/empty.
+      # Rollback: revert this line to "../data/postgres:/var/lib/postgresql/data".
+      - /Volumes/RDH_POSTGRES_DATA/postgres:/var/lib/postgresql/data
       - ./postgres/init/001_create_app_databases.sh:/docker-entrypoint-initdb.d/000_create_app_databases.sh:ro
       - ../schemas/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql:ro
     healthcheck:
