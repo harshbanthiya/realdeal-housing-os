@@ -15,6 +15,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/009_owner_building_unit_dashboard.sql"
   "$PROJECT_ROOT/schemas/010_milestone_2b_data_quality_dashboard.sql"
   "$PROJECT_ROOT/schemas/011_human_dashboard_ops_views.sql"
+  "$PROJECT_ROOT/schemas/012_growth_seo_lead_pipeline.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

@@ -4,11 +4,13 @@
 -- the match TYPE only ("matching normalized phone/email"), never raw values. No
 -- phones/emails/websites/addresses are exposed.
 
-DROP VIEW IF EXISTS vw_milestone_2b_summary;
+-- CASCADE on views that Phase 6.0 human-dashboard views (migration 011) build on:
+-- on a re-apply they are dropped here and recreated by 011 later in the same pass.
+DROP VIEW IF EXISTS vw_milestone_2b_summary CASCADE;
 DROP VIEW IF EXISTS vw_owner_unit_batch_quality;
-DROP VIEW IF EXISTS vw_owner_unit_candidate_queue;
-DROP VIEW IF EXISTS vw_owner_relationship_revert_dashboard;
-DROP VIEW IF EXISTS vw_duplicate_risk_dashboard;
+DROP VIEW IF EXISTS vw_owner_unit_candidate_queue CASCADE;
+DROP VIEW IF EXISTS vw_owner_relationship_revert_dashboard CASCADE;
+DROP VIEW IF EXISTS vw_duplicate_risk_dashboard CASCADE;
 
 -- The owner/unit audit batch this milestone is built on.
 -- (Inlined as a literal in each view; kept here as documentation.)

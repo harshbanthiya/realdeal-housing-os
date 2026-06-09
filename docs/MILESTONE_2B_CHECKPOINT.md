@@ -95,3 +95,11 @@ row at a time). Why, by counts:
 - **Do not scale import** or bulk-merge until the duplicate-risk and candidate queues
   have been reviewed; the 6 duplicate-involved rows and the duplicate building anchors
   are the two things to clear as volume grows.
+
+## Update — Phase 5.14 paused; Phase 6.0 started
+
+Owner/unit scaling (Phase 5.14) and dashboard polish are **paused**. Work shifted to
+**Phase 6.0** — the growth/SEO/content/lead-pipeline foundation (schema, read-only
+views, fake workflow, docs; no publishing, no outreach). See
+`docs/GROWTH_SEO_LEAD_PIPELINE.md`. The Milestone 2B numbers above are unchanged
+(4 canonical contacts, 2 active owner relationships, 0 communications).

@@ -122,6 +122,14 @@ Underlying audited views (open when you need full detail): `vw_milestone_2b_summ
 `vw_owner_unit_candidate_queue`, `vw_duplicate_risk_dashboard`,
 `vw_owner_relationship_revert_dashboard`.
 
+**Growth pipeline (Phase 6.0):** the growth/SEO/lead engine has its own read-only
+views — `vw_growth_pipeline_home`, `vw_seo_keyword_dashboard`,
+`vw_content_pipeline_dashboard`, `vw_inbound_lead_review_queue`,
+`vw_channel_permission_dashboard`, `vw_campaign_readiness_dashboard`,
+`vw_ai_agent_task_dashboard`. These are inspection-only and contain no publishing or
+outreach actions (campaigns have `send_enabled = false`). See
+`docs/GROWTH_SEO_LEAD_PIPELINE.md`.
+
 ---
 
 ## 5. What each view means

@@ -509,3 +509,36 @@ python3 scripts/milestone_2b_summary.py   # counts only
 
 Recommendation: **Phase 5.14 Option A** (merge more safe owner/unit candidates — 50
 queued, 6 duplicate-involved deferred). See `docs/MILESTONE_2B_CHECKPOINT.md`.
+
+## Phase 5.13A NocoDB Human Dashboard Setup
+
+Phase 5.13A made NocoDB usable for a human operator. The fix:
+`NC_ALLOW_LOCAL_EXTERNAL_DBS: "true"` on the `nocodb` service (NocoDB blocks
+internal/private DB hosts by default), and connecting the base to host `postgres`
+(not `localhost`), db `realdeal_os`, schema `public`. Migration
+`schemas/011_human_dashboard_ops_views.sql` adds four masked human views and
+`scripts/human_dashboard_summary.py`. See `docs/NOCODB_HUMAN_DASHBOARD_RUNBOOK.md`.
+
+## Phase 6.0 Growth, SEO, Content & Lead Pipeline Foundation
+
+Phase 6.0 lays the foundation for the growth engine: building SEO pages, keyword
+targeting, content briefs, a publishing queue, inbound lead capture, attribution,
+consent/channel permissions, suppression, campaign drafts, and an AI agent task
+queue. Migration `schemas/012_growth_seo_lead_pipeline.sql` adds 11 tables and 7
+read-only masked views (`vw_growth_pipeline_home`, `vw_seo_keyword_dashboard`,
+`vw_content_pipeline_dashboard`, `vw_inbound_lead_review_queue`,
+`vw_channel_permission_dashboard`, `vw_campaign_readiness_dashboard`,
+`vw_ai_agent_task_dashboard`).
+
+**Foundation only — no publishing and no outreach.** `campaign_drafts.send_enabled`
+defaults `false`, `ai_agent_tasks.human_review_required` defaults `true`, and no
+external API is called. The fake end-to-end workflow is fully reversible:
+
+```bash
+python3 scripts/seed_fake_growth_pipeline.py                 # dry-run (default)
+python3 scripts/seed_fake_growth_pipeline.py --apply --fake-ok
+python3 scripts/growth_pipeline_summary.py                   # counts only
+python3 scripts/cleanup_fake_growth_pipeline.py --apply      # removes only fake rows
+```
+
+See `docs/GROWTH_SEO_LEAD_PIPELINE.md`.

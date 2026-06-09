@@ -6,7 +6,9 @@
 
 DROP VIEW IF EXISTS vw_owner_relationship_dashboard;
 DROP VIEW IF EXISTS vw_building_unit_owner_summary;
-DROP VIEW IF EXISTS vw_contact_property_trace_full;
+-- CASCADE: Phase 6.0 layered human-dashboard views (migration 011) depend on this
+-- view. On a re-apply they are dropped here and recreated by 011 later in the pass.
+DROP VIEW IF EXISTS vw_contact_property_trace_full CASCADE;
 DROP VIEW IF EXISTS vw_property_relationship_revert_readiness;
 
 -- 1. Active owner/unit relationships, one row each, with review + source context.
