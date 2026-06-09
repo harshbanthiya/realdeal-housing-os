@@ -588,3 +588,26 @@ python3 scripts/cleanup_wix_content_review.py --profile-slug imperial-heights-go
 ```
 
 See `docs/PHASE_6_2_WIX_CMS_CONTENT_REVIEW_PLAN.md`.
+
+## Phase 6.3 Content Quality & AI Task Execution Planning
+
+Phase 6.3 makes the Imperial Heights plan reviewable and ready for **future**
+AI-assisted drafting, staying local and non-publishing. Migration
+`schemas/014_content_quality_and_ai_planning.sql` adds 4 tables
+(`content_quality_checks`, `content_source_requirements`, `ai_prompt_templates`,
+`ai_task_execution_plans`) and 5 views (incl. `vw_imperial_heights_content_readiness`).
+The prep script seeds 24 pending quality checks, 20 needed source requirements, 4
+draft prompt templates (with safety rules), and 5 execution plans
+(`manual`, `external_calls_allowed=false`, `requires_human_review=true`). **No AI
+execution, no external calls, no publishing, no outreach; `ready_for_ai_draft` and
+`ready_for_publish` both stay false.**
+
+```bash
+# Dry-run default; real data needs --real-ok; writing needs --apply:
+python3 scripts/prepare_content_quality_plan.py \
+  --profile-slug imperial-heights-goregaon-west --real-ok [--apply]
+# Reversible cleanup (dry-run default; --apply --real-ok deletes only 6.3 rows):
+python3 scripts/cleanup_content_quality_plan.py --profile-slug imperial-heights-goregaon-west
+```
+
+See `docs/PHASE_6_3_CONTENT_QUALITY_AI_PLANNING.md`.

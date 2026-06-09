@@ -137,6 +137,15 @@ review queue, and the pre-publish checklist. `ready_for_publish` stays false unt
 every check passes and the row is approved — nothing publishes from these views. See
 `docs/PHASE_6_2_WIX_CMS_CONTENT_REVIEW_PLAN.md`.
 
+**Content quality & AI planning (Phase 6.3):** `vw_content_quality_dashboard`,
+`vw_content_source_requirements_dashboard`, `vw_ai_prompt_template_dashboard`,
+`vw_ai_task_execution_plan_dashboard`, and `vw_imperial_heights_content_readiness`
+show per-brief quality checks, the sources each brief still needs, the AI prompt
+template catalogue (no full prompt text), the AI execution plans (all `manual`,
+no external calls, human-review-required), and overall readiness. `ready_for_ai_draft`
+and `ready_for_publish` are both false until checks pass and sources are collected.
+See `docs/PHASE_6_3_CONTENT_QUALITY_AI_PLANNING.md`.
+
 ---
 
 ## 5. What each view means

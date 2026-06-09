@@ -183,6 +183,20 @@ future, guarded step. Built via `scripts/prepare_wix_content_review.py` (reversi
 `scripts/cleanup_wix_content_review.py`). **Still no Wix calls, no publishing, no outreach.**
 See `docs/PHASE_6_2_WIX_CMS_CONTENT_REVIEW_PLAN.md`.
 
+## Content quality & AI planning (Phase 6.3)
+
+Phase 6.3 added the content-quality and AI-execution-planning layer (migration 014):
+`content_quality_checks` (per-brief checklist), `content_source_requirements`
+(research/sources needed, each with a `[SOURCE URL NEEDED]` placeholder),
+`ai_prompt_templates` (reusable, safety-ruled templates), and `ai_task_execution_plans`
+(how each queued AI task runs later — `manual`, `external_calls_allowed=false`,
+`requires_human_review=true`). `vw_imperial_heights_content_readiness` surfaces
+`ready_for_ai_draft` (true only when no blocker check is open and no source requirement
+is still needed) and `ready_for_publish` (false in this phase). Built via
+`scripts/prepare_content_quality_plan.py` (reversible with
+`scripts/cleanup_content_quality_plan.py`). **No AI execution, no external calls, no
+publishing, no outreach.** See `docs/PHASE_6_3_CONTENT_QUALITY_AI_PLANNING.md`.
+
 ## What is NOT done yet
 
 - **No publishing.** No Wix/social/blog content is pushed anywhere.
