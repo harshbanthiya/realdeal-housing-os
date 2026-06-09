@@ -170,6 +170,19 @@ The first real, review-gated SEO/content plan was created for **Imperial Heights
 3 content briefs, 3 draft publishing rows, and 5 queued AI tasks — **no external
 calls, no publishing, no outreach**. See `docs/PHASE_6_1_IMPERIAL_HEIGHTS_SEO_PLAN.md`.
 
+## Wix CMS readiness (Phase 6.2)
+
+Phase 6.2 added the Wix-publishing **readiness** layer (migration 013): `wix_cms_collections`
++ `wix_cms_field_mappings` (how Real Deal OS fields map to Wix CMS), `content_review_items`
+(human review queue for briefs), and `publishing_readiness_checks` (pre-publish checklist).
+Dashboards: `vw_wix_cms_mapping_dashboard`, `vw_content_review_dashboard`,
+`vw_publishing_readiness_dashboard`, `vw_imperial_heights_content_plan`. A publishing row
+becomes `ready_for_publish` only when every readiness check passes **and** its
+`publish_status` is approved/ready_for_review — and even then publishing is a separate,
+future, guarded step. Built via `scripts/prepare_wix_content_review.py` (reversible with
+`scripts/cleanup_wix_content_review.py`). **Still no Wix calls, no publishing, no outreach.**
+See `docs/PHASE_6_2_WIX_CMS_CONTENT_REVIEW_PLAN.md`.
+
 ## What is NOT done yet
 
 - **No publishing.** No Wix/social/blog content is pushed anywhere.

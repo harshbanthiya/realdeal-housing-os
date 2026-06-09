@@ -37,8 +37,8 @@ if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ] || [ -z "$POSTGRES_DB"
 fi
 
 DB_NAME="${POSTGRES_DB:-realdeal_os}"
-EXPECTED_TABLES="'contacts','buildings','inventory','media_assets','content_items','interactions','tasks','import_batches','contact_import_rows','contact_aliases','contact_property_hints','contact_duplicate_candidates','source_files','contact_methods','lead_requirements','inventory_import_rows','import_review_items','review_action_log','canonical_merge_batches','canonical_merge_links','building_aliases','building_units','contact_property_relationships','property_relationship_review_items','property_relationship_action_log','building_web_profiles','seo_keywords','content_briefs','content_publishing_queue','inbound_lead_sources','inbound_leads','lead_attribution_events','channel_permissions','outreach_suppression_list','campaign_drafts','ai_agent_tasks'"
-EXPECTED_VIEWS="'vw_import_contact_review','vw_duplicate_review','vw_inventory_import_review','vw_lead_requirements_review','vw_review_dashboard_summary','vw_review_contact_methods','vw_review_business_leads','vw_review_duplicate_candidates','vw_review_queue','vw_review_batch_sources','vw_canonical_merge_batches','vw_canonical_merge_links','vw_canonical_contacts_review','vw_canonical_contact_methods_review','vw_canonical_source_trace','vw_canonical_lead_requirements_review','vw_canonical_merge_audit','vw_building_alias_review','vw_building_units_review','vw_contact_property_relationship_review','vw_property_relationship_review_queue','vw_contact_building_unit_trace','vw_owner_relationship_dashboard','vw_building_unit_owner_summary','vw_contact_property_trace_full','vw_property_relationship_revert_readiness','vw_milestone_2b_summary','vw_owner_unit_batch_quality','vw_owner_unit_candidate_queue','vw_owner_relationship_revert_dashboard','vw_duplicate_risk_dashboard','vw_human_dashboard_home','vw_human_next_actions','vw_human_owner_relationships','vw_human_candidate_review_queue','vw_growth_pipeline_home','vw_seo_keyword_dashboard','vw_content_pipeline_dashboard','vw_inbound_lead_review_queue','vw_channel_permission_dashboard','vw_campaign_readiness_dashboard','vw_ai_agent_task_dashboard'"
+EXPECTED_TABLES="'contacts','buildings','inventory','media_assets','content_items','interactions','tasks','import_batches','contact_import_rows','contact_aliases','contact_property_hints','contact_duplicate_candidates','source_files','contact_methods','lead_requirements','inventory_import_rows','import_review_items','review_action_log','canonical_merge_batches','canonical_merge_links','building_aliases','building_units','contact_property_relationships','property_relationship_review_items','property_relationship_action_log','building_web_profiles','seo_keywords','content_briefs','content_publishing_queue','inbound_lead_sources','inbound_leads','lead_attribution_events','channel_permissions','outreach_suppression_list','campaign_drafts','ai_agent_tasks','wix_cms_collections','wix_cms_field_mappings','content_review_items','publishing_readiness_checks'"
+EXPECTED_VIEWS="'vw_import_contact_review','vw_duplicate_review','vw_inventory_import_review','vw_lead_requirements_review','vw_review_dashboard_summary','vw_review_contact_methods','vw_review_business_leads','vw_review_duplicate_candidates','vw_review_queue','vw_review_batch_sources','vw_canonical_merge_batches','vw_canonical_merge_links','vw_canonical_contacts_review','vw_canonical_contact_methods_review','vw_canonical_source_trace','vw_canonical_lead_requirements_review','vw_canonical_merge_audit','vw_building_alias_review','vw_building_units_review','vw_contact_property_relationship_review','vw_property_relationship_review_queue','vw_contact_building_unit_trace','vw_owner_relationship_dashboard','vw_building_unit_owner_summary','vw_contact_property_trace_full','vw_property_relationship_revert_readiness','vw_milestone_2b_summary','vw_owner_unit_batch_quality','vw_owner_unit_candidate_queue','vw_owner_relationship_revert_dashboard','vw_duplicate_risk_dashboard','vw_human_dashboard_home','vw_human_next_actions','vw_human_owner_relationships','vw_human_candidate_review_queue','vw_growth_pipeline_home','vw_seo_keyword_dashboard','vw_content_pipeline_dashboard','vw_inbound_lead_review_queue','vw_channel_permission_dashboard','vw_campaign_readiness_dashboard','vw_ai_agent_task_dashboard','vw_wix_cms_mapping_dashboard','vw_content_review_dashboard','vw_publishing_readiness_dashboard','vw_imperial_heights_content_plan'"
 
 echo "Checking Real Deal OS tables in database: $DB_NAME"
 
@@ -81,7 +81,11 @@ WITH expected(table_name) AS (
     ('channel_permissions'),
     ('outreach_suppression_list'),
     ('campaign_drafts'),
-    ('ai_agent_tasks')
+    ('ai_agent_tasks'),
+    ('wix_cms_collections'),
+    ('wix_cms_field_mappings'),
+    ('content_review_items'),
+    ('publishing_readiness_checks')
 )
 SELECT
   expected.table_name,
@@ -158,7 +162,11 @@ WITH expected(view_name) AS (
     ('vw_inbound_lead_review_queue'),
     ('vw_channel_permission_dashboard'),
     ('vw_campaign_readiness_dashboard'),
-    ('vw_ai_agent_task_dashboard')
+    ('vw_ai_agent_task_dashboard'),
+    ('vw_wix_cms_mapping_dashboard'),
+    ('vw_content_review_dashboard'),
+    ('vw_publishing_readiness_dashboard'),
+    ('vw_imperial_heights_content_plan')
 )
 SELECT
   expected.view_name,

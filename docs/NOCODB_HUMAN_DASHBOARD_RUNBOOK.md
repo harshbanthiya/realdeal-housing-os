@@ -130,6 +130,13 @@ views — `vw_growth_pipeline_home`, `vw_seo_keyword_dashboard`,
 outreach actions (campaigns have `send_enabled = false`). See
 `docs/GROWTH_SEO_LEAD_PIPELINE.md`.
 
+**Wix CMS readiness (Phase 6.2):** `vw_wix_cms_mapping_dashboard`,
+`vw_content_review_dashboard`, `vw_publishing_readiness_dashboard`, and
+`vw_imperial_heights_content_plan` show the field-mapping coverage, the content
+review queue, and the pre-publish checklist. `ready_for_publish` stays false until
+every check passes and the row is approved — nothing publishes from these views. See
+`docs/PHASE_6_2_WIX_CMS_CONTENT_REVIEW_PLAN.md`.
+
 ---
 
 ## 5. What each view means

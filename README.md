@@ -566,3 +566,25 @@ python3 scripts/cleanup_real_building_seo_plan.py \
 ```
 
 See `docs/PHASE_6_1_IMPERIAL_HEIGHTS_SEO_PLAN.md`.
+
+## Phase 6.2 Wix CMS Mapping & Content Review
+
+Phase 6.2 prepares the Imperial Heights plan for **future** Wix publishing without
+publishing anything. Migration `schemas/013_wix_cms_content_readiness.sql` adds 4
+tables (`wix_cms_collections`, `wix_cms_field_mappings`, `content_review_items`,
+`publishing_readiness_checks`) and 4 views (`vw_wix_cms_mapping_dashboard`,
+`vw_content_review_dashboard`, `vw_publishing_readiness_dashboard`,
+`vw_imperial_heights_content_plan`). The prep script seeds 2 planned Wix
+collections, 12 draft field mappings, 3 pending content reviews, and a 24-row
+pending readiness checklist. **No Wix/external calls, no publishing, no outreach;
+`ready_for_publish` stays false.**
+
+```bash
+# Dry-run default; real data needs --real-ok; writing needs --apply:
+python3 scripts/prepare_wix_content_review.py \
+  --profile-slug imperial-heights-goregaon-west --real-ok [--apply]
+# Reversible cleanup (dry-run default; --apply --real-ok deletes only 6.2 rows):
+python3 scripts/cleanup_wix_content_review.py --profile-slug imperial-heights-goregaon-west
+```
+
+See `docs/PHASE_6_2_WIX_CMS_CONTENT_REVIEW_PLAN.md`.
