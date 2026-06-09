@@ -161,6 +161,15 @@ Every fake row is tagged `fake_batch='FAKE_PHASE_6_0_GROWTH_PIPELINE'`, `phase='
 touches real contacts, buildings, leads, or source rows. The fake lead is not linked
 to any real contact.
 
+## First real plan (Phase 6.1)
+
+The first real, review-gated SEO/content plan was created for **Imperial Heights**
+(Goregaon West) using `scripts/apply_real_building_seo_plan.py` (dry-run default;
+`--real-ok` + `--apply` to write) and is reversible via
+`scripts/cleanup_real_building_seo_plan.py`. It added 1 web profile, 10 keywords,
+3 content briefs, 3 draft publishing rows, and 5 queued AI tasks — **no external
+calls, no publishing, no outreach**. See `docs/PHASE_6_1_IMPERIAL_HEIGHTS_SEO_PLAN.md`.
+
 ## What is NOT done yet
 
 - **No publishing.** No Wix/social/blog content is pushed anywhere.

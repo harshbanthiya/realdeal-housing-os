@@ -542,3 +542,27 @@ python3 scripts/cleanup_fake_growth_pipeline.py --apply      # removes only fake
 ```
 
 See `docs/GROWTH_SEO_LEAD_PIPELINE.md`.
+
+## Phase 6.1 First Real Building SEO/Content Plan
+
+Phase 6.1 creates the first **real, review-gated** SEO/content plan for a building
+(Imperial Heights, Goregaon West) on the Phase 6.0 schema: 1 `building_web_profile`,
+10 low-competition `seo_keywords`, 3 `content_briefs`, 3 **draft**
+`content_publishing_queue` rows, and 5 **queued** `ai_agent_tasks`
+(`human_review_required=true`). **No external calls, no publishing, no outreach.**
+The chosen anchor is the earliest-created of the two duplicate "Imperial Heights"
+buildings; building dedupe stays future work.
+
+```bash
+# Dry-run (default); real data requires --real-ok; writing requires --apply:
+python3 scripts/apply_real_building_seo_plan.py \
+  --building-id <BUILDING_ID> --building-name "Imperial Heights" \
+  --area "Goregaon West" --city "Mumbai" \
+  --profile-slug "imperial-heights-goregaon-west" --real-ok [--apply]
+
+# Reversible cleanup (dry-run default; --apply --real-ok to delete planning rows only):
+python3 scripts/cleanup_real_building_seo_plan.py \
+  --building-id <BUILDING_ID> --profile-slug "imperial-heights-goregaon-west"
+```
+
+See `docs/PHASE_6_1_IMPERIAL_HEIGHTS_SEO_PLAN.md`.
