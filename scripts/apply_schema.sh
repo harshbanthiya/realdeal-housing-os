@@ -19,6 +19,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/013_wix_cms_content_readiness.sql"
   "$PROJECT_ROOT/schemas/014_content_quality_and_ai_planning.sql"
   "$PROJECT_ROOT/schemas/015_content_draft_workspace.sql"
+  "$PROJECT_ROOT/schemas/016_source_gap_resolution_workflow.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

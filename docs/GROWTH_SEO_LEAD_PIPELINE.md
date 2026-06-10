@@ -212,6 +212,21 @@ are outlines/placeholders with `[SOURCE NEEDED]` markers and an
 "INTERNAL DRAFT — NOT FOR PUBLISHING" header — **no AI execution, no external calls,
 no publishing, no outreach.** See `docs/PHASE_6_4_LOCAL_CONTENT_DRAFT_WORKSPACE.md`.
 
+## Source-gap resolution workflow (Phase 6.5)
+
+Phase 6.5 added the review-gated source-gap resolution workflow (migration 016):
+`source_gap_resolution_tasks` (one classified task per open gap — internal /
+human / future-external; `external_calls_allowed` always false),
+`internal_source_evidence` (safe **count-only** references to internal data — units,
+owner relationships, aliases, source batches; no personal values), and
+`source_gap_review_items` (human accept/resolve/waive queue). Dashboards:
+`vw_source_gap_resolution_dashboard`, `vw_internal_source_evidence_dashboard`,
+`vw_source_gap_review_queue`, `vw_imperial_heights_source_gap_status` (`ready_for_publish`
+hard-coded false). Built via `scripts/plan_source_gap_resolution.py` and reversible with
+`scripts/cleanup_source_gap_resolution.py`. **No gap is auto-resolved** (gaps stay open),
+and there is **no AI execution, no external/web calls, no publishing, no outreach.**
+See `docs/PHASE_6_5_SOURCE_GAP_RESOLUTION_WORKFLOW.md`.
+
 ## What is NOT done yet
 
 - **No publishing.** No Wix/social/blog content is pushed anywhere.

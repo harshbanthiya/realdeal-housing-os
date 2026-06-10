@@ -635,3 +635,26 @@ python3 scripts/cleanup_local_content_draft_artifacts.py --profile-slug imperial
 ```
 
 See `docs/PHASE_6_4_LOCAL_CONTENT_DRAFT_WORKSPACE.md`.
+
+## Phase 6.5 Source-Gap Resolution Workflow
+
+Phase 6.5 turns the 17 open source-gap items into **review-gated** resolution tasks
+and records **safe, count-only** internal evidence. Migration
+`schemas/016_source_gap_resolution_workflow.sql` adds 3 tables
+(`source_gap_resolution_tasks`, `internal_source_evidence`, `source_gap_review_items`)
+and 4 views (incl. `vw_imperial_heights_source_gap_status`, whose `ready_for_publish`
+is a hard-coded `false`). The planner classifies each open gap into an internal /
+human / future-external task and seeds 17 resolution tasks (all `pending`), 15 internal
+evidence rows (counts only — units, owner relationships, aliases, source batches), and
+23 pending review items. **Nothing is auto-resolved** (gaps stay `open`),
+`external_calls_allowed=0`, `external_calls_required=7` is a future-work flag only, and
+there is **no AI execution, no external/web calls, no publishing, no outreach.**
+
+```bash
+# Dry-run default; real data needs --real-ok; writing needs --apply:
+python3 scripts/plan_source_gap_resolution.py \
+  --profile-slug imperial-heights-goregaon-west --real-ok [--apply]
+python3 scripts/cleanup_source_gap_resolution.py --profile-slug imperial-heights-goregaon-west
+```
+
+See `docs/PHASE_6_5_SOURCE_GAP_RESOLUTION_WORKFLOW.md`.

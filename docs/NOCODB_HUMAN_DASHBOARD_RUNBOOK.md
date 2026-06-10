@@ -155,6 +155,16 @@ is public or published. Internal drafts may also be exported (with an
 "INTERNAL DRAFT — NOT FOR PUBLISHING" header) to the git-ignored `exports/content/`.
 See `docs/PHASE_6_4_LOCAL_CONTENT_DRAFT_WORKSPACE.md`.
 
+**Source-gap resolution workflow (Phase 6.5):** `vw_source_gap_resolution_dashboard`
+(per-gap tasks/evidence/reviews with a `recommended_next_action`),
+`vw_internal_source_evidence_dashboard` (safe count-only internal evidence),
+`vw_source_gap_review_queue` (the human accept/resolve/waive queue), and
+`vw_imperial_heights_source_gap_status` (per-brief readiness; `ready_for_publish` is
+hard-coded false). Work the review queue to confirm each gap's classification, accept
+or reject the internal evidence, and resolve/waive gaps **only** with verified, citable
+sources. No gap is auto-resolved; `external_calls_allowed=false`; nothing is published
+or sent. See `docs/PHASE_6_5_SOURCE_GAP_RESOLUTION_WORKFLOW.md`.
+
 ---
 
 ## 5. What each view means

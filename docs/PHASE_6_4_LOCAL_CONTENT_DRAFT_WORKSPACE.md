@@ -96,7 +96,8 @@ python3 scripts/cleanup_local_content_draft_artifacts.py \
 
 - Review the artifacts and the 17 open source gaps in NocoDB; resolve the gaps with
   verified, citable sources (replacing `[SOURCE NEEDED]` markers).
-- **Phase 6.5 (suggested):** a guarded script for a human to record gap resolutions
-  and draft-review decisions, then promote an artifact to `approved_for_internal_use`
-  (still `internal_only`, still not public). Final public drafting + Wix publishing
-  remain gated, future, and out of scope until sources are verified and all checks pass.
+- **Phase 6.5 (built):** the open source gaps are now classified into review-gated
+  resolution tasks (internal / human / future-external) with safe internal evidence and
+  a human review queue — see `docs/PHASE_6_5_SOURCE_GAP_RESOLUTION_WORKFLOW.md`. Final
+  public drafting + Wix publishing remain gated, future, and out of scope until sources
+  are verified and all checks pass.
