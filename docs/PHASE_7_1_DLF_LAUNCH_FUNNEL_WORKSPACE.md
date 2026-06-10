@@ -113,3 +113,10 @@ python3 scripts/seed_dlf_launch_funnel_workspace.py \
 4. **Connect the n8n workflow plan** — design lead intake → scoring → operator queue (not live).
 5. **Approve the first batch of campaign copy** — review WhatsApp/email/social drafts; still no
    send until consent + name are confirmed and a channel is explicitly enabled.
+
+## Phase 7.2 follow-up
+
+Phase 7.2 implements the permission-review step as a masked, review-gated candidate layer.
+It created 5 launch contact segment candidates and 19 pending permission/suppression review
+items, with `approved_for_segment=0`, `send_enabled=0`, and `ready_for_campaign_selection=false`.
+See `docs/PHASE_7_2_DLF_CONTACT_SEGMENTATION_PERMISSION_REVIEW.md`.

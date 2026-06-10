@@ -390,9 +390,18 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Stage real property-relationship candidates | `scripts/apply_real_property_relationship_candidates.py` |
 | Approve a property-relationship candidate | `scripts/approve_property_relationship_candidate.py` |
 | Revert a property-relationship approval | `scripts/revert_property_relationship_approval.py` |
+| Plan DLF contact segment candidates | `scripts/plan_dlf_contact_segments.py` |
+| Dry-run cleanup of DLF segment candidates | `scripts/cleanup_dlf_contact_segments.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
+
+Phase 7.2 adds DLF launch contact segmentation views for read-only operator review:
+`vw_launch_contact_segment_candidate_dashboard`,
+`vw_launch_contact_permission_review_queue`, `vw_dlf_contact_segment_readiness`,
+and `vw_dlf_owner_audience_summary`. These views mask contact names and expose no
+phone numbers, emails, websites, addresses, or raw payloads. Candidates remain
+unapproved until explicit human permission and suppression review.
 
 ---
 

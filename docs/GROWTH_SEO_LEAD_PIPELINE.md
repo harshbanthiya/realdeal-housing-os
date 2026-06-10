@@ -334,3 +334,13 @@ opt-out lines — no false scarcity, guaranteed returns, unverified RERA, or exa
 project-name blockers clear and a channel is explicitly enabled. Seeded review-gated for the DLF
 workspace; see `docs/PHASE_7_1_DLF_LAUNCH_FUNNEL_WORKSPACE.md`. No sends, publishing, external
 calls, or contact selection happen here.
+
+## Launch contact segmentation (Phase 7.2)
+
+Migration `schemas/023_launch_contact_segmentation.sql` adds the contact segmentation and
+permission-review layer for launch projects: `launch_contact_segment_candidates`,
+`launch_contact_permission_review_items`, `launch_contact_segment_audit_log`, and masked
+dashboards for operator review. The DLF planner created 5 review-gated candidates and 19 pending
+permission/suppression review items. No candidate is approved, no contact is added to a live
+campaign, and `send_enabled` remains 0. See
+`docs/PHASE_7_2_DLF_CONTACT_SEGMENTATION_PERMISSION_REVIEW.md`.

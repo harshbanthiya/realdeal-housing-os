@@ -966,3 +966,23 @@ python3 scripts/seed_dlf_launch_funnel_workspace.py \
 
 See `docs/PHASE_7_1_DLF_LAUNCH_FUNNEL_WORKSPACE.md`. Next: confirm project name → contact
 permission review → Wix form/lead-intake plan → n8n workflow plan → approve first campaign copy.
+
+## Phase 7.2 DLF Contact Segmentation And Permission Review
+
+Phase 7.2 adds a masked, review-gated contact segmentation layer for the DLF launch.
+Migration `schemas/023_launch_contact_segmentation.sql` adds candidate, permission-review, and
+audit tables plus 4 dashboards. The planner created **5** segment candidates and **19** pending
+permission review items: 2 active-owner candidates and 3 existing warm-contact candidates.
+
+No candidates were approved, no campaign selection happened, `send_enabled=0`,
+`communication_sent=0`, contacts stayed 4, and raw contact values are never exposed.
+
+```bash
+python3 scripts/plan_dlf_contact_segments.py \
+  --launch-key dlf-westpark-andheri-west --limit 50 --real-ok [--apply]
+python3 scripts/cleanup_dlf_contact_segments.py \
+  --launch-key dlf-westpark-andheri-west --real-ok
+```
+
+See `docs/PHASE_7_2_DLF_CONTACT_SEGMENTATION_PERMISSION_REVIEW.md`. Next: human permission +
+suppression review, or Wix/n8n lead intake planning.
