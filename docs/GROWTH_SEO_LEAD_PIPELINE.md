@@ -344,3 +344,16 @@ dashboards for operator review. The DLF planner created 5 review-gated candidate
 permission/suppression review items. No candidate is approved, no contact is added to a live
 campaign, and `send_enabled` remains 0. See
 `docs/PHASE_7_2_DLF_CONTACT_SEGMENTATION_PERMISSION_REVIEW.md`.
+
+## Launch lead intake and attribution plan (Phase 7.3)
+
+Migration `schemas/024_dlf_lead_intake_attribution.sql` adds the planning layer that will later
+connect Wix forms, UTM links, n8n routing, lead review, and operator metrics:
+`launch_lead_intake_endpoints`, `launch_lead_field_mappings`,
+`launch_lead_attribution_rules`, `launch_inbound_lead_review_items`, and
+`launch_operator_daily_metrics`, plus six dashboards. The DLF seed creates 8 planned endpoints,
+18 draft field mappings, attribution rules copied from the Phase 7.1 UTM specs, 30 zero-valued
+metric placeholders, and 5 pending readiness checks. `vw_dlf_lead_intake_readiness` keeps
+`ready_for_live_lead_capture=false` and `external_call_allowed_count=0`. No Wix/n8n APIs are
+called, no live webhook exists, no inbound leads or contacts are created, and nothing is sent or
+published. See `docs/PHASE_7_3_DLF_LEAD_INTAKE_ATTRIBUTION_PLAN.md`.

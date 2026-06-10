@@ -986,3 +986,31 @@ python3 scripts/cleanup_dlf_contact_segments.py \
 
 See `docs/PHASE_7_2_DLF_CONTACT_SEGMENTATION_PERMISSION_REVIEW.md`. Next: human permission +
 suppression review, or Wix/n8n lead intake planning.
+
+## Phase 7.3 DLF Lead Intake And Attribution Plan
+
+Phase 7.3 adds the review-gated lead-intake foundation for the DLF launch. Migration
+`schemas/024_dlf_lead_intake_attribution.sql` adds 5 tables
+(`launch_lead_intake_endpoints`, `launch_lead_field_mappings`,
+`launch_lead_attribution_rules`, `launch_inbound_lead_review_items`,
+`launch_operator_daily_metrics`) plus 6 dashboards, including
+`vw_dlf_lead_intake_readiness`. The readiness view hard-blocks live capture:
+`ready_for_live_lead_capture=false` and `external_call_allowed_count=0`.
+
+`scripts/seed_dlf_lead_intake_plan.py` (dry-run default; `--real-ok`; `--apply` to write)
+seeds **8 planned endpoints, 18 draft field mappings, attribution rules from the 8 Phase-7.1 UTM
+specs, 30 zero-valued daily metric placeholders, and 5 pending readiness checks**. Endpoints
+remain `planned`, field/rule rows remain `draft`, no inbound leads or contacts are created, no
+external APIs are called, no live webhooks are created, and nothing is sent or published. Cleanup
+is dry-run first via `scripts/cleanup_dlf_lead_intake_plan.py` and refuses if any endpoint became
+active, any external call was allowed, or any lead/contact exists from the seed tag.
+
+```bash
+python3 scripts/seed_dlf_lead_intake_plan.py \
+  --launch-key dlf-westpark-andheri-west --real-ok [--apply]
+python3 scripts/cleanup_dlf_lead_intake_plan.py \
+  --launch-key dlf-westpark-andheri-west --real-ok
+```
+
+See `docs/PHASE_7_3_DLF_LEAD_INTAKE_ATTRIBUTION_PLAN.md`. Next: n8n workflow dry-run planning,
+operator dashboard polish, or a fully cleaned fake-lead round-trip.

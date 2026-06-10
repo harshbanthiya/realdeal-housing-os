@@ -120,3 +120,12 @@ Phase 7.2 implements the permission-review step as a masked, review-gated candid
 It created 5 launch contact segment candidates and 19 pending permission/suppression review
 items, with `approved_for_segment=0`, `send_enabled=0`, and `ready_for_campaign_selection=false`.
 See `docs/PHASE_7_2_DLF_CONTACT_SEGMENTATION_PERMISSION_REVIEW.md`.
+
+## Phase 7.3 follow-up
+
+Phase 7.3 implements the Wix/n8n lead-intake planning step as a review-gated, non-live
+foundation. It adds planned endpoints, draft form-field mappings, draft attribution rules from
+the Phase 7.1 UTM specs, zero-valued operator daily metrics, and lead-intake readiness checks.
+No Wix/n8n APIs are called, no live webhooks are created, no inbound leads or contacts are
+created, and `ready_for_live_lead_capture` remains false.
+See `docs/PHASE_7_3_DLF_LEAD_INTAKE_ATTRIBUTION_PLAN.md`.

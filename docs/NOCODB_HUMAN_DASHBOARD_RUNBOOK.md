@@ -256,6 +256,22 @@ off), `vw_launch_calendar_dashboard` (30 planned placeholders), and
 lines. Undo via `scripts/cleanup_dlf_launch_funnel_workspace.py` (dry-run shown). See
 `docs/PHASE_7_1_DLF_LAUNCH_FUNNEL_WORKSPACE.md`.
 
+**DLF contact segmentation (Phase 7.2):** open
+`vw_launch_contact_segment_candidate_dashboard`,
+`vw_launch_contact_permission_review_queue`, `vw_dlf_contact_segment_readiness`, and
+`vw_dlf_owner_audience_summary`. These views mask contact names and expose no phone numbers,
+emails, websites, addresses, or raw payloads. Candidates remain unapproved until explicit human
+permission and suppression review. See
+`docs/PHASE_7_2_DLF_CONTACT_SEGMENTATION_PERMISSION_REVIEW.md`.
+
+**DLF lead intake and attribution plan (Phase 7.3):** open `vw_dlf_lead_intake_readiness` first;
+`ready_for_live_lead_capture` must be **false** and `external_call_allowed_count` must be **0**.
+Then review `vw_launch_lead_intake_endpoint_dashboard`,
+`vw_launch_lead_field_mapping_dashboard`, `vw_launch_lead_attribution_rule_dashboard`,
+`vw_launch_inbound_lead_review_dashboard`, and `vw_launch_operator_daily_metrics_dashboard`.
+These are planning views only: no live Wix/n8n endpoint, no inbound leads, no contacts, no sends,
+and no publishing. See `docs/PHASE_7_3_DLF_LEAD_INTAKE_ATTRIBUTION_PLAN.md`.
+
 ---
 
 ## 5. What each view means
@@ -392,6 +408,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Revert a property-relationship approval | `scripts/revert_property_relationship_approval.py` |
 | Plan DLF contact segment candidates | `scripts/plan_dlf_contact_segments.py` |
 | Dry-run cleanup of DLF segment candidates | `scripts/cleanup_dlf_contact_segments.py` |
+| Seed DLF lead-intake plan | `scripts/seed_dlf_lead_intake_plan.py` |
+| Dry-run cleanup of DLF lead-intake plan | `scripts/cleanup_dlf_lead_intake_plan.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -402,6 +420,12 @@ Phase 7.2 adds DLF launch contact segmentation views for read-only operator revi
 and `vw_dlf_owner_audience_summary`. These views mask contact names and expose no
 phone numbers, emails, websites, addresses, or raw payloads. Candidates remain
 unapproved until explicit human permission and suppression review.
+
+Phase 7.3 adds DLF lead-intake planning views for read-only operator review:
+`vw_launch_lead_intake_endpoint_dashboard`, `vw_launch_lead_field_mapping_dashboard`,
+`vw_launch_lead_attribution_rule_dashboard`, `vw_launch_inbound_lead_review_dashboard`,
+`vw_launch_operator_daily_metrics_dashboard`, and `vw_dlf_lead_intake_readiness`. These views
+show endpoint/mapping/rule/status counts and keep live capture blocked.
 
 ---
 
