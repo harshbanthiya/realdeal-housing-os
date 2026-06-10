@@ -102,5 +102,6 @@ any inbound lead exists from this blueprint source.
 
 ## Next phase
 
-Next safe steps: review/approve the blueprint, then build n8n manually or via a later guarded API
-phase. Activation should remain a separate explicit approval.
+Phase 7.5 adds a view-only operator cockpit on top of the launch, lead-intake, and n8n readiness
+layers. It does not build or activate n8n; it only gives the operator a daily blocked/safety
+dashboard. See `docs/PHASE_7_5_DLF_OPERATOR_COCKPIT.md`.

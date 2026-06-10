@@ -369,3 +369,13 @@ schema, 7 fake-only test cases, and 18 pending review items. `vw_dlf_n8n_readine
 No n8n/Wix/messaging APIs are called, no workflow or webhook is created, no inbound leads or
 contacts are created, and nothing is sent or published. See
 `docs/PHASE_7_4_DLF_N8N_WORKFLOW_BLUEPRINT.md`.
+
+## DLF operator cockpit (Phase 7.5)
+
+Migration `schemas/026_dlf_operator_cockpit.sql` adds a view-only daily cockpit over the DLF
+launch stack: home, today tasks, combined review backlog, 14-day campaign calendar, audience
+readiness, lead-intake readiness, n8n readiness, content readiness, and safety posture. The
+summary helper `scripts/dlf_operator_cockpit_summary.py` prints counts only. The cockpit is
+designed to show why the launch is blocked while keeping `send_enabled=0`, `publish_enabled=0`,
+no external automation, no live lead capture, no communications, and no publishing. See
+`docs/PHASE_7_5_DLF_OPERATOR_COCKPIT.md`.

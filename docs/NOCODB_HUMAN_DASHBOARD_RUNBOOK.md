@@ -281,6 +281,14 @@ and no publishing. See `docs/PHASE_7_3_DLF_LEAD_INTAKE_ATTRIBUTION_PLAN.md`.
 workflows, no webhooks, no inbound leads, no contacts, no sends, and no publishing. See
 `docs/PHASE_7_4_DLF_N8N_WORKFLOW_BLUEPRINT.md`.
 
+**DLF operator cockpit (Phase 7.5):** open `vw_dlf_operator_cockpit_home` first, then
+`vw_dlf_operator_safety_posture`, `vw_dlf_operator_today_tasks`,
+`vw_dlf_operator_review_backlog`, `vw_dlf_operator_campaign_calendar_next_14_days`,
+`vw_dlf_operator_audience_readiness`, `vw_dlf_operator_lead_intake_readiness`,
+`vw_dlf_operator_n8n_readiness`, and `vw_dlf_operator_content_readiness`. These views are
+count/status dashboards only and should continue to show the launch as blocked for send/publish.
+See `docs/PHASE_7_5_DLF_OPERATOR_COCKPIT.md`.
+
 ---
 
 ## 5. What each view means
@@ -421,6 +429,7 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Dry-run cleanup of DLF lead-intake plan | `scripts/cleanup_dlf_lead_intake_plan.py` |
 | Seed DLF n8n workflow blueprint | `scripts/seed_dlf_n8n_workflow_blueprint.py` |
 | Dry-run cleanup of DLF n8n workflow blueprint | `scripts/cleanup_dlf_n8n_workflow_blueprint.py` |
+| Print DLF operator cockpit counts | `scripts/dlf_operator_cockpit_summary.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -443,6 +452,13 @@ Phase 7.4 adds DLF n8n blueprint views for read-only operator review:
 `vw_launch_n8n_payload_schema_dashboard`, `vw_launch_n8n_test_case_dashboard`,
 `vw_launch_n8n_review_queue`, and `vw_dlf_n8n_readiness`. These views show planned workflows,
 planned nodes, schema/test metadata, and pending review gates while build/activation stay blocked.
+
+Phase 7.5 adds DLF operator cockpit views for daily read-only execution:
+`vw_dlf_operator_cockpit_home`, `vw_dlf_operator_today_tasks`,
+`vw_dlf_operator_review_backlog`, `vw_dlf_operator_campaign_calendar_next_14_days`,
+`vw_dlf_operator_audience_readiness`, `vw_dlf_operator_lead_intake_readiness`,
+`vw_dlf_operator_n8n_readiness`, `vw_dlf_operator_content_readiness`, and
+`vw_dlf_operator_safety_posture`.
 
 ---
 

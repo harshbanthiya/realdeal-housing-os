@@ -1042,3 +1042,27 @@ python3 scripts/cleanup_dlf_n8n_workflow_blueprint.py \
 
 See `docs/PHASE_7_4_DLF_N8N_WORKFLOW_BLUEPRINT.md`. Next: human blueprint approval, then a
 separate guarded build phase.
+
+## Phase 7.5 DLF Operator Cockpit
+
+Phase 7.5 adds a view-only human cockpit for daily DLF launch execution. Migration
+`schemas/026_dlf_operator_cockpit.sql` adds 9 dashboard views:
+`vw_dlf_operator_cockpit_home`, `vw_dlf_operator_today_tasks`,
+`vw_dlf_operator_review_backlog`, `vw_dlf_operator_campaign_calendar_next_14_days`,
+`vw_dlf_operator_audience_readiness`, `vw_dlf_operator_lead_intake_readiness`,
+`vw_dlf_operator_n8n_readiness`, `vw_dlf_operator_content_readiness`, and
+`vw_dlf_operator_safety_posture`. The cockpit combines blockers, today tasks, review backlog,
+calendar placeholders, audience readiness, lead-intake readiness, n8n readiness, content
+readiness, and safety posture without exposing raw contact values or full copy bodies.
+
+`scripts/dlf_operator_cockpit_summary.py` prints the cockpit as counts only. The expected safety
+posture remains `safe_blocked`: `send_enabled=0`, `publish_enabled=0`, external automation off,
+no live lead capture, no campaign-approved contacts, no communications sent, and no publishing.
+
+```bash
+python3 scripts/dlf_operator_cockpit_summary.py \
+  --launch-key dlf-westpark-andheri-west
+```
+
+See `docs/PHASE_7_5_DLF_OPERATOR_COCKPIT.md`. Next: work the blocker/review queues; activation
+requires separate explicit approval.
