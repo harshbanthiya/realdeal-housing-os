@@ -932,3 +932,37 @@ python3 scripts/seed_dlf_launch_command_center.py \
 
 See `docs/PHASE_7_0_DLF_LAUNCH_COMMAND_CENTER.md`. Next: confirm project name/RERA → landing-page
 brief → campaign copy drafts → contact permission review → n8n lead-intake plan.
+
+## Phase 7.1 DLF Launch Funnel & Campaign Draft Workspace
+
+Phase 7.1 builds the full launch funnel on top of the 7.0 command center
+(`Audience → Message → Landing Page → Lead Form → Qualification → Follow-up → Site Visit →
+Booking Intent → Closed/Lost/Nurture`) — **schema + a review-gated draft seed only, no sends, no
+publishing, no external calls.** Migration `schemas/022_launch_funnel_workspace.sql` adds 8 tables
+(`launch_landing_page_specs`, `launch_lead_capture_forms`, `launch_utm_campaign_specs`,
+`launch_content_pillars`, `launch_message_templates`, `launch_social_content_drafts`,
+`launch_lead_scoring_rules`, `launch_draft_review_items`) + 9 dashboards (the message/social views
+expose only `body_char_count` / `caption_char_count`, **never full copy**; the rollup
+`vw_dlf_launch_funnel_readiness` keeps `ready_for_launch_push` a real gate — **false** this phase).
+
+`scripts/seed_dlf_launch_funnel_workspace.py` (dry-run default; `--real-ok` to read, `--apply` to
+write; refuses if launch project missing or rows already exist without `--allow-existing`) seeded
+**1 landing-page spec · 1 lead-capture form · 8 UTM specs · 10 content pillars · 13 message
+templates (7 WhatsApp / 4 email / 1 phone / 1 referral) · 15 social drafts · 10 lead-scoring rules
+· 60 review items · 2 new readiness checks**, all `draft`/`pending`, `send_enabled=false`,
+`publish_enabled=false`, `human_review_required=true`, tagged `phase=7.1`. Draft copy uses only
+compliant placeholders (`[PROJECT_NAME_CONFIRM]`, `[RERA_VERIFY]`, `[PRICE_VERIFY]`,
+`[BROCHURE_LINK_PENDING]`, `[WIX_PAGE_PENDING]`, `[VERIFY]`) with opt-out lines — no false
+scarcity, guaranteed returns, unverified RERA, or exact price. **No contacts selected (contacts
+still 4), no leads, nothing sent/published, no external calls.** Funnel rollup:
+`ready_for_launch_push=false`, send/publish counts `0`, blocked on project-name + consent.
+`scripts/cleanup_dlf_launch_funnel_workspace.py` (dry-run shown; 120 rows) removes only the tagged
+`phase=7.1` rows and refuses if any send/publish/sent flag is set.
+
+```bash
+python3 scripts/seed_dlf_launch_funnel_workspace.py \
+  --launch-key dlf-westpark-andheri-west --real-ok [--apply]
+```
+
+See `docs/PHASE_7_1_DLF_LAUNCH_FUNNEL_WORKSPACE.md`. Next: confirm project name → contact
+permission review → Wix form/lead-intake plan → n8n workflow plan → approve first campaign copy.

@@ -244,6 +244,18 @@ off), `vw_launch_calendar_dashboard` (30 planned placeholders), and
 `scripts/cleanup_dlf_launch_command_center.py` (dry-run shown). See
 `docs/PHASE_7_0_DLF_LAUNCH_COMMAND_CENTER.md`.
 
+**DLF launch funnel workspace (Phase 7.1):** the full funnel draft workspace. Open
+`vw_dlf_launch_funnel_readiness` first (`ready_for_launch_push` — **false**; `send_enabled_count`
+/ `publish_enabled_count` **0**; blocked on project-name + consent), then
+`vw_launch_draft_review_queue` (60 pending reviews), `vw_launch_landing_page_dashboard`,
+`vw_launch_lead_capture_form_dashboard`, `vw_launch_utm_campaign_dashboard` (8 specs),
+`vw_launch_content_pillar_dashboard` (10), `vw_launch_message_template_dashboard` (13 — shows
+`body_char_count` only, **never full copy**), `vw_launch_social_content_dashboard` (15 —
+`caption_char_count` only), and `vw_launch_lead_scoring_dashboard` (10 rules). Everything is
+`draft`/`pending`, send/publish disabled, copy uses `[VERIFY]`-style placeholders with opt-out
+lines. Undo via `scripts/cleanup_dlf_launch_funnel_workspace.py` (dry-run shown). See
+`docs/PHASE_7_1_DLF_LAUNCH_FUNNEL_WORKSPACE.md`.
+
 ---
 
 ## 5. What each view means

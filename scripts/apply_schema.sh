@@ -25,6 +25,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/019_rera_verification_foundation.sql"
   "$PROJECT_ROOT/schemas/020_rera_snapshot_parser_staging.sql"
   "$PROJECT_ROOT/schemas/021_launch_command_center.sql"
+  "$PROJECT_ROOT/schemas/022_launch_funnel_workspace.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

@@ -318,3 +318,19 @@ when no blocker is outstanding, the project name is confirmed, and a channel is 
 send- AND publish-enabled. The first seeded launch is the review-gated DLF workspace
 (`dlf-westpark-andheri-west`); see `docs/PHASE_7_0_DLF_LAUNCH_COMMAND_CENTER.md`. No sends,
 publishing, external calls, or contact selection happen at the foundation stage.
+
+## Launch funnel workspace (Phase 7.1)
+
+On top of the launch command center, `schemas/022_launch_funnel_workspace.sql` adds the full
+funnel draft workspace: `launch_landing_page_specs`, `launch_lead_capture_forms`,
+`launch_utm_campaign_specs`, `launch_content_pillars`, `launch_message_templates`,
+`launch_social_content_drafts`, `launch_lead_scoring_rules`, and a `launch_draft_review_items`
+queue, plus 9 dashboards. Message/social dashboards expose only `body_char_count` /
+`caption_char_count` (never full copy). All drafts are `send_enabled=false` /
+`publish_enabled=false` / `human_review_required=true`; copy uses compliant placeholders
+(`[PROJECT_NAME_CONFIRM]`, `[RERA_VERIFY]`, `[PRICE_VERIFY]`, `[BROCHURE_LINK_PENDING]`) with
+opt-out lines — no false scarcity, guaranteed returns, unverified RERA, or exact price. The
+`vw_dlf_launch_funnel_readiness` rollup keeps `ready_for_launch_push` false until consent +
+project-name blockers clear and a channel is explicitly enabled. Seeded review-gated for the DLF
+workspace; see `docs/PHASE_7_1_DLF_LAUNCH_FUNNEL_WORKSPACE.md`. No sends, publishing, external
+calls, or contact selection happen here.

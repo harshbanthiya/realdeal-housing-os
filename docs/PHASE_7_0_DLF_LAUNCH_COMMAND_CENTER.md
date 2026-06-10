@@ -117,3 +117,8 @@ contact selected or printed. `send_enabled_count=0`, `publish_enabled_count=0`,
 4. **Permission review for contacts** — work the segments (especially
    `old_real_estate_contacts_needs_permission_review`) and `consent_ready` / `suppression_checked`.
 5. **n8n lead-intake plan** — design the `n8n_workflow_ready` intake (not yet live).
+
+> **Phase 7.1 update:** the full launch funnel draft workspace (landing page, lead form, UTM
+> specs, content pillars, WhatsApp/email/social templates, lead scoring, review queue) is now
+> seeded on top of this command center — still review-gated, send/publish disabled. See
+> `docs/PHASE_7_1_DLF_LAUNCH_FUNNEL_WORKSPACE.md`.
