@@ -143,6 +143,37 @@ responses, JSON-like, HTML, failed, candidate-endpoint count, response-body file
   **must** be solved by a human. The safe, repeatable path is the **headed, human-in-the-loop**
   capture. We deliberately do **not** bypass, OCR, auto-solve, or loop.
 
+## Operator-assisted post-CAPTCHA capture (Phase 6.12 — same URL: project view/6231)
+
+Phase 6.12 ran **one** operator-assisted capture: the headed `--human-captcha-mode
+--pause-for-human` flow opened the visible browser, a **real human manually solved and
+submitted the CAPTCHA**, and the script then captured the rendered page. **It worked.**
+
+- **Capture succeeded:** `http_status=200`, `status=captured`, `captcha_detected=true`,
+  **`captcha_solved_by_human=true`** — `screenshot_after_human.png` was written. No bypass,
+  OCR, or solving service; the human cleared the gate.
+- **Rendered project data captured:** after the CAPTCHA, the page rendered the real project
+  detail. `visible_text.txt` grew from ~164 bytes (gated shell) to **~9.8 KB**, and
+  `page.html` from ~32 KB to **~315 KB**. Network jumped to **116 requests / 116 responses /
+  84 same-host / 75 JSON-like / 47 candidate endpoints** (vs. 37/37/9/1/0 while gated) — the
+  project-detail XHRs only fire once the CAPTCHA is cleared.
+- **Prototype parser on the captured snapshot:** `registration_number_token_count=1`,
+  `project_name_label_present=true`, `carpet_area_label_present=true`,
+  `promoter_label_present=true`, `complaint_section_present=true`,
+  `litigation_section_present=true`, `captcha_detected_in_snapshot=false`. A counts-only
+  label scan found **all eight** expected sections present (Registration Number, Project Name,
+  Project Status, Promoter, Building, Apartment/Unit summary, Complaint, Litigation).
+- **Suitable for a future parser:** **yes.** The post-CAPTCHA snapshot contains usable,
+  structured project-detail text and labels (and many same-host JSON endpoints that a future,
+  review-gated parser could read from saved response bodies). Snapshots remain **raw and
+  untrusted** until human review; **nothing was written to the DB** and no RERA match was
+  accepted / profile verified / building merged / gap resolved / content published or sent.
+
+> Note on coordination: when the capture is launched by an automated shell, the script's
+> `--pause-for-human` `input()` has no interactive stdin and falls back to a bounded
+> wait-for-signal/timeout window — the human still solves the CAPTCHA in the visible browser
+> within that window. For full manual Enter-control, run the command in your own terminal.
+
 ## What the prototype parser does
 
 `scripts/parse_rera_snapshot_placeholder.py` reads a snapshot's `visible_text.txt`/

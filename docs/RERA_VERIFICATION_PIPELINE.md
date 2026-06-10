@@ -89,8 +89,18 @@ on the public project view before the project data renders. The script now **det
 A Phase 6.11 test on `project/view/6231` confirmed: headless → `captcha_required` (safe
 stop, no DB writes); headed human-in-the-loop with no human present → reported honestly
 (`captcha_still_present`), **no bypass**. The data is reachable only **after a human clears
-the CAPTCHA**. Snapshots stay untrusted until human review. See
-`docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`. **No RERA match was accepted, no profile marked
+the CAPTCHA**.
+
+**Phase 6.12** then ran **one operator-assisted capture** on the same URL: a real human
+manually solved and submitted the CAPTCHA, and the script captured the rendered page
+(`status=captured`, `captcha_solved_by_human=true`). The post-CAPTCHA snapshot contains the
+real project detail — `visible_text.txt` ~164 B → **~9.8 KB**, `page.html` ~32 KB →
+**~315 KB**, network 37 → **116 requests / 75 JSON-like / 47 candidate endpoints** — and a
+counts-only scan found **all eight** expected sections present (Registration Number, Project
+Name, Project Status, Promoter, Building, Apartment/Unit summary, Complaint, Litigation). The
+snapshot is therefore **suitable for a future review-gated parser**, but stays **raw and
+untrusted** until human review. See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`. Across 6.11
+and 6.12: **no CAPTCHA bypass/OCR/solver, no DB writes, no RERA match accepted, no profile
 verified, no building merged, no source gap resolved, no publishing/outreach.**
 
 ## Why no bulk scraping / API calls happen in these phases

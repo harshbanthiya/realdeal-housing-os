@@ -819,3 +819,20 @@ python3 scripts/fetch_rera_page_playwright.py --url "<one MahaRERA URL>" \
 ```
 
 See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
+
+## Phase 6.12 Operator-Assisted MahaRERA Post-CAPTCHA Capture
+
+Phase 6.12 ran **one** operator-assisted capture on `project/view/6231`: the headed
+`--human-captcha-mode --pause-for-human` flow opened a visible browser, a **real human
+manually solved and submitted the CAPTCHA**, and the script then captured the rendered page
+(`status=captured`, `captcha_solved_by_human=true`, `screenshot_after_human.png`). The
+post-CAPTCHA snapshot holds the real project detail — `visible_text.txt` ~164 B → **~9.8 KB**,
+`page.html` ~32 KB → **~315 KB**, network 37 → **116 requests / 75 JSON-like / 47 candidate
+endpoints** — and the counts-only parser found **all eight** expected sections present
+(Registration Number, Project Name, Project Status, Promoter, Building, Apartment/Unit
+summary, Complaint, Litigation), so the snapshot is **suitable for a future review-gated
+parser**. It stays **raw and untrusted** until human review. **No CAPTCHA bypass/OCR/solver,
+no DB writes, no RERA match accepted, no profile verified, no building merged, no source gap
+resolved, nothing published or sent.** Snapshots remain git-ignored under
+`exports/rera_snapshots/` and are never committed. See
+`docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
