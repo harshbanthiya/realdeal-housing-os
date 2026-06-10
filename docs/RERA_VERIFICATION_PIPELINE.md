@@ -65,7 +65,17 @@ saleable/built-up figure) against the official RERA **carpet** area
 candidate via `rera_area_mismatch_review`. (Carpet area is almost always smaller than
 built-up/saleable, so a positive mismatch usually means `carpet_vs_builtup`.)
 
-## Why no scraping / API calls happen in this phase
+## Browser-fetch feasibility (Phase 6.10)
+
+Because MahaRERA pages are JavaScript-rendered, Phase 6.10 set up **Playwright** and a
+**guarded single-URL** capture script (`scripts/fetch_rera_page_playwright.py`) that saves
+raw, untrusted snapshots under the git-ignored `exports/rera_snapshots/` — **no bulk
+scraping, no DB writes, no CAPTCHA/auth bypass**. A feasibility test confirmed the page
+opens (HTTP 200, no block) but renders its data asynchronously, so a future capture must
+wait for network-idle/selector before parsing. Snapshots stay untrusted until human
+review. See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
+
+## Why no bulk scraping / API calls happen in these phases
 
 This phase builds the **destination schema and the human-review workflow** before any
 data collection. Pulling official records is a separate, deliberate step with its own

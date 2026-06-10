@@ -204,6 +204,13 @@ street/boundary/lat/long are **not** trusted building address data; litigation/c
 counts carry **no personal names**. Nothing is verified/accepted/published here. See
 `docs/PHASE_6_9_MANUAL_RERA_IMPERIAL_HEIGHTS.md`.
 
+**RERA Playwright fetch feasibility (Phase 6.10):** a guarded single-URL Playwright
+capture (`scripts/fetch_rera_page_playwright.py`) can save raw, untrusted MahaRERA page
+snapshots under the git-ignored `exports/rera_snapshots/` — **no bulk scraping, no DB
+writes, no CAPTCHA/auth bypass**. Snapshots are raw evidence (`trusted_for_db=false`,
+`human_review_required=true`) and feed no dashboard until a future review-gated parser
+exists. See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
+
 ---
 
 ## 5. What each view means

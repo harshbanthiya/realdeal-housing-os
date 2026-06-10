@@ -117,6 +117,20 @@ venv/
 workflows/n8n/*credentials*.json
 workflows/n8n/*secret*.json
 
+# Phase 6.10 RERA Playwright snapshots and browser artifacts (raw, untrusted, never committed).
+# (exports/ above already covers exports/rera_snapshots/, but be explicit and also catch
+#  Playwright traces/videos/cache that could land outside exports/.)
+exports/rera_snapshots/
+**/rera_snapshots/
+playwright-report/
+test-results/
+*.webm
+trace.zip
+*.trace.zip
+.cache/ms-playwright/
+ms-playwright/
+.playwright/
+
 # Explicitly keep project configuration and source artifacts trackable.
 !docker/docker-compose.yml
 !docker/.env.example

@@ -762,3 +762,27 @@ python3 scripts/cleanup_manual_rera_verification.py            # dry-run
 ```
 
 See `docs/PHASE_6_9_MANUAL_RERA_IMPERIAL_HEIGHTS.md`.
+
+## Phase 6.10 Playwright MahaRERA Fetch Feasibility
+
+Phase 6.10 is **setup + feasibility only** for opening JavaScript-rendered MahaRERA pages
+with a headless browser and saving **raw, untrusted** snapshots — **no bulk scraping, no
+DB writes, no CAPTCHA/auth bypass**. Playwright is an optional dev dependency
+(`requirements-rera-fetch.txt`; `python3 -m playwright install chromium` — browser binaries
+go to the per-user cache, never the repo). `scripts/fetch_rera_page_playwright.py` opens
+**exactly one** allow-listed MahaRERA URL and saves `screenshot.png` / `page.html` /
+`visible_text.txt` / `network_summary.json` / `metadata.json`
+(`trusted_for_db=false`) under the **git-ignored** `exports/rera_snapshots/`.
+`scripts/parse_rera_snapshot_placeholder.py` is a non-DB, counts-only prototype.
+Feasibility test on `view/6231`: page opened (HTTP 200, no block, 37 network events) but
+the SPA renders project data asynchronously, so a future capture must wait for
+network-idle/selector. **No DB/RERA/building/content row changed; nothing published or
+sent.** Snapshots are never committed.
+
+```bash
+python3 -m pip install -r requirements-rera-fetch.txt && python3 -m playwright install chromium
+python3 scripts/fetch_rera_page_playwright.py --url "<one MahaRERA URL>" --output-label <label> --apply
+python3 scripts/parse_rera_snapshot_placeholder.py --snapshot-folder exports/rera_snapshots/<folder>
+```
+
+See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.

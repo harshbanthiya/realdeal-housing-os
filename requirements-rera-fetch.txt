@@ -1,0 +1,14 @@
+# Phase 6.10 — optional dev/dependency for the guarded MahaRERA single-page browser fetch.
+#
+# Python Playwright is preferred because the project's scripts are Python-based.
+# This is NOT a runtime dependency of the core pipeline; install it only when you
+# intend to run scripts/fetch_rera_page_playwright.py for a single user-supplied URL.
+#
+# Setup (user/local environment only — do NOT commit installed browser binaries):
+#   python3 -m pip install -r requirements-rera-fetch.txt
+#   python3 -m playwright install chromium
+#
+# The chromium browser is downloaded into the per-user Playwright cache
+# (e.g. ~/Library/Caches/ms-playwright), never into this repository.
+
+playwright>=1.40
