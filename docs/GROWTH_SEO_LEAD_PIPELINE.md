@@ -357,3 +357,15 @@ metric placeholders, and 5 pending readiness checks. `vw_dlf_lead_intake_readine
 `ready_for_live_lead_capture=false` and `external_call_allowed_count=0`. No Wix/n8n APIs are
 called, no live webhook exists, no inbound leads or contacts are created, and nothing is sent or
 published. See `docs/PHASE_7_3_DLF_LEAD_INTAKE_ATTRIBUTION_PLAN.md`.
+
+## n8n workflow blueprint (Phase 7.4)
+
+Migration `schemas/025_n8n_launch_workflow_blueprint.sql` adds a blueprint layer for the future
+n8n lead-intake flow: `launch_n8n_workflow_blueprints`, `launch_n8n_workflow_nodes`,
+`launch_n8n_payload_schemas`, `launch_n8n_test_cases`, and `launch_n8n_review_items`, plus six
+dashboards. The DLF seed creates 6 planned workflow blueprints, 20 planned nodes, 1 draft payload
+schema, 7 fake-only test cases, and 18 pending review items. `vw_dlf_n8n_readiness` keeps
+`ready_to_build_in_n8n=false`, `ready_to_activate=false`, and `external_call_allowed_count=0`.
+No n8n/Wix/messaging APIs are called, no workflow or webhook is created, no inbound leads or
+contacts are created, and nothing is sent or published. See
+`docs/PHASE_7_4_DLF_N8N_WORKFLOW_BLUEPRINT.md`.

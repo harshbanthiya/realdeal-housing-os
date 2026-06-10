@@ -1014,3 +1014,31 @@ python3 scripts/cleanup_dlf_lead_intake_plan.py \
 
 See `docs/PHASE_7_3_DLF_LEAD_INTAKE_ATTRIBUTION_PLAN.md`. Next: n8n workflow dry-run planning,
 operator dashboard polish, or a fully cleaned fake-lead round-trip.
+
+## Phase 7.4 DLF n8n Workflow Blueprint
+
+Phase 7.4 adds the review-gated n8n automation blueprint layer without creating anything in n8n.
+Migration `schemas/025_n8n_launch_workflow_blueprint.sql` adds 5 tables
+(`launch_n8n_workflow_blueprints`, `launch_n8n_workflow_nodes`,
+`launch_n8n_payload_schemas`, `launch_n8n_test_cases`, `launch_n8n_review_items`) plus 6
+dashboards, including `vw_dlf_n8n_readiness`. The readiness rollup keeps
+`ready_to_build_in_n8n=false`, `ready_to_activate=false`, and `external_call_allowed_count=0`
+until a later review phase.
+
+`scripts/seed_dlf_n8n_workflow_blueprint.py` (dry-run default; `--real-ok`; `--apply` to write)
+seeds **6 planned workflow blueprints, 20 planned nodes, 1 draft payload schema, 7 fake-only test
+cases, and 18 pending review items**. No n8n API is called, no workflow or webhook is created, no
+inbound lead/contact is created, and nothing is sent or published. Cleanup is dry-run first via
+`scripts/cleanup_dlf_n8n_workflow_blueprint.py` and refuses if any workflow was built/activated,
+any external call was allowed, any test case executed, or any inbound lead exists from the seed
+tag.
+
+```bash
+python3 scripts/seed_dlf_n8n_workflow_blueprint.py \
+  --launch-key dlf-westpark-andheri-west --real-ok [--apply]
+python3 scripts/cleanup_dlf_n8n_workflow_blueprint.py \
+  --launch-key dlf-westpark-andheri-west --real-ok
+```
+
+See `docs/PHASE_7_4_DLF_N8N_WORKFLOW_BLUEPRINT.md`. Next: human blueprint approval, then a
+separate guarded build phase.

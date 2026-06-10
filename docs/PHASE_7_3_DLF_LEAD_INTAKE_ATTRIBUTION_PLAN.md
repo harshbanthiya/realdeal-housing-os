@@ -110,6 +110,7 @@ or any contact appears tagged to this seed.
 
 ## Next phase
 
-Next safe steps: n8n workflow dry-run planning, operator dashboard polish, or a fake lead
-round-trip that is fully cleaned up in the same phase. Live capture should wait for a separate
-human approval phase.
+Phase 7.4 adds the n8n workflow blueprint layer: planned workflows, planned nodes, a draft payload
+schema, fake-only test cases, and review gates. It still creates no n8n workflows, live webhooks,
+inbound leads, contacts, sends, or publishing. See
+`docs/PHASE_7_4_DLF_N8N_WORKFLOW_BLUEPRINT.md`.

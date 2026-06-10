@@ -272,6 +272,15 @@ Then review `vw_launch_lead_intake_endpoint_dashboard`,
 These are planning views only: no live Wix/n8n endpoint, no inbound leads, no contacts, no sends,
 and no publishing. See `docs/PHASE_7_3_DLF_LEAD_INTAKE_ATTRIBUTION_PLAN.md`.
 
+**DLF n8n workflow blueprint (Phase 7.4):** open `vw_dlf_n8n_readiness` first;
+`ready_to_build_in_n8n` and `ready_to_activate` must be **false**, and
+`external_call_allowed_count` must be **0**. Then review
+`vw_launch_n8n_workflow_blueprint_dashboard`, `vw_launch_n8n_node_dashboard`,
+`vw_launch_n8n_payload_schema_dashboard`, `vw_launch_n8n_test_case_dashboard`, and
+`vw_launch_n8n_review_queue`. These are blueprint/review views only: no n8n API calls, no live
+workflows, no webhooks, no inbound leads, no contacts, no sends, and no publishing. See
+`docs/PHASE_7_4_DLF_N8N_WORKFLOW_BLUEPRINT.md`.
+
 ---
 
 ## 5. What each view means
@@ -410,6 +419,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Dry-run cleanup of DLF segment candidates | `scripts/cleanup_dlf_contact_segments.py` |
 | Seed DLF lead-intake plan | `scripts/seed_dlf_lead_intake_plan.py` |
 | Dry-run cleanup of DLF lead-intake plan | `scripts/cleanup_dlf_lead_intake_plan.py` |
+| Seed DLF n8n workflow blueprint | `scripts/seed_dlf_n8n_workflow_blueprint.py` |
+| Dry-run cleanup of DLF n8n workflow blueprint | `scripts/cleanup_dlf_n8n_workflow_blueprint.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -426,6 +437,12 @@ Phase 7.3 adds DLF lead-intake planning views for read-only operator review:
 `vw_launch_lead_attribution_rule_dashboard`, `vw_launch_inbound_lead_review_dashboard`,
 `vw_launch_operator_daily_metrics_dashboard`, and `vw_dlf_lead_intake_readiness`. These views
 show endpoint/mapping/rule/status counts and keep live capture blocked.
+
+Phase 7.4 adds DLF n8n blueprint views for read-only operator review:
+`vw_launch_n8n_workflow_blueprint_dashboard`, `vw_launch_n8n_node_dashboard`,
+`vw_launch_n8n_payload_schema_dashboard`, `vw_launch_n8n_test_case_dashboard`,
+`vw_launch_n8n_review_queue`, and `vw_dlf_n8n_readiness`. These views show planned workflows,
+planned nodes, schema/test metadata, and pending review gates while build/activation stay blocked.
 
 ---
 

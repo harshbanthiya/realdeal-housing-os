@@ -28,6 +28,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/022_launch_funnel_workspace.sql"
   "$PROJECT_ROOT/schemas/023_launch_contact_segmentation.sql"
   "$PROJECT_ROOT/schemas/024_dlf_lead_intake_attribution.sql"
+  "$PROJECT_ROOT/schemas/025_n8n_launch_workflow_blueprint.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then
