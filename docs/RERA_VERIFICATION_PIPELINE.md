@@ -65,15 +65,33 @@ saleable/built-up figure) against the official RERA **carpet** area
 candidate via `rera_area_mismatch_review`. (Carpet area is almost always smaller than
 built-up/saleable, so a positive mismatch usually means `carpet_vs_builtup`.)
 
-## Browser-fetch feasibility (Phase 6.10)
+## Browser-fetch feasibility (Phase 6.10) + gate handling (Phase 6.11)
 
 Because MahaRERA pages are JavaScript-rendered, Phase 6.10 set up **Playwright** and a
 **guarded single-URL** capture script (`scripts/fetch_rera_page_playwright.py`) that saves
 raw, untrusted snapshots under the git-ignored `exports/rera_snapshots/` — **no bulk
-scraping, no DB writes, no CAPTCHA/auth bypass**. A feasibility test confirmed the page
-opens (HTTP 200, no block) but renders its data asynchronously, so a future capture must
-wait for network-idle/selector before parsing. Snapshots stay untrusted until human
-review. See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
+scraping, no DB writes, no CAPTCHA/auth bypass**. Phase 6.10 confirmed the page opens
+(HTTP 200, no block) but renders its data asynchronously.
+
+**Phase 6.11** added handling for the two gates an operator observed when browsing
+MahaRERA: (1) an **external-site confirmation modal** ("You are about to proceed to an
+external website. Click YES to proceed.") on the search/result flow, and (2) a **CAPTCHA**
+on the public project view before the project data renders. The script now **detects** both:
+
+- The external modal is detected; **YES is clicked only with `--accept-external-warning`**
+  (allowlisted single URL only); otherwise the run stops with `status=external_warning_required`.
+- A CAPTCHA is detected; **without `--human-captcha-mode` the run stops** with
+  `status=captcha_required`. With `--human-captcha-mode` (headed), the script pauses and a
+  **human** solves the CAPTCHA manually in the visible browser; only then does capture
+  continue. The script **never** reads, OCRs, solves, auto-submits, or uses a service for the
+  CAPTCHA, and never prints its text.
+
+A Phase 6.11 test on `project/view/6231` confirmed: headless → `captcha_required` (safe
+stop, no DB writes); headed human-in-the-loop with no human present → reported honestly
+(`captcha_still_present`), **no bypass**. The data is reachable only **after a human clears
+the CAPTCHA**. Snapshots stay untrusted until human review. See
+`docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`. **No RERA match was accepted, no profile marked
+verified, no building merged, no source gap resolved, no publishing/outreach.**
 
 ## Why no bulk scraping / API calls happen in these phases
 

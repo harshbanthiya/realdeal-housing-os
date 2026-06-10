@@ -786,3 +786,36 @@ python3 scripts/parse_rera_snapshot_placeholder.py --snapshot-folder exports/rer
 ```
 
 See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
+
+## Phase 6.11 MahaRERA Headed Capture — External-Warning + CAPTCHA Gates
+
+Phase 6.11 taught the single-URL capture script (`scripts/fetch_rera_page_playwright.py`) to
+**detect** the two gates an operator observed on MahaRERA and to handle them safely — **no
+bulk scraping, no DB writes, no CAPTCHA bypass/OCR/solver, no auto-submit**. (1) An
+**external-site confirmation modal** is detected; YES is clicked **only** with
+`--accept-external-warning` (allowlisted single URL), else the run stops with
+`status=external_warning_required`. (2) A **CAPTCHA** is detected; **without
+`--human-captcha-mode` the run stops** with `status=captcha_required`. With
+`--human-captcha-mode` (headed), the script pauses and a **human** solves the CAPTCHA in the
+visible browser themselves; only then does it capture `screenshot_after_human.png` + HTML +
+visible text + network summary (counts-only; cookies/auth/tokens/queries redacted). The
+script **never** reads, OCRs, solves, auto-submits, or services the CAPTCHA, and never prints
+its text. Tests on `view/6231`: headless → `captcha_required` (safe stop, no DB writes);
+headed with no human present → honest `captcha_still_present`, **no bypass**.
+`scripts/parse_rera_snapshot_placeholder.py` (counts/booleans only) confirms a gated snapshot
+is unparseable until a human clears the CAPTCHA. **No RERA match accepted, no profile
+verified, no building merged, no source gap resolved, nothing published or sent.**
+
+```bash
+# Headless — stops safely at whichever gate appears (no human, no DB writes):
+python3 scripts/fetch_rera_page_playwright.py --url "<one MahaRERA URL>" \
+  --output-label <label> --save-screenshot --save-visible-text --save-html \
+  --save-network-summary --apply
+
+# Headed human-in-the-loop — operator solves the CAPTCHA, then presses Enter:
+python3 scripts/fetch_rera_page_playwright.py --url "<one MahaRERA URL>" \
+  --output-label <label> --headful --human-captcha-mode --pause-for-human \
+  --save-screenshot --save-visible-text --save-html --save-network-summary --apply
+```
+
+See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
