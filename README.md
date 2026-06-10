@@ -897,3 +897,38 @@ python3 scripts/review_rera_snapshot_parser_candidates.py \
 
 See `docs/PHASE_6_14_RERA_PARSER_REVIEW.md`. Next: **profile verification + match acceptance**
 after the remaining legal-context review.
+
+## Phase 7.0 DLF Launch Command Center Foundation
+
+Phase 7.0 pivots to **launch-growth operations**: a project-scoped command center to prepare a
+high-priority **DLF** launch (~**August**) across Wix / SEO / blog / Instagram / YouTube Shorts /
+WhatsApp / email / phone / referral / listing portals, with **later** n8n automation.
+**Foundation + a review-gated seed only — no sends, no publishing, no external calls.**
+Migration `schemas/021_launch_command_center.sql` adds 6 tables (`launch_projects`,
+`launch_channels`, `launch_campaign_calendar`, `launch_lead_segments`, `launch_operator_tasks`,
+`launch_readiness_checks`) + 7 dashboards (incl. `vw_dlf_launch_priority_dashboard`, whose
+`ready_for_launch_push` is a real gate — **false** this phase).
+
+**Naming guard:** the user says **“DLF Westend”**; public sources may say **“DLF The Westpark /
+Westpark Phase-I, Andheri West.”** These are **not** assumed equal — the seed records both, sets
+`name_confirmation_required=true`, and adds a **blocker** check `project_name_confirmed=pending`.
+
+`scripts/seed_dlf_launch_command_center.py` (dry-run default; `--real-ok` to read, `--apply` to
+write; refuses duplicate `launch_key` without `--allow-existing`) seeded **1 launch_project · 10
+channels · 6 lead segments (counts only) · 11 readiness checks (3 blocker) · 11 operator tasks ·
+30 calendar placeholders · 4 campaign_drafts · 4 ai_agent_tasks** — all send/publish disabled,
+`status=draft/planned/pending`, tagged `phase=7.0`. **No contacts selected (contacts still 4), no
+inbound leads, nothing sent/published, no external calls.** DLF rollup:
+`ready_for_launch_push=false`, `send_enabled_count=0`, `publish_enabled_count=0`, blocked on
+project-name confirmation. `scripts/cleanup_dlf_launch_command_center.py` (dry-run shown; 77 rows)
+removes only the tagged `phase=7.0` rows and refuses if any send/publish/sent flag is set.
+
+```bash
+python3 scripts/seed_dlf_launch_command_center.py \
+  --launch-key dlf-westpark-andheri-west \
+  --project-display-name "DLF Westend / The Westpark Andheri West" \
+  --internal-alias "DLF Westend" --expected-launch-month "August" --real-ok [--apply]
+```
+
+See `docs/PHASE_7_0_DLF_LAUNCH_COMMAND_CENTER.md`. Next: confirm project name/RERA → landing-page
+brief → campaign copy drafts → contact permission review → n8n lead-intake plan.

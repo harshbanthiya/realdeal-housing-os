@@ -24,6 +24,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/018_building_dedupe_review_workflow.sql"
   "$PROJECT_ROOT/schemas/019_rera_verification_foundation.sql"
   "$PROJECT_ROOT/schemas/020_rera_snapshot_parser_staging.sql"
+  "$PROJECT_ROOT/schemas/021_launch_command_center.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

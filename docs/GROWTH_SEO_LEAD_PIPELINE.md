@@ -303,3 +303,18 @@ resolved, nothing verified/accepted/published/sent. Reversible via
 - A consent-checked segment engine will compute real `eligible_recipient_count`s and
   only then may a campaign's `send_enabled` be turned on — guarded, reviewed, and
   honouring `channel_permissions` and `outreach_suppression_list`.
+
+## Launch command center (Phase 7.0)
+
+For time-sensitive launches, a **project layer** sits on top of these growth tables.
+Migration `schemas/021_launch_command_center.sql` adds `launch_projects`, `launch_channels`,
+`launch_campaign_calendar`, `launch_lead_segments` (counts only — never raw contacts),
+`launch_operator_tasks`, and `launch_readiness_checks`, plus 7 dashboards (incl.
+`vw_dlf_launch_priority_dashboard`). A launch's `launch_campaign_calendar` items can link to
+`content_briefs` and `campaign_drafts`; segments are described as counts with per-channel
+`whatsapp_allowed_count` / `email_allowed_count` / `suppressed_count`. **All send/publish flags
+default false and readiness gates default pending** — `ready_for_launch_push` only turns true
+when no blocker is outstanding, the project name is confirmed, and a channel is explicitly
+send- AND publish-enabled. The first seeded launch is the review-gated DLF workspace
+(`dlf-westpark-andheri-west`); see `docs/PHASE_7_0_DLF_LAUNCH_COMMAND_CENTER.md`. No sends,
+publishing, external calls, or contact selection happen at the foundation stage.

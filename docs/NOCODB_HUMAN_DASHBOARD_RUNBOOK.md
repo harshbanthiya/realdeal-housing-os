@@ -232,6 +232,18 @@ untouched and `ready_*` flags stay false. Approve via
 `--approve-privacy-safety`); undo via `scripts/revert_rera_snapshot_parser_review.py`. Still
 **no verify / accept / merge / publish**. See `docs/PHASE_6_14_RERA_PARSER_REVIEW.md`.
 
+**DLF launch command center (Phase 7.0):** the launch-growth workspace for the high-priority
+DLF launch (~August). Open `vw_dlf_launch_priority_dashboard` first (read `blocked_reason` /
+`ready_for_launch_push` — **false** this phase), then `vw_launch_command_center_home`,
+`vw_launch_operator_task_dashboard` (11 pending tasks), `vw_launch_readiness_dashboard` (11
+checks; 3 blockers — start with **`project_name_confirmed`**: confirm “DLF Westend” vs public
+“DLF The Westpark / Westpark Phase-I”), `vw_launch_channel_dashboard` (10 channels, send/publish
+off), `vw_launch_calendar_dashboard` (30 planned placeholders), and
+`vw_launch_lead_segment_dashboard` (6 segments, **counts only — no raw contacts**). Everything is
+**send/publish disabled**; nothing is sent or published. Undo the seed via
+`scripts/cleanup_dlf_launch_command_center.py` (dry-run shown). See
+`docs/PHASE_7_0_DLF_LAUNCH_COMMAND_CENTER.md`.
+
 ---
 
 ## 5. What each view means
