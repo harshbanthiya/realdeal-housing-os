@@ -165,6 +165,16 @@ or reject the internal evidence, and resolve/waive gaps **only** with verified, 
 sources. No gap is auto-resolved; `external_calls_allowed=false`; nothing is published
 or sent. See `docs/PHASE_6_5_SOURCE_GAP_RESOLUTION_WORKFLOW.md`.
 
+**Internal evidence acceptance (Phase 6.6):** `vw_internal_evidence_acceptance_dashboard`
+(per-evidence `evidence_status` + linked `review_status` + `recommended_next_action`) and
+`vw_imperial_heights_evidence_readiness` (per-profile rollup of candidate/accepted/
+needs_review/rejected evidence and gap counts; `ready_for_publish` hard-coded false).
+Accept only purely-internal, non-personal evidence via
+`scripts/review_internal_source_evidence.py` (dry-run default); reverse with
+`scripts/revert_internal_source_evidence_review.py`. Accepting evidence never resolves a
+gap — gaps stay open, content stays not-ready for AI/public drafting, and nothing is
+published or sent. See `docs/PHASE_6_6_INTERNAL_EVIDENCE_ACCEPTANCE.md`.
+
 ---
 
 ## 5. What each view means

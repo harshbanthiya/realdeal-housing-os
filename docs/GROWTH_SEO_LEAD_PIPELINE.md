@@ -227,6 +227,22 @@ hard-coded false). Built via `scripts/plan_source_gap_resolution.py` and reversi
 and there is **no AI execution, no external/web calls, no publishing, no outreach.**
 See `docs/PHASE_6_5_SOURCE_GAP_RESOLUTION_WORKFLOW.md`.
 
+## Internal evidence acceptance (Phase 6.6)
+
+Phase 6.6 lets a human accept the purely-internal, non-personal evidence candidates from
+Phase 6.5. `scripts/review_internal_source_evidence.py` sets
+`internal_source_evidence.evidence_status` (accepted/rejected/needs_review) for a tiny
+chosen set and moves the linked `internal_evidence_review` accordingly, tagging each
+change (`evidence_review_phase=6.6`) for a clean revert via
+`scripts/revert_internal_source_evidence_review.py`. Migration 017 adds two read-only
+views (`vw_internal_evidence_acceptance_dashboard`, `vw_imperial_heights_evidence_readiness`;
+`ready_for_publish` hard-coded false). The first batch accepted the 3 `building_alias`
+rows (count-based, non-personal); `active_owner_relationship_count` is deferred pending
+building dedupe and `inventory_hint` needs human review. **No gap is resolved** (still 17
+open), content is **not** ready for AI/public drafting, and there is **no AI execution, no
+external/web calls, no publishing, no outreach.**
+See `docs/PHASE_6_6_INTERNAL_EVIDENCE_ACCEPTANCE.md`.
+
 ## What is NOT done yet
 
 - **No publishing.** No Wix/social/blog content is pushed anywhere.

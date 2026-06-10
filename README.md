@@ -658,3 +658,29 @@ python3 scripts/cleanup_source_gap_resolution.py --profile-slug imperial-heights
 ```
 
 See `docs/PHASE_6_5_SOURCE_GAP_RESOLUTION_WORKFLOW.md`.
+
+## Phase 6.6 Internal Evidence Acceptance
+
+Phase 6.6 lets a human accept the **purely-internal, non-personal** evidence candidates
+from Phase 6.5 so the system records which internal facts can be trusted for *future*
+drafting. `scripts/review_internal_source_evidence.py` (dry-run default) sets
+`internal_source_evidence.evidence_status` and moves the linked `internal_evidence_review`
+`pending -> approved/rejected/needs_more_info`, tagging each change in `raw_context`
+(`evidence_review_phase=6.6`) for a clean revert via
+`scripts/revert_internal_source_evidence_review.py`. Guards refuse non-candidate rows,
+out-of-profile evidence, any phone/email-like `safe_summary`, and batches over `--limit`.
+Migration `schemas/017_internal_evidence_acceptance_dashboard.sql` adds 2 views
+(`vw_internal_evidence_acceptance_dashboard`, `vw_imperial_heights_evidence_readiness`;
+`ready_for_publish` hard-coded false). First batch accepted the **3 `building_alias`** rows
+(→ 3 reviews approved); `active_owner_relationship_count` is deferred for building dedupe,
+`inventory_hint` needs human review. **No gaps resolved** (still 17 open), `ready_for_ai_draft=0`,
+`ready_for_publish=0`, **no AI execution, no external calls, no publishing, no outreach.**
+
+```bash
+# Dry-run default; real data needs --real-ok; writing needs --apply:
+python3 scripts/review_internal_source_evidence.py --profile-slug imperial-heights-goregaon-west \
+  --evidence-id <uuid[,uuid...]> --status accepted --reviewed-by <name> --real-ok [--apply]
+python3 scripts/revert_internal_source_evidence_review.py --profile-slug imperial-heights-goregaon-west
+```
+
+See `docs/PHASE_6_6_INTERNAL_EVIDENCE_ACCEPTANCE.md`.

@@ -135,7 +135,12 @@ python3 scripts/plan_source_gap_resolution.py \
 - Work the `vw_source_gap_review_queue` in NocoDB: confirm each gap's classification,
   accept/reject the internal evidence, and resolve or waive gaps **only** when backed by
   verified, citable sources.
-- **Phase 6.6 (suggested):** a guarded script for a human to apply gap-resolution
-  decisions (mark a gap `resolved`/`waived` with `resolution_notes` and a review
-  approval), with a rollback. Final public drafting + Wix publishing remain gated,
-  future, and out of scope until every gap is cleared and all Phase 6.2/6.3 checks pass.
+- **Phase 6.6 (built):** the internal evidence acceptance workflow — a human accepts the
+  purely-internal, non-personal evidence candidates (the first batch accepted the 3
+  `building_alias` rows) without resolving any gap. See
+  `docs/PHASE_6_6_INTERNAL_EVIDENCE_ACCEPTANCE.md`.
+- **Later (suggested):** a guarded script to apply gap-resolution decisions (mark a gap
+  `resolved`/`waived` with `resolution_notes` + a review approval), plus building dedupe
+  so `active_owner_relationship_count` can be trusted. Final public drafting + Wix
+  publishing remain gated, future, and out of scope until every gap is cleared and all
+  Phase 6.2/6.3 checks pass.
