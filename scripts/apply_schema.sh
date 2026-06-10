@@ -18,6 +18,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/012_growth_seo_lead_pipeline.sql"
   "$PROJECT_ROOT/schemas/013_wix_cms_content_readiness.sql"
   "$PROJECT_ROOT/schemas/014_content_quality_and_ai_planning.sql"
+  "$PROJECT_ROOT/schemas/015_content_draft_workspace.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

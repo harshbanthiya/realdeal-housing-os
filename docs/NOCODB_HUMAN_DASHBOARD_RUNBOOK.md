@@ -146,6 +146,15 @@ no external calls, human-review-required), and overall readiness. `ready_for_ai_
 and `ready_for_publish` are both false until checks pass and sources are collected.
 See `docs/PHASE_6_3_CONTENT_QUALITY_AI_PLANNING.md`.
 
+**Local content draft workspace (Phase 6.4):** `vw_content_draft_artifact_dashboard`
+(metadata/flags only, no body), `vw_content_draft_review_queue`,
+`vw_content_source_gap_dashboard`, and `vw_imperial_heights_draft_workspace` show the
+internal draft artifacts, their review queue, the open source gaps, and per-brief
+readiness. All artifacts are `internal_only=true` / `public_ready=false`; nothing here
+is public or published. Internal drafts may also be exported (with an
+"INTERNAL DRAFT — NOT FOR PUBLISHING" header) to the git-ignored `exports/content/`.
+See `docs/PHASE_6_4_LOCAL_CONTENT_DRAFT_WORKSPACE.md`.
+
 ---
 
 ## 5. What each view means

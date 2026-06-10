@@ -197,6 +197,21 @@ is still needed) and `ready_for_publish` (false in this phase). Built via
 `scripts/cleanup_content_quality_plan.py`). **No AI execution, no external calls, no
 publishing, no outreach.** See `docs/PHASE_6_3_CONTENT_QUALITY_AI_PLANNING.md`.
 
+## Local content draft workspace (Phase 6.4)
+
+Phase 6.4 added the internal draft workspace (migration 015): `content_draft_artifacts`
+(internal, non-public outlines/notes/meta drafts — `internal_only=true`,
+`public_ready=false`), `content_draft_reviews` (human review queue), and
+`content_source_gap_items` (specific missing facts before drafting). Dashboards:
+`vw_content_draft_artifact_dashboard`, `vw_content_draft_review_queue`,
+`vw_content_source_gap_dashboard`, `vw_imperial_heights_draft_workspace`. Built via
+`scripts/create_local_content_draft_artifacts.py`, optionally exported to the
+git-ignored `exports/content/` by `scripts/export_content_draft_artifacts.py`, and
+reversible with `scripts/cleanup_local_content_draft_artifacts.py`. Artifact bodies
+are outlines/placeholders with `[SOURCE NEEDED]` markers and an
+"INTERNAL DRAFT — NOT FOR PUBLISHING" header — **no AI execution, no external calls,
+no publishing, no outreach.** See `docs/PHASE_6_4_LOCAL_CONTENT_DRAFT_WORKSPACE.md`.
+
 ## What is NOT done yet
 
 - **No publishing.** No Wix/social/blog content is pushed anywhere.

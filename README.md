@@ -611,3 +611,27 @@ python3 scripts/cleanup_content_quality_plan.py --profile-slug imperial-heights-
 ```
 
 See `docs/PHASE_6_3_CONTENT_QUALITY_AI_PLANNING.md`.
+
+## Phase 6.4 Local Content Draft Workspace
+
+Phase 6.4 stores **internal, non-final** draft artifacts for the Imperial Heights
+briefs — local only, no publishing. Migration
+`schemas/015_content_draft_workspace.sql` adds 3 tables
+(`content_draft_artifacts`, `content_draft_reviews`, `content_source_gap_items`)
+and 4 views (incl. `vw_imperial_heights_draft_workspace`). The script seeds 7 draft
+artifacts (3 outlines + 3 internal notes + 1 meta draft; all `internal_only=true`,
+`public_ready=false`), 7 pending draft reviews, and 17 open source-gap items. Bodies
+are outlines/placeholders with `[SOURCE NEEDED]` markers and an
+"INTERNAL DRAFT — NOT FOR PUBLISHING" header — no contact data, no invented facts.
+**No AI execution, no external calls, no publishing, no outreach.** An optional
+exporter writes drafts under the git-ignored `exports/content/`.
+
+```bash
+# Dry-run default; real data needs --real-ok; writing needs --apply:
+python3 scripts/create_local_content_draft_artifacts.py \
+  --profile-slug imperial-heights-goregaon-west --real-ok [--apply]
+python3 scripts/export_content_draft_artifacts.py --profile-slug imperial-heights-goregaon-west [--apply]
+python3 scripts/cleanup_local_content_draft_artifacts.py --profile-slug imperial-heights-goregaon-west
+```
+
+See `docs/PHASE_6_4_LOCAL_CONTENT_DRAFT_WORKSPACE.md`.
