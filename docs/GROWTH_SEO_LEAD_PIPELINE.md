@@ -243,6 +243,22 @@ open), content is **not** ready for AI/public drafting, and there is **no AI exe
 external/web calls, no publishing, no outreach.**
 See `docs/PHASE_6_6_INTERNAL_EVIDENCE_ACCEPTANCE.md`.
 
+## Building-anchor dedupe planning (Phase 6.7)
+
+Phase 6.7 plans the consolidation of two duplicate "Imperial Heights" building anchors
+(`0e72db71` with the SEO profile/briefs vs `f05bbd01`) that split the active owner
+relationships and understated the profile's evidence counts. Migration 018 adds 3 tables
+(`building_duplicate_candidates`, `building_dedupe_review_items`,
+`building_dedupe_action_log`) and 3 views (incl.
+`vw_imperial_heights_building_anchor_summary`, `vw_building_dedupe_dashboard`).
+`scripts/plan_building_dedupe.py` (dry-run default) seeds 1 `pending_review` candidate
+(canonical `0e72db71`, strength `strong`) + 1 pending review item;
+`scripts/plan_building_dedupe_consolidation.py` is dry-run-only and previews the move
+(1 alias / 1 unit / 1 relationship). **No building is merged/deleted, no relationship
+moved, no SEO/content changed, no gap resolved**, and there is **no AI execution, no
+external/web calls, no publishing, no outreach.** Reversible via
+`scripts/cleanup_building_dedupe_plan.py`. See `docs/PHASE_6_7_BUILDING_DEDUPE_PLANNING.md`.
+
 ## What is NOT done yet
 
 - **No publishing.** No Wix/social/blog content is pushed anywhere.

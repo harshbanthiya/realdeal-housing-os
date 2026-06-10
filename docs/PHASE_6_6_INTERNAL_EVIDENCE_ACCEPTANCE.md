@@ -109,7 +109,9 @@ python3 scripts/revert_internal_source_evidence_review.py \
 
 - In a later batch, accept the remaining safe structural counts (`source_batch_count`,
   `unit_count`) and set `inventory_hint` to `needs_review`.
-- **Building dedupe (suggested next):** consolidate the duplicate Imperial Heights
-  anchors so `active_owner_relationship_count` can be trusted, then accept it.
+- **Building dedupe (planned in Phase 6.7):** the duplicate Imperial Heights anchors
+  (`0e72db71` canonical vs `f05bbd01`) are now identified and queued for review — see
+  `docs/PHASE_6_7_BUILDING_DEDUPE_PLANNING.md`. Once consolidated, the previously-deferred
+  `active_owner_relationship_count` evidence can be accepted.
 - Only after gaps are resolved with verified, citable sources (a separate gated step)
   does AI/public drafting + Wix publishing become eligible — still future and out of scope.

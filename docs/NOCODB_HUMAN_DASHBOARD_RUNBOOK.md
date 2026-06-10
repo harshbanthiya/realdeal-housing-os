@@ -175,6 +175,15 @@ Accept only purely-internal, non-personal evidence via
 gap — gaps stay open, content stays not-ready for AI/public drafting, and nothing is
 published or sent. See `docs/PHASE_6_6_INTERNAL_EVIDENCE_ACCEPTANCE.md`.
 
+**Building-anchor dedupe planning (Phase 6.7):** `vw_imperial_heights_building_anchor_summary`
+(one row per Imperial-Heights-like building with alias/unit/relationship/profile/brief
+counts and a `recommended_role`), `vw_building_dedupe_dashboard` (canonical-vs-duplicate
+counts + review status), and `vw_building_dedupe_review_queue` (the human review queue).
+Approve a `duplicate_building_review` only when confident the two anchors are the same
+building. Planning is review-gated and **never merges/moves/deletes** anything — buildings,
+relationships, and SEO/content rows are untouched; nothing is published or sent. See
+`docs/PHASE_6_7_BUILDING_DEDUPE_PLANNING.md`.
+
 ---
 
 ## 5. What each view means

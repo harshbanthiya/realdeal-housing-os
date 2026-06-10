@@ -684,3 +684,30 @@ python3 scripts/revert_internal_source_evidence_review.py --profile-slug imperia
 ```
 
 See `docs/PHASE_6_6_INTERNAL_EVIDENCE_ACCEPTANCE.md`.
+
+## Phase 6.7 Building-Anchor Dedupe Planning
+
+Phase 6.7 plans (does **not** execute) the consolidation of two duplicate "Imperial
+Heights" building anchors that split the active owner relationships and understated the
+SEO profile's evidence counts. Migration
+`schemas/018_building_dedupe_review_workflow.sql` adds 3 tables
+(`building_duplicate_candidates`, `building_dedupe_review_items`,
+`building_dedupe_action_log`) and 3 views (incl.
+`vw_imperial_heights_building_anchor_summary`). `scripts/plan_building_dedupe.py`
+(dry-run default) proposes canonical anchor `0e72db71` (it holds the web profile + 3
+briefs) over duplicate `f05bbd01`, seeding **1** `pending_review` candidate (strength
+`strong`) and **1** pending review item. `scripts/plan_building_dedupe_consolidation.py`
+is **dry-run only** (no `--apply`) and previews what a future merge would move (1 alias /
+1 unit / 1 relationship). **No building merged/deleted, no relationship moved, no SEO/
+content changed, no gaps resolved**, and **no AI execution, no external calls, no
+publishing, no outreach.** Reversible via `scripts/cleanup_building_dedupe_plan.py`.
+
+```bash
+# Dry-run default; real data needs --real-ok; writing needs --apply:
+python3 scripts/plan_building_dedupe.py --building-name "Imperial Heights" \
+  --profile-slug imperial-heights-goregaon-west --real-ok [--apply]
+python3 scripts/plan_building_dedupe_consolidation.py --candidate-id <uuid>   # dry-run only
+python3 scripts/cleanup_building_dedupe_plan.py --building-name "Imperial Heights"
+```
+
+See `docs/PHASE_6_7_BUILDING_DEDUPE_PLANNING.md`.

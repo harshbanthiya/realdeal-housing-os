@@ -21,6 +21,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/015_content_draft_workspace.sql"
   "$PROJECT_ROOT/schemas/016_source_gap_resolution_workflow.sql"
   "$PROJECT_ROOT/schemas/017_internal_evidence_acceptance_dashboard.sql"
+  "$PROJECT_ROOT/schemas/018_building_dedupe_review_workflow.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then
