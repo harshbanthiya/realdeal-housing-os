@@ -116,9 +116,10 @@ python3 scripts/parse_rera_snapshot_to_candidates.py \
 
 ## Next phase
 
-**Human review of parser candidates** — an operator works `vw_rera_snapshot_review_queue`
-(and `vw_rera_snapshot_compare_dashboard`) to approve/reject parsed facts and the
-parser-vs-manual matches, including the four `risk_count_compare` items and the privacy-safety
-reviews. Only after that does a separate, review-gated step consider updating the canonical
-RERA profile / accepting a match / RERA-anchored building dedupe. Public drafting + Wix
-publishing remain out of scope.
+**Human review of parser candidates — DONE in Phase 6.14** (`docs/PHASE_6_14_RERA_PARSER_REVIEW.md`):
+an operator approved the 6 non-personal matched reviews (5 facts → `matched_manual`) and the 4
+privacy-safety reviews, and **left pending** the 4 `risk_count_compare` + 1 capture review.
+Staging-only, reversible, **no canonical writes**;
+`ready_to_update_rera_profile` / `ready_for_content_fact_use` stay false. After that, a separate
+review-gated step considers updating the canonical RERA profile / accepting a match /
+RERA-anchored building dedupe. Public drafting + Wix publishing remain out of scope.

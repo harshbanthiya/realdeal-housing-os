@@ -867,3 +867,33 @@ python3 scripts/parse_rera_snapshot_to_candidates.py \
 
 See `docs/PHASE_6_13_RERA_SNAPSHOT_PARSER.md`. Next: **human review** of the parser
 candidates via `vw_rera_snapshot_review_queue`.
+
+## Phase 6.14 Human Review of RERA Snapshot Parser Candidates
+
+Phase 6.14 is the first **reversible** human-review pass over the Phase 6.13 parser staging
+outputs — **staging-only, no canonical writes, no external calls**.
+`scripts/review_rera_snapshot_parser_candidates.py` (dry-run default; `--real-ok` to read,
+`--apply` to write; safe helpers `--approve-safe-matched` / `--approve-privacy-safety`, with
+`--limit` and a refusal that blocks `--approve-safe-matched` from touching risk/legal-count
+items) approved the **6** non-personal `parser_manual_match_review` items (promoting 5 mapped
+facts to `matched_manual`: registration number, project status, registration date, carpet row
+count, apartment total) and the **4** `privacy_safety_review` items (each confirming
+`personal_data_excluded=true` / `safe_for_public_use=false` — names excluded). The **4**
+`risk_count_compare` + **1** capture `parsed_fact_review` items were **left pending** (legal
+counts need human context). After apply: parsed facts = 5 matched_manual / 8 candidate / 4
+needs_human_review; reviews = 10 approved / 5 pending. Canonical/manual rows unchanged: profile
+`needs_human_review`, matches `candidate`, carpet 26 / status 13 / review 6, buildings 2, gaps
+17 open / 0 resolved, `ready_for_publish=0`, nothing sent;
+`ready_to_update_rera_profile` / `ready_for_content_fact_use` stay **false**. Changes are
+stamped `review_phase=6.14` and reversible via `scripts/revert_rera_snapshot_parser_review.py`
+(dry-run shown only).
+
+```bash
+python3 scripts/review_rera_snapshot_parser_candidates.py \
+  --profile-slug imperial-heights-goregaon-west \
+  --approve-safe-matched --approve-privacy-safety \
+  --reviewed-by operator --limit 10 --real-ok [--apply]
+```
+
+See `docs/PHASE_6_14_RERA_PARSER_REVIEW.md`. Next: **profile verification + match acceptance**
+after the remaining legal-context review.

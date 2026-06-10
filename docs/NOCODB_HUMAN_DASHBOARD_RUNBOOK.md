@@ -222,6 +222,16 @@ mismatch / 4 pending_review), and `vw_imperial_heights_rera_parser_readiness` (b
 `privacy_safety_review` items; **nothing is verified/accepted/published** from parser output.
 See `docs/PHASE_6_13_RERA_SNAPSHOT_PARSER.md`.
 
+**RERA parser-candidate review (Phase 6.14):** a first reversible review pass approved the **6**
+non-personal `parser_manual_match_review` items (5 facts → `matched_manual`) and the **4**
+`privacy_safety_review` items (names confirmed excluded), and **left pending** the **4**
+`risk_count_compare` + **1** capture review (legal counts need human context). In
+`vw_rera_snapshot_review_queue` you'll now see 10 approved / 5 pending; canonical rows are
+untouched and `ready_*` flags stay false. Approve via
+`scripts/review_rera_snapshot_parser_candidates.py` (safe helpers `--approve-safe-matched` /
+`--approve-privacy-safety`); undo via `scripts/revert_rera_snapshot_parser_review.py`. Still
+**no verify / accept / merge / publish**. See `docs/PHASE_6_14_RERA_PARSER_REVIEW.md`.
+
 ---
 
 ## 5. What each view means
