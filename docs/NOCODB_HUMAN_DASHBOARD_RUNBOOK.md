@@ -195,6 +195,15 @@ schema + fake-workflow only — **no MahaRERA scraping/API calls**, nothing auto
 published, or sent. RERA is an internal verification aid, not legal advice. See
 `docs/RERA_VERIFICATION_PIPELINE.md`.
 
+**Manual MahaRERA verification — Imperial Heights (Phase 6.9):** real review-gated RERA
+rows now exist for Imperial Heights Wing C & D (reg `P51800003270`) — work
+`vw_rera_verification_review_queue` to confirm facts and **accept** the RERA match (two
+`candidate` matches, one per duplicate anchor) before building dedupe, and work the
+high-priority `rera_address_review` before trusting any address. The RERA
+street/boundary/lat/long are **not** trusted building address data; litigation/complaint
+counts carry **no personal names**. Nothing is verified/accepted/published here. See
+`docs/PHASE_6_9_MANUAL_RERA_IMPERIAL_HEIGHTS.md`.
+
 ---
 
 ## 5. What each view means

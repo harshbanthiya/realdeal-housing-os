@@ -275,6 +275,18 @@ fully cleaned, leaving **no real building/SEO/content change, no MahaRERA/extern
 no publishing, no outreach.** RERA is an internal verification aid, not legal advice.
 See `docs/RERA_VERIFICATION_PIPELINE.md`.
 
+## Manual MahaRERA verification — Imperial Heights (Phase 6.9)
+
+Phase 6.9 entered **real but review-gated** MahaRERA rows for Imperial Heights Wing C & D
+(reg `P51800003270`) from a manually-supplied official PDF snapshot (no scraping/API):
+1 profile (`needs_human_review`), 2 `candidate` building matches, 26 carpet-area records
+(213 apartments), 13 status/risk/document checks (litigation/complaint/non-compliance as
+counts only — **no personal names**), 6 pending review items. RERA address/lat/long are
+**not** trusted (operator review); no building merged, no internal address changed, no gap
+resolved, nothing verified/accepted/published/sent. Reversible via
+`scripts/cleanup_manual_rera_verification.py`. See
+`docs/PHASE_6_9_MANUAL_RERA_IMPERIAL_HEIGHTS.md`.
+
 ## What is NOT done yet
 
 - **No publishing.** No Wix/social/blog content is pushed anywhere.

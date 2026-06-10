@@ -92,11 +92,15 @@ python3 scripts/cleanup_fake_rera_verification.py             # dry-run
 python3 scripts/cleanup_fake_rera_verification.py --apply
 ```
 
-## Future manual verification phase (Imperial Heights)
+## Manual verification phase (Imperial Heights) — Phase 6.9, done
 
-A later phase will let a human **manually** record official MahaRERA facts for Imperial
-Heights (registration number, promoter, carpet areas, status) into these tables — by
-reading the official portal directly, never by scripted scraping — then work the
+Phase 6.9 recorded official MahaRERA facts for **Imperial Heights Wing C & D**
+(reg `P51800003270`) from a **manually-supplied PDF snapshot** — registration, promoter
+company, land/built-up areas, sanctioned wings/floors, 26 carpet-area records (213
+apartments), and 13 status/risk/document checks — all **review-gated**
+(`needs_human_review` / `candidate` / `pending`), with **no scraping**. RERA
+address/lat/long were deliberately **not** trusted (left for operator review). See
+`docs/PHASE_6_9_MANUAL_RERA_IMPERIAL_HEIGHTS.md`. A human now works the
 `vw_rera_verification_review_queue`.
 
 ## Future building dedupe phase using an accepted RERA match

@@ -113,9 +113,12 @@ python3 scripts/plan_building_dedupe_consolidation.py --candidate-id <uuid>
 
 - Work `vw_building_dedupe_review_queue` in NocoDB and approve the
   `duplicate_building_review` only when confident the two anchors are the same building.
-- **Official verification first (Phase 6.8, built):** the MahaRERA verification
-  foundation now exists — an *accepted* RERA project match gives an authoritative basis
-  for consolidating these anchors. See `docs/RERA_VERIFICATION_PIPELINE.md`.
+- **Official verification first (Phase 6.8 + 6.9):** the MahaRERA verification foundation
+  exists, and Phase 6.9 entered real review-gated RERA rows for Imperial Heights Wing C &
+  D (reg `P51800003270`) from an official PDF snapshot. Both internal anchors (`0e72db71`,
+  `f05bbd01`) now have a `candidate` RERA match — an *accepted* match gives the
+  authoritative basis for consolidating them. See
+  `docs/PHASE_6_9_MANUAL_RERA_IMPERIAL_HEIGHTS.md` and `docs/RERA_VERIFICATION_PIPELINE.md`.
 - **Then (separate, approved phase):** implement the guarded merge that moves the
   duplicate's aliases/units/relationships onto `0e72db71`, logs to
   `building_dedupe_action_log`, and re-runs the Phase 6.6 evidence acceptance so

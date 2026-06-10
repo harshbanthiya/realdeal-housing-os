@@ -736,3 +736,29 @@ python3 scripts/cleanup_fake_rera_verification.py [--apply]
 ```
 
 See `docs/RERA_VERIFICATION_PIPELINE.md`.
+
+## Phase 6.9 Manual MahaRERA Verification (Imperial Heights Wing C & D)
+
+Phase 6.9 enters **real but review-gated** MahaRERA verification rows for Imperial Heights,
+transcribed by a human from a manually-supplied official MahaRERA PDF snapshot (project
+`P51800003270`, [view/6231](https://maharerait.maharashtra.gov.in/public/project/view/6231))
+— **no scraping, no API, no browsing**. `scripts/apply_manual_rera_verification.py`
+(dry-run default) creates 1 RERA profile (`needs_human_review`), 2 building-match
+candidates (`candidate`, not accepted), 26 carpet-area records (`needs_human_review`, 213
+apartments), 13 status/risk/document checks (litigation/complaint/non-compliance as
+**counts only — no personal names**), and 6 pending review items (incl. a high-priority
+`rera_address_review`). Per the operator note, **RERA street/boundary/lat/long are NOT
+stored as trusted address** — `district/taluka/locality/pincode` left NULL, address left
+for operator review; **no building merged, no internal address changed, no gap resolved,
+nothing verified/accepted/published/sent.** Reversible via
+`scripts/cleanup_manual_rera_verification.py`. The PDF is **not committed**.
+
+```bash
+python3 scripts/apply_manual_rera_verification.py --building-id 0e72db71-8b93-4ecd-879c-17d8d8f2b206 \
+  --profile-slug imperial-heights-goregaon-west --rera-registration-number P51800003270 \
+  --official-project-url https://maharerait.maharashtra.gov.in/public/project/view/6231 \
+  --project-name "Imperial Heights Wing C and D" --real-ok [--apply]
+python3 scripts/cleanup_manual_rera_verification.py            # dry-run
+```
+
+See `docs/PHASE_6_9_MANUAL_RERA_IMPERIAL_HEIGHTS.md`.
