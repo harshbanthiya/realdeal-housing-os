@@ -259,6 +259,22 @@ moved, no SEO/content changed, no gap resolved**, and there is **no AI execution
 external/web calls, no publishing, no outreach.** Reversible via
 `scripts/cleanup_building_dedupe_plan.py`. See `docs/PHASE_6_7_BUILDING_DEDUPE_PLANNING.md`.
 
+## MahaRERA verification foundation (Phase 6.8)
+
+Phase 6.8 adds the **schema + fake-workflow** foundation for future official MahaRERA
+building verification (the official layer for Maharashtra/Mumbai projects) — **no
+scraping, no API calls, no browsing** from scripts. Migration 019 adds 6 tables
+(`rera_project_profiles`, `rera_building_match_candidates`, `rera_carpet_area_records`,
+`rera_project_status_checks`, `rera_area_mismatch_candidates`,
+`rera_verification_review_items`) and 6 dashboards (incl.
+`vw_imperial_heights_rera_readiness`). An accepted RERA match is what will later unlock
+the Phase 6.7 building dedupe; a verified profile with no blocker risk gates
+content-fact use. The fake workflow (`scripts/seed_fake_rera_verification.py` /
+`cleanup_fake_rera_verification.py` / `rera_verification_summary.py`) was seeded then
+fully cleaned, leaving **no real building/SEO/content change, no MahaRERA/external call,
+no publishing, no outreach.** RERA is an internal verification aid, not legal advice.
+See `docs/RERA_VERIFICATION_PIPELINE.md`.
+
 ## What is NOT done yet
 
 - **No publishing.** No Wix/social/blog content is pushed anywhere.

@@ -113,6 +113,9 @@ python3 scripts/plan_building_dedupe_consolidation.py --candidate-id <uuid>
 
 - Work `vw_building_dedupe_review_queue` in NocoDB and approve the
   `duplicate_building_review` only when confident the two anchors are the same building.
+- **Official verification first (Phase 6.8, built):** the MahaRERA verification
+  foundation now exists — an *accepted* RERA project match gives an authoritative basis
+  for consolidating these anchors. See `docs/RERA_VERIFICATION_PIPELINE.md`.
 - **Then (separate, approved phase):** implement the guarded merge that moves the
   duplicate's aliases/units/relationships onto `0e72db71`, logs to
   `building_dedupe_action_log`, and re-runs the Phase 6.6 evidence acceptance so

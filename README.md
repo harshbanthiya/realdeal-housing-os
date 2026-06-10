@@ -711,3 +711,28 @@ python3 scripts/cleanup_building_dedupe_plan.py --building-name "Imperial Height
 ```
 
 See `docs/PHASE_6_7_BUILDING_DEDUPE_PLANNING.md`.
+
+## Phase 6.8 MahaRERA Verification Foundation
+
+Phase 6.8 lays the **schema + fake-workflow** foundation for future official
+[MahaRERA](https://maharera.maharashtra.gov.in/) building verification — **no scraping,
+no API calls, no browsing** from scripts. Migration
+`schemas/019_rera_verification_foundation.sql` adds 6 tables (`rera_project_profiles`,
+`rera_building_match_candidates`, `rera_carpet_area_records`, `rera_project_status_checks`,
+`rera_area_mismatch_candidates`, `rera_verification_review_items`) and 6 views (incl.
+`vw_imperial_heights_rera_readiness`, whose `ready_for_building_dedupe` needs an accepted
+RERA match and `ready_for_content_fact_use` needs a verified profile with no blocker risk).
+`scripts/seed_fake_rera_verification.py` seeds a clearly-fake, fully-removable test set
+(1 fake building + RERA profile/match/areas/checks/mismatch/reviews);
+`scripts/cleanup_fake_rera_verification.py` removes only those tagged rows;
+`scripts/rera_verification_summary.py` is read-only counts. **No real building/SEO/content
+changed, no MahaRERA/external call, no publishing, no outreach** — verified by seeding then
+fully cleaning the fake batch. RERA is an **internal verification aid, not legal advice.**
+
+```bash
+python3 scripts/seed_fake_rera_verification.py [--apply --fake-ok]
+python3 scripts/rera_verification_summary.py
+python3 scripts/cleanup_fake_rera_verification.py [--apply]
+```
+
+See `docs/RERA_VERIFICATION_PIPELINE.md`.

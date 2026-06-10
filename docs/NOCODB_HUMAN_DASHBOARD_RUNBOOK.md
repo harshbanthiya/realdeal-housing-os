@@ -184,6 +184,17 @@ building. Planning is review-gated and **never merges/moves/deletes** anything â
 relationships, and SEO/content rows are untouched; nothing is published or sent. See
 `docs/PHASE_6_7_BUILDING_DEDUPE_PLANNING.md`.
 
+**MahaRERA verification (Phase 6.8 foundation):** `vw_rera_project_verification_dashboard`,
+`vw_rera_building_match_dashboard`, `vw_rera_area_mismatch_dashboard`,
+`vw_rera_status_risk_dashboard`, `vw_rera_verification_review_queue`, and
+`vw_imperial_heights_rera_readiness` expose official RERA project verification, internal-
+anchor matches, carpet-area mismatches, status/risk flags, and the review queue (no
+personal contact data). `ready_for_building_dedupe` needs an accepted RERA match;
+`ready_for_content_fact_use` needs a verified profile with no blocker risk. This phase is
+schema + fake-workflow only â€” **no MahaRERA scraping/API calls**, nothing auto-corrected,
+published, or sent. RERA is an internal verification aid, not legal advice. See
+`docs/RERA_VERIFICATION_PIPELINE.md`.
+
 ---
 
 ## 5. What each view means
