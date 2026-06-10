@@ -836,3 +836,34 @@ no DB writes, no RERA match accepted, no profile verified, no building merged, n
 resolved, nothing published or sent.** Snapshots remain git-ignored under
 `exports/rera_snapshots/` and are never committed. See
 `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
+
+## Phase 6.13 Review-Gated MahaRERA Snapshot Parser
+
+Phase 6.13 parses the Phase 6.12 post-CAPTCHA snapshot into **untrusted, review-gated candidate
+facts** and compares them to the Phase 6.9 manual rows — **no canonical writes, no personal
+names stored**. Migration `schemas/020_rera_snapshot_parser_staging.sql` adds 4 staging tables
+(`rera_snapshot_captures`, `rera_parsed_fact_candidates`, `rera_snapshot_compare_results`,
+`rera_snapshot_review_items`) + 5 dashboards, incl.
+`vw_imperial_heights_rera_parser_readiness` (`ready_to_update_rera_profile` /
+`ready_for_content_fact_use` are **hard false**).
+`scripts/parse_rera_snapshot_to_candidates.py` (dry-run default; `--real-ok` to read snapshot,
+`--apply` to write; refuses unless the folder is under git-ignored `exports/rera_snapshots/`
+and the profile/reg resolve) extracted **17 candidate facts** + **10 compare results
+(6 matched / 0 mismatch / 4 pending_review)** in one transaction tagged `phase=6.13`. The
+snapshot **corroborates** the manual data (reg `P51800003270`, status `Completed`, carpet 26,
+apartments 213 all matched). Complaint/litigation/appeal/non-compliance are stored as
+**counts only** (51 legal rows counted, **0 names stored**); the promoter **company** name is
+an official public record. Canonical rows unchanged: profile `needs_human_review`, matches
+`candidate`, carpet 26 / status 13 / review 6, buildings 2, gaps 17 open / 0 resolved,
+`ready_for_publish=0`, nothing sent. `scripts/cleanup_rera_snapshot_parser_candidates.py`
+(dry-run shown) removes only the tagged `phase=6.13` rows.
+
+```bash
+python3 scripts/parse_rera_snapshot_to_candidates.py \
+  --snapshot-folder exports/rera_snapshots/<ts>_imperial_heights_wing_cd_6231_post_captcha \
+  --profile-slug imperial-heights-goregaon-west \
+  --rera-registration-number P51800003270 --real-ok [--apply]
+```
+
+See `docs/PHASE_6_13_RERA_SNAPSHOT_PARSER.md`. Next: **human review** of the parser
+candidates via `vw_rera_snapshot_review_queue`.

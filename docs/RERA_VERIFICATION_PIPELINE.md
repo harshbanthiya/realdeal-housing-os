@@ -103,6 +103,25 @@ untrusted** until human review. See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
 and 6.12: **no CAPTCHA bypass/OCR/solver, no DB writes, no RERA match accepted, no profile
 verified, no building merged, no source gap resolved, no publishing/outreach.**
 
+## Review-gated snapshot parser (Phase 6.13)
+
+Phase 6.13 parses the Phase 6.12 **post-CAPTCHA** snapshot into **untrusted, review-gated
+candidate facts** and compares them against the Phase 6.9 manual rows — **no canonical
+writes**. Migration `schemas/020_rera_snapshot_parser_staging.sql` adds 4 staging tables
+(`rera_snapshot_captures`, `rera_parsed_fact_candidates`, `rera_snapshot_compare_results`,
+`rera_snapshot_review_items`) + 5 dashboards, including
+`vw_imperial_heights_rera_parser_readiness` (whose `ready_to_update_rera_profile` /
+`ready_for_content_fact_use` are **hard false**). `scripts/parse_rera_snapshot_to_candidates.py`
+(dry-run default; `--real-ok` to read, `--apply` to write) extracted **17 candidate facts**
+and **10 compare results** (**6 matched / 0 mismatch / 4 pending_review**) — the snapshot
+**corroborates** the manual data. Legal-risk sections (complaint/litigation/appeal/
+non-compliance) are stored as **counts only**; **no personal names** are stored (a scan of
+stored values returns 0 name matches). Canonical rows stayed put: profile
+`needs_human_review`, matches `candidate`, carpet 26 / status 13 / review 6, buildings 2.
+`scripts/cleanup_rera_snapshot_parser_candidates.py` (dry-run shown only) removes solely the
+tagged `phase=6.13` rows. See `docs/PHASE_6_13_RERA_SNAPSHOT_PARSER.md`. Next: **human review**
+of the parser candidates via `vw_rera_snapshot_review_queue`.
+
 ## Why no bulk scraping / API calls happen in these phases
 
 This phase builds the **destination schema and the human-review workflow** before any

@@ -202,10 +202,12 @@ behind the CAPTCHA), confirming a snapshot is only parseable **after** a human c
 1. **Human-in-the-loop capture of a rendered page** — an operator runs the headed
    `--human-captcha-mode` flow, solves the CAPTCHA, and the script captures a **post-CAPTCHA**
    snapshot with the real project data.
-2. **Review-gated snapshot parser** — a real (still review-gated) parser that extracts
-   candidate facts from a post-CAPTCHA snapshot into a staging area as `needs_human_review`
-   candidates, never trusted automatically. (Alternatively, **continue the manual PDF flow**
-   from Phase 6.9 — also fully review-gated.)
+2. **Review-gated snapshot parser** — **DONE in Phase 6.13**:
+   `scripts/parse_rera_snapshot_to_candidates.py` parses the post-CAPTCHA snapshot into
+   untrusted candidate facts (migration 020 staging tables) and compares them against the
+   Phase 6.9 manual rows (6 matched / 0 mismatch / 4 pending_review) — **no canonical writes**,
+   **counts-only** for legal-risk sections, **no personal names stored**. See
+   `docs/PHASE_6_13_RERA_SNAPSHOT_PARSER.md`. Next is **human review** of those candidates.
 3. **Accepted RERA matches** — a human accepts the RERA project match (Phase 6.9 left both
    Imperial Heights anchors as `candidate`).
 4. **Building dedupe** — once a RERA match is accepted, consolidate the duplicate Imperial

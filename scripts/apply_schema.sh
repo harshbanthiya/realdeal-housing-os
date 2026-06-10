@@ -23,6 +23,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/017_internal_evidence_acceptance_dashboard.sql"
   "$PROJECT_ROOT/schemas/018_building_dedupe_review_workflow.sql"
   "$PROJECT_ROOT/schemas/019_rera_verification_foundation.sql"
+  "$PROJECT_ROOT/schemas/020_rera_snapshot_parser_staging.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

@@ -211,6 +211,17 @@ writes, no CAPTCHA/auth bypass**. Snapshots are raw evidence (`trusted_for_db=fa
 `human_review_required=true`) and feed no dashboard until a future review-gated parser
 exists. See `docs/RERA_PLAYWRIGHT_FETCH_FEASIBILITY.md`.
 
+**RERA snapshot parser — review-gated candidates (Phases 6.12–6.13):** an operator-assisted
+headed capture (Phase 6.12) produced a post-CAPTCHA snapshot, and Phase 6.13 parsed it into
+**untrusted candidate facts**. Open `vw_rera_snapshot_review_queue` (the human queue),
+`vw_rera_parsed_fact_candidate_dashboard` (parsed facts — counts/booleans, **no personal
+names**), `vw_rera_snapshot_compare_dashboard` (parser-vs-Phase-6.9 comparison: 6 matched / 0
+mismatch / 4 pending_review), and `vw_imperial_heights_rera_parser_readiness` (both
+`ready_*` flags **hard false**). Legal-risk sections are **counts only**; the promoter
+**company** name is an official record. Work the four `risk_count_compare` items and the
+`privacy_safety_review` items; **nothing is verified/accepted/published** from parser output.
+See `docs/PHASE_6_13_RERA_SNAPSHOT_PARSER.md`.
+
 ---
 
 ## 5. What each view means
