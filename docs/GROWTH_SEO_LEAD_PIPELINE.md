@@ -490,3 +490,18 @@ activation was requested. `workflow_created_in_n8n=0`, `activation_requested=0`,
 `inbound_leads=0`, contacts 4, and send/publish/communication counts remain 0. Rollback dry-run:
 `scripts/revert_dlf_n8n_build_package_review.py`. See
 `docs/PHASE_7_12_DLF_N8N_BUILD_PACKAGE_REVIEW.md`.
+
+## DLF n8n manual import verification (Phase 7.13)
+
+Migration `schemas/033_dlf_n8n_manual_import_verification.sql` adds manual-import verification
+tracking: `launch_n8n_manual_import_checks`, `vw_dlf_n8n_manual_import_check_dashboard`, and
+`vw_dlf_n8n_manual_import_readiness`. The readiness view allows inactive manual-import readiness
+while hard-blocking activation with `ready_to_activate=false`.
+
+No manual import was performed in Phase 7.13. `scripts/record_dlf_n8n_manual_import_check.py`
+recorded one pending no-import check only. The build package remains `approved_for_manual_import`,
+`workflow_created_in_n8n=false`, `activation_requested=false`, and all workflow blueprints remain
+`planned` / `not_created`. No n8n API call, workflow activation, live webhook, inbound lead, contact
+change, send, or publishing happened. Rollback dry-run:
+`scripts/revert_dlf_n8n_manual_import_check.py`. See
+`docs/PHASE_7_13_DLF_N8N_MANUAL_IMPORT_VERIFICATION.md`.

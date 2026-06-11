@@ -71,3 +71,10 @@ not delete the artifact and does not touch leads, contacts, messages, or publish
 
 Next work can be a controlled manual inactive import phase, or Wix landing/form approval. Activation
 and live lead capture remain separate explicit phases.
+
+## Follow-on Phase 7.13
+
+Phase 7.13 created the manual-import verification layer and recorded one pending no-import check. No
+manual import was performed, so the package remains `approved_for_manual_import`,
+`workflow_created_in_n8n=0`, `activation_requested=0`, and `ready_to_activate=false`. See
+`docs/PHASE_7_13_DLF_N8N_MANUAL_IMPORT_VERIFICATION.md`.

@@ -492,6 +492,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Dry-run cleanup of DLF n8n build package | `scripts/cleanup_dlf_n8n_build_package.py` |
 | Review inactive DLF n8n build package | `scripts/review_dlf_n8n_build_package.py` |
 | Revert DLF n8n build package review | `scripts/revert_dlf_n8n_build_package_review.py` |
+| Record DLF inactive n8n manual import check | `scripts/record_dlf_n8n_manual_import_check.py` |
+| Dry-run revert of DLF n8n manual import check | `scripts/revert_dlf_n8n_manual_import_check.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -532,6 +534,12 @@ Phase 7.12 reviews the inactive n8n build package for manual import readiness on
 security, privacy, and manual-import review items are approved; the activation blocker remains
 `needs_more_info`. `vw_dlf_n8n_build_readiness.ready_for_manual_import` may be true, but
 `ready_to_activate` must remain false and n8n workflow creation/activation counts must remain 0.
+
+Phase 7.13 adds DLF n8n manual-import verification views:
+`vw_dlf_n8n_manual_import_check_dashboard` and `vw_dlf_n8n_manual_import_readiness`. The current
+state is one pending no-import check: manual import has not happened, the package remains
+`approved_for_manual_import`, workflow creation remains false, activation remains false, and
+`ready_to_activate` must remain false.
 
 ---
 

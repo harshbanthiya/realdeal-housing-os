@@ -145,7 +145,8 @@ WITH expected(table_name) AS (
     ('launch_test_lead_review_items'),
     ('launch_n8n_build_packages'),
     ('launch_n8n_build_validation_results'),
-    ('launch_n8n_build_review_items')
+    ('launch_n8n_build_review_items'),
+    ('launch_n8n_manual_import_checks')
 )
 SELECT
   expected.table_name,
@@ -315,7 +316,9 @@ WITH expected(view_name) AS (
     ('vw_dlf_n8n_build_package_dashboard'),
     ('vw_dlf_n8n_build_validation_dashboard'),
     ('vw_dlf_n8n_build_review_queue'),
-    ('vw_dlf_n8n_build_readiness')
+    ('vw_dlf_n8n_build_readiness'),
+    ('vw_dlf_n8n_manual_import_check_dashboard'),
+    ('vw_dlf_n8n_manual_import_readiness')
 )
 SELECT
   expected.view_name,

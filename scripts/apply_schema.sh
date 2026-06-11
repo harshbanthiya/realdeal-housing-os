@@ -35,6 +35,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/030_dlf_contact_permission_evidence.sql"
   "$PROJECT_ROOT/schemas/031_dlf_test_lead_intake_harness.sql"
   "$PROJECT_ROOT/schemas/032_dlf_n8n_build_package.sql"
+  "$PROJECT_ROOT/schemas/033_dlf_n8n_manual_import_verification.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then
