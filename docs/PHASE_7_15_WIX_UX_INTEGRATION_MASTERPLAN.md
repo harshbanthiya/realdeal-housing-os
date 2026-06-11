@@ -197,3 +197,9 @@ packages. Writing requires `--real-ok --apply`.
 Either a **Fable UI/UX handoff package** (once the brief is approved) or a **manual Wix build/review
 plan**. Connecting tracking/messaging integrations, building live forms/webhooks, and publishing Wix
 pages remain separate explicit phases and stay blocked.
+
+Phase 7.16 builds the **Fable UI/UX handoff package** from this masterplan
+(`schemas/036_fable_uiux_handoff_package.sql`, `scripts/create_dlf_fable_uiux_handoff_package.py`): a
+privacy-safe concise Fable prompt + detailed design brief distilled from this blueprint, pages, and
+design components, with no contact data / secrets / DB IDs and no Fable call. See
+`docs/PHASE_7_16_FABLE_UIUX_HANDOFF_PACKAGE.md`.

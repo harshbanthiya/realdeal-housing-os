@@ -530,3 +530,16 @@ publishing, no live form/webhook, no sends; `external_call_allowed`/`publish_ena
 `ready_to_publish` stays false. Cleanup dry-run:
 `scripts/cleanup_dlf_wix_ux_integration_masterplan.py`. See
 `docs/PHASE_7_15_WIX_UX_INTEGRATION_MASTERPLAN.md`.
+
+Phase 7.16 distills the Phase 7.15 masterplan into a privacy-safe Fable UI/UX handoff package.
+Migration `schemas/036_fable_uiux_handoff_package.sql` adds four `fable_uiux_handoff_*` tables and
+five views (incl. `vw_dlf_fable_handoff_readiness`).
+`scripts/create_dlf_fable_uiux_handoff_package.py` (dry-run by default) writes two git-ignored
+Markdown artifacts under `exports/fable_handoffs/` — a concise Fable prompt and a detailed design
+brief — plus 1 generated package, 12 sections, 9 passed validations, and 7 pending reviews.
+Public/business-safe only: no contact data, secrets, or DB IDs; placeholders preserved
+(RERA/price/brochure/visual). No Fable call and no Wix/Meta/WhatsApp/email/n8n call;
+`fable_call_made`/`external_call_made` stay 0 and `ready_for_fable_use` stays false until reviews are
+approved (the operator pastes the prompt into Fable manually). Cleanup dry-run:
+`scripts/cleanup_dlf_fable_uiux_handoff_package.py`. See
+`docs/PHASE_7_16_FABLE_UIUX_HANDOFF_PACKAGE.md`.

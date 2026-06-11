@@ -498,6 +498,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Dry-run cleanup of DLF Wix build package | `scripts/cleanup_dlf_wix_landing_build_package.py` |
 | Seed DLF Wix UX/SEO/integration masterplan | `scripts/seed_dlf_wix_ux_integration_masterplan.py` |
 | Dry-run cleanup of DLF Wix UX masterplan | `scripts/cleanup_dlf_wix_ux_integration_masterplan.py` |
+| Create DLF Fable UI/UX handoff package | `scripts/create_dlf_fable_uiux_handoff_package.py` |
+| Dry-run cleanup of DLF Fable handoff package | `scripts/cleanup_dlf_fable_uiux_handoff_package.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -561,6 +563,16 @@ experience, 7 page blueprints, 11 integration readiness items, 11 design compone
 reviews. Planning only: every integration stays `external_call_allowed=false`, every page
 `publish_enabled=false`, `integrations_active=0`, and `ready_to_publish` stays false. Connecting
 Meta/WhatsApp/email/n8n/Google and publishing pages are separate, explicit, review-gated phases.
+
+Phase 7.16 adds DLF Fable UI/UX handoff views for read-only operator review:
+`vw_fable_uiux_handoff_package_dashboard`, `vw_fable_uiux_handoff_section_dashboard`,
+`vw_fable_uiux_handoff_validation_dashboard`, `vw_fable_uiux_handoff_review_queue`, and
+`vw_dlf_fable_handoff_readiness`. These show the privacy-safe Fable handoff package (1 generated, 12
+sections, 9 passed validations, 7 pending reviews) distilled from the Phase 7.15 masterplan. The
+artifacts (a concise prompt + detailed brief) live git-ignored under `exports/fable_handoffs/` and
+carry no contact data, secrets, or DB IDs. No Fable/external call happened: `fable_call_made_count`
+and `external_call_made_count` stay 0 and `ready_for_fable_use` stays false until reviews are
+approved. The operator pastes the reviewed concise prompt into Fable manually.
 
 ---
 

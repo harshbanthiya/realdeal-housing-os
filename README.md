@@ -1263,3 +1263,21 @@ email/n8n/Google API call, no publishing, no live form/webhook, no sends. Every 
 optional Three.js visuals are deferred to a future phase (`fable_handoff_future_phase=true`). Cleanup
 dry-run: `scripts/cleanup_dlf_wix_ux_integration_masterplan.py`. See
 `docs/PHASE_7_15_WIX_UX_INTEGRATION_MASTERPLAN.md`.
+
+## Phase 7.16 Fable UI/UX Handoff Package
+
+Phase 7.16 distills the approved Phase 7.15 masterplan into a privacy-safe Fable handoff package.
+Migration `schemas/036_fable_uiux_handoff_package.sql` adds `fable_uiux_handoff_packages`,
+`fable_uiux_handoff_sections`, `fable_uiux_handoff_validation_results`,
+`fable_uiux_handoff_review_items` plus five views including `vw_dlf_fable_handoff_readiness`.
+
+`scripts/create_dlf_fable_uiux_handoff_package.py` (dry-run by default; `--real-ok --apply` to write)
+generates two git-ignored Markdown artifacts under `exports/fable_handoffs/` — a concise Fable prompt
+(~2.2 KB) and a detailed design brief — plus 1 `generated` package, 12 sections, 9 passed
+validations, and 7 pending reviews. Artifacts carry only public/business-safe design direction
+(Apple-inspired luxury, mobile-first, SEO/Wix constraints, placeholder rules); a direct scan confirms
+no contact data, secrets, or DB IDs. No Fable call and no Wix/Meta/WhatsApp/email/n8n call happen:
+`fable_call_made_count`/`external_call_made_count` stay 0 and `ready_for_fable_use` stays false until
+reviews are approved. The operator pastes the concise prompt into Fable manually. Cleanup dry-run:
+`scripts/cleanup_dlf_fable_uiux_handoff_package.py`. See
+`docs/PHASE_7_16_FABLE_UIUX_HANDOFF_PACKAGE.md`.

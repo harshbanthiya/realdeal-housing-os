@@ -154,7 +154,11 @@ WITH expected(table_name) AS (
     ('wix_page_blueprints'),
     ('wix_integration_readiness_items'),
     ('wix_design_component_specs'),
-    ('wix_ux_review_items')
+    ('wix_ux_review_items'),
+    ('fable_uiux_handoff_packages'),
+    ('fable_uiux_handoff_sections'),
+    ('fable_uiux_handoff_validation_results'),
+    ('fable_uiux_handoff_review_items')
 )
 SELECT
   expected.table_name,
@@ -336,7 +340,12 @@ WITH expected(view_name) AS (
     ('vw_wix_integration_readiness_dashboard'),
     ('vw_wix_design_component_dashboard'),
     ('vw_wix_ux_review_queue'),
-    ('vw_dlf_wix_unified_experience_readiness')
+    ('vw_dlf_wix_unified_experience_readiness'),
+    ('vw_fable_uiux_handoff_package_dashboard'),
+    ('vw_fable_uiux_handoff_section_dashboard'),
+    ('vw_fable_uiux_handoff_validation_dashboard'),
+    ('vw_fable_uiux_handoff_review_queue'),
+    ('vw_dlf_fable_handoff_readiness')
 )
 SELECT
   expected.view_name,
