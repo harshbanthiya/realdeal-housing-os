@@ -146,3 +146,9 @@ Either a human review that approves the package for manual Wix build
 (`package_status=approved_for_manual_build` after the six pending reviews clear), or a controlled
 Wix page draft recording phase. Publishing, live form/webhook creation, live lead capture,
 messaging, and campaign activation remain separate explicit phases and stay blocked.
+
+Phase 7.15 later situates this landing package inside a unified Wix website UX/SEO/integration
+masterplan (`schemas/035_wix_ux_integration_masterplan.sql`,
+`scripts/seed_dlf_wix_ux_integration_masterplan.py`): the DLF Westpark landing page becomes one
+`project_landing` page blueprint among seven planned pages, with integration readiness and design
+components planned but not connected. See `docs/PHASE_7_15_WIX_UX_INTEGRATION_MASTERPLAN.md`.

@@ -496,6 +496,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Dry-run revert of DLF n8n manual import check | `scripts/revert_dlf_n8n_manual_import_check.py` |
 | Create DLF Wix landing/form build package | `scripts/create_dlf_wix_landing_build_package.py` |
 | Dry-run cleanup of DLF Wix build package | `scripts/cleanup_dlf_wix_landing_build_package.py` |
+| Seed DLF Wix UX/SEO/integration masterplan | `scripts/seed_dlf_wix_ux_integration_masterplan.py` |
+| Dry-run cleanup of DLF Wix UX masterplan | `scripts/cleanup_dlf_wix_ux_integration_masterplan.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -550,6 +552,15 @@ status, validation checks, and review gates for a human-buildable Wix landing pa
 package is `validated` with 8 passed validations and 6 pending reviews. No Wix API/page/publish/live
 form happened: `wix_pages_created`/`wix_pages_published`/`live_forms_created` stay 0 and
 `ready_to_publish` stays false.
+
+Phase 7.15 adds DLF Wix UX/SEO/integration masterplan views for read-only operator review:
+`vw_wix_site_experience_dashboard`, `vw_wix_page_blueprint_dashboard`,
+`vw_wix_integration_readiness_dashboard`, `vw_wix_design_component_dashboard`,
+`vw_wix_ux_review_queue`, and `vw_dlf_wix_unified_experience_readiness`. These show the planned site
+experience, 7 page blueprints, 11 integration readiness items, 11 design components, and 31 pending
+reviews. Planning only: every integration stays `external_call_allowed=false`, every page
+`publish_enabled=false`, `integrations_active=0`, and `ready_to_publish` stays false. Connecting
+Meta/WhatsApp/email/n8n/Google and publishing pages are separate, explicit, review-gated phases.
 
 ---
 

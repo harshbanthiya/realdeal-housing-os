@@ -517,3 +517,16 @@ creation, publish, or live form/webhook happened; `ready_to_publish`, `ready_for
 and `ready_for_launch_push` stay false. Cleanup dry-run:
 `scripts/cleanup_dlf_wix_landing_build_package.py`. See
 `docs/PHASE_7_14_DLF_WIX_LANDING_BUILD_PACKAGE.md`.
+
+Phase 7.15 expands the landing-page work into a unified Wix website UX/SEO/integration masterplan.
+Migration `schemas/035_wix_ux_integration_masterplan.sql` adds five `wix_*` planning tables and six
+views (incl. `vw_dlf_wix_unified_experience_readiness`, `ready_to_publish` hard-false).
+`scripts/seed_dlf_wix_ux_integration_masterplan.py` (dry-run by default) seeds 1 site blueprint, 7
+page blueprints (homepage/project/area+building SEO/blog hub/thank-you/privacy), 11 integration
+readiness items (Meta Pixel+CAPI, GSC, GA4, GTM, Wix Forms/CMS, n8n webhook, WhatsApp chat/Business
+Platform, email provider, CRM/RDH-OS sync), 11 design components (incl. optional Three.js hero and a
+future Fable handoff placeholder), and 31 pending reviews. Planning only: no external API call, no
+publishing, no live form/webhook, no sends; `external_call_allowed`/`publish_enabled` stay 0 and
+`ready_to_publish` stays false. Cleanup dry-run:
+`scripts/cleanup_dlf_wix_ux_integration_masterplan.py`. See
+`docs/PHASE_7_15_WIX_UX_INTEGRATION_MASTERPLAN.md`.

@@ -1245,3 +1245,21 @@ Wix page, and creates no live form/webhook. Unverified facts stay as placeholder
 `ready_for_live_lead_capture`, and `ready_for_launch_push` stay false. Cleanup dry-run:
 `scripts/cleanup_dlf_wix_landing_build_package.py`. See
 `docs/PHASE_7_14_DLF_WIX_LANDING_BUILD_PACKAGE.md`.
+
+## Phase 7.15 Wix Website UX, SEO & Integration Masterplan
+
+Phase 7.15 upgrades from a single landing-page package to a unified Wix website experience plan.
+Migration `schemas/035_wix_ux_integration_masterplan.sql` adds `wix_site_experience_blueprints`,
+`wix_page_blueprints`, `wix_integration_readiness_items`, `wix_design_component_specs`,
+`wix_ux_review_items` plus six views including `vw_dlf_wix_unified_experience_readiness`
+(`ready_to_publish` hard-false).
+
+`scripts/seed_dlf_wix_ux_integration_masterplan.py` (dry-run by default; `--real-ok --apply` to write)
+seeds 1 site experience blueprint, 7 page blueprints, 11 integration readiness items, 11 design
+component specs, and 31 pending review items for DLF Westpark. Planning only: no Wix/Meta/WhatsApp/
+email/n8n/Google API call, no publishing, no live form/webhook, no sends. Every integration stays
+`external_call_allowed=false`, every page `publish_enabled=false`; `ready_for_manual_wix_build`,
+`ready_for_tracking_connection`, and `ready_to_publish` stay false. High-end Fable UI/UX design and
+optional Three.js visuals are deferred to a future phase (`fable_handoff_future_phase=true`). Cleanup
+dry-run: `scripts/cleanup_dlf_wix_ux_integration_masterplan.py`. See
+`docs/PHASE_7_15_WIX_UX_INTEGRATION_MASTERPLAN.md`.

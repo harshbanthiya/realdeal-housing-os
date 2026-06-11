@@ -149,7 +149,12 @@ WITH expected(table_name) AS (
     ('launch_n8n_manual_import_checks'),
     ('launch_wix_build_packages'),
     ('launch_wix_build_validation_results'),
-    ('launch_wix_build_review_items')
+    ('launch_wix_build_review_items'),
+    ('wix_site_experience_blueprints'),
+    ('wix_page_blueprints'),
+    ('wix_integration_readiness_items'),
+    ('wix_design_component_specs'),
+    ('wix_ux_review_items')
 )
 SELECT
   expected.table_name,
@@ -325,7 +330,13 @@ WITH expected(view_name) AS (
     ('vw_dlf_wix_build_package_dashboard'),
     ('vw_dlf_wix_build_validation_dashboard'),
     ('vw_dlf_wix_build_review_queue'),
-    ('vw_dlf_wix_build_readiness')
+    ('vw_dlf_wix_build_readiness'),
+    ('vw_wix_site_experience_dashboard'),
+    ('vw_wix_page_blueprint_dashboard'),
+    ('vw_wix_integration_readiness_dashboard'),
+    ('vw_wix_design_component_dashboard'),
+    ('vw_wix_ux_review_queue'),
+    ('vw_dlf_wix_unified_experience_readiness')
 )
 SELECT
   expected.view_name,
