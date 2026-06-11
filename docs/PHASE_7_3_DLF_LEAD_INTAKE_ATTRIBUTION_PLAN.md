@@ -114,3 +114,8 @@ Phase 7.4 adds the n8n workflow blueprint layer: planned workflows, planned node
 schema, fake-only test cases, and review gates. It still creates no n8n workflows, live webhooks,
 inbound leads, contacts, sends, or publishing. See
 `docs/PHASE_7_4_DLF_N8N_WORKFLOW_BLUEPRINT.md`.
+
+Phase 7.10 later exercised this lead-intake plan with a **fake/test-only** harness (5 fake payloads,
+40 validations) in dedicated `launch_test_lead_*` tables — no real `inbound_leads`/contacts, no
+webhooks/API, `ready_for_live_lead_capture` stays false. See
+`docs/PHASE_7_10_DLF_TEST_LEAD_INTAKE.md`.

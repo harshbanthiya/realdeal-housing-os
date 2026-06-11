@@ -444,3 +444,18 @@ needs_permission_review, approved_for_segment 0, ready_for_campaign_selection fa
 `safe_blocked`, contacts 4, leads 0. Reversible via
 `scripts/revert_dlf_contact_permission_evidence.py`. See
 `docs/PHASE_7_9_DLF_CONTACT_PERMISSION_EVIDENCE.md`.
+
+## DLF controlled test lead intake (Phase 7.10)
+
+Migration `schemas/031_dlf_test_lead_intake_harness.sql` adds 3 tables (`launch_test_lead_payloads`,
+`launch_test_lead_validation_results`, `launch_test_lead_review_items`) + 4 views (payload /
+validation / review-queue dashboards + `vw_dlf_test_lead_readiness`; dashboards expose no fake
+name/phone/email). Script `scripts/run_dlf_test_lead_intake.py` (dry-run by default; writes need
+`--real-ok` + `--apply`) created 5 fake payloads (valid brochure / missing consent / missing
+phone+email / high-budget / referral → 3 validated, 2 failed), 40 validation results (37 passed, 2
+failed, 1 needs_review), 13 review items. All payloads `uses_fake_data=true`,
+`creates_real_lead/contact=false`, `external_call_made=false`. It never touches real
+`inbound_leads`/`contacts` (still 0/4), calls no API/webhook; an in-transaction guard refuses any
+real/external residue or activation. `ready_for_live_lead_capture` mirrors the real false gate. Test
+rows retained for dashboard QA (tagged `phase=7.10`); remove via
+`scripts/cleanup_dlf_test_lead_intake.py`. See `docs/PHASE_7_10_DLF_TEST_LEAD_INTAKE.md`.

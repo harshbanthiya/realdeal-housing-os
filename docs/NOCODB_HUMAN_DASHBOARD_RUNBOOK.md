@@ -336,6 +336,17 @@ granted (a `permission_decision='allowed'` requires a real `channel_permissions`
 `scripts/revert_dlf_contact_permission_evidence.py`). See
 `docs/PHASE_7_9_DLF_CONTACT_PERMISSION_EVIDENCE.md`.
 
+**DLF controlled test lead intake (Phase 7.10):** open `vw_dlf_test_lead_readiness` first
+(`ready_for_live_lead_capture` must be **false**; `fake_payloads_create_real_lead_count` /
+`_real_contact_count` / `external_call_made_count` must all be **0**), then
+`vw_dlf_test_lead_payload_dashboard` (5 fake payloads — status/type/flags only, **no fake
+name/phone/email**), `vw_dlf_test_lead_validation_dashboard` (40 validations: 37 passed / 2 failed / 1
+needs_review), and `vw_dlf_test_lead_review_queue` (13 pending review items). These are FAKE-only test
+rows in dedicated `launch_test_lead_*` tables — the real `inbound_leads`/`contacts` tables are
+untouched (still 0 / 4). Created via `scripts/run_dlf_test_lead_intake.py --real-ok --apply
+--retain-test-rows`; remove via `scripts/cleanup_dlf_test_lead_intake.py`. See
+`docs/PHASE_7_10_DLF_TEST_LEAD_INTAKE.md`.
+
 ---
 
 ## 5. What each view means

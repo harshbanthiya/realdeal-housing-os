@@ -1163,3 +1163,23 @@ send/publish/n8n activation. Candidates stay `needs_permission_review`, `approve
 `ready_for_campaign_selection=false`, `consent_ready` needs_review, launch `safe_blocked`, send/publish
 0, contacts 4, leads 0. Reversible via `scripts/revert_dlf_contact_permission_evidence.py`. See
 `docs/PHASE_7_9_DLF_CONTACT_PERMISSION_EVIDENCE.md`.
+
+## Phase 7.10 DLF Controlled Test Lead Intake
+
+Phase 7.10 proves the lead-intake validation path with **fake/test payloads only**. Migration
+`schemas/031_dlf_test_lead_intake_harness.sql` adds 3 tables (`launch_test_lead_payloads`,
+`launch_test_lead_validation_results`, `launch_test_lead_review_items`) and 4 views
+(`vw_dlf_test_lead_payload_dashboard`, `vw_dlf_test_lead_validation_dashboard`,
+`vw_dlf_test_lead_review_queue`, `vw_dlf_test_lead_readiness` — dashboards expose no fake
+name/phone/email). Script `scripts/run_dlf_test_lead_intake.py` (dry-run by default; writes need
+`--real-ok` + `--apply`) created **5** fake payloads (valid brochure, missing consent, missing
+phone/email, high-budget, referral) → 3 validated / 2 failed, **40** validations (37 passed / 2 failed
+/ 1 needs_review), **13** review items. All payloads `uses_fake_data=true`,
+`creates_real_lead/contact=false`, `external_call_made=false`.
+
+It never touches the real `inbound_leads`/`contacts` tables, calls no API/webhook, and an
+in-transaction guard refuses any real/external test residue, send/publish, or a true
+`ready_for_launch_push`/`ready_for_live_lead_capture`. `inbound_leads` stays 0, contacts 4,
+`ready_for_live_lead_capture=false`, launch `safe_blocked`. Test rows are **retained** for dashboard QA
+(clearly fake, tagged `phase=7.10`); remove with `scripts/cleanup_dlf_test_lead_intake.py`. See
+`docs/PHASE_7_10_DLF_TEST_LEAD_INTAKE.md`.
