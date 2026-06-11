@@ -79,3 +79,8 @@ unlock live capture. `send_enabled=0`, `publish_enabled=0`, `external_call_allow
 2. Review the Phase 7.11 inactive n8n workflow build package (no import, no activation).
 3. Run a controlled inactive import later only after explicit approval.
 4. Controlled live lead capture only after explicit approval + consent basis.
+
+The same `draft` field mappings feed the Phase 7.14 Wix landing/form build package
+(`scripts/create_dlf_wix_landing_build_package.py`), which lists each field's label/type/required/
+`pii_type` for a human-built Wix form — no live form/webhook and no Wix publish. See
+`docs/PHASE_7_14_DLF_WIX_LANDING_BUILD_PACKAGE.md`.

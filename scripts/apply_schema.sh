@@ -36,6 +36,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/031_dlf_test_lead_intake_harness.sql"
   "$PROJECT_ROOT/schemas/032_dlf_n8n_build_package.sql"
   "$PROJECT_ROOT/schemas/033_dlf_n8n_manual_import_verification.sql"
+  "$PROJECT_ROOT/schemas/034_dlf_wix_landing_build_package.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

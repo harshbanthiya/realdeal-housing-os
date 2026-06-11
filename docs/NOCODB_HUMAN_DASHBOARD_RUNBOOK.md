@@ -494,6 +494,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Revert DLF n8n build package review | `scripts/revert_dlf_n8n_build_package_review.py` |
 | Record DLF inactive n8n manual import check | `scripts/record_dlf_n8n_manual_import_check.py` |
 | Dry-run revert of DLF n8n manual import check | `scripts/revert_dlf_n8n_manual_import_check.py` |
+| Create DLF Wix landing/form build package | `scripts/create_dlf_wix_landing_build_package.py` |
+| Dry-run cleanup of DLF Wix build package | `scripts/cleanup_dlf_wix_landing_build_package.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -540,6 +542,14 @@ Phase 7.13 adds DLF n8n manual-import verification views:
 state is one pending no-import check: manual import has not happened, the package remains
 `approved_for_manual_import`, workflow creation remains false, activation remains false, and
 `ready_to_activate` must remain false.
+
+Phase 7.14 adds DLF Wix landing/form build-package views for read-only operator review:
+`vw_dlf_wix_build_package_dashboard`, `vw_dlf_wix_build_validation_dashboard`,
+`vw_dlf_wix_build_review_queue`, and `vw_dlf_wix_build_readiness`. These views show local package
+status, validation checks, and review gates for a human-buildable Wix landing page + lead form. The
+package is `validated` with 8 passed validations and 6 pending reviews. No Wix API/page/publish/live
+form happened: `wix_pages_created`/`wix_pages_published`/`live_forms_created` stay 0 and
+`ready_to_publish` stays false.
 
 ---
 

@@ -119,3 +119,8 @@ Phase 7.10 later exercised this lead-intake plan with a **fake/test-only** harne
 40 validations) in dedicated `launch_test_lead_*` tables — no real `inbound_leads`/contacts, no
 webhooks/API, `ready_for_live_lead_capture` stays false. See
 `docs/PHASE_7_10_DLF_TEST_LEAD_INTAKE.md`.
+
+Phase 7.14 reuses these field mappings in a human-buildable Wix landing/form build package
+(`scripts/create_dlf_wix_landing_build_package.py`): the generated artifact lists each mapped field's
+label/type/required/`pii_type` for a manual Wix form build, with no live form/webhook and no Wix
+publish. See `docs/PHASE_7_14_DLF_WIX_LANDING_BUILD_PACKAGE.md`.

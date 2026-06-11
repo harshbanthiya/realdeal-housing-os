@@ -505,3 +505,15 @@ recorded one pending no-import check only. The build package remains `approved_f
 change, send, or publishing happened. Rollback dry-run:
 `scripts/revert_dlf_n8n_manual_import_check.py`. See
 `docs/PHASE_7_13_DLF_N8N_MANUAL_IMPORT_VERIFICATION.md`.
+
+Phase 7.14 prepares a human-buildable Wix landing page + lead form build package for DLF Westpark.
+Migration `schemas/034_dlf_wix_landing_build_package.sql` adds `launch_wix_build_packages`,
+`launch_wix_build_validation_results`, and `launch_wix_build_review_items` plus four
+`vw_dlf_wix_build_*` views. `scripts/create_dlf_wix_landing_build_package.py` (dry-run by default)
+writes one git-ignored Markdown artifact under `exports/wix_build_packages/` and 1 `validated`
+package / 8 passed validations / 6 pending reviews built from the existing landing spec, lead form,
+field mappings, and content pillars. Unverified facts stay as placeholders. No Wix API call, page
+creation, publish, or live form/webhook happened; `ready_to_publish`, `ready_for_live_lead_capture`,
+and `ready_for_launch_push` stay false. Cleanup dry-run:
+`scripts/cleanup_dlf_wix_landing_build_package.py`. See
+`docs/PHASE_7_14_DLF_WIX_LANDING_BUILD_PACKAGE.md`.

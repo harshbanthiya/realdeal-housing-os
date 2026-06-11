@@ -1227,3 +1227,21 @@ one pending no-import check only. The package remains `approved_for_manual_impor
 `planned`/`not_created`, and `ready_to_activate=false`. Rollback dry-run:
 `scripts/revert_dlf_n8n_manual_import_check.py`. See
 `docs/PHASE_7_13_DLF_N8N_MANUAL_IMPORT_VERIFICATION.md`.
+
+## Phase 7.14 DLF Wix Landing Page & Lead Form Build Package
+
+Phase 7.14 prepares a safe, human-buildable Wix landing page + lead form package for DLF Westpark.
+Migration `schemas/034_dlf_wix_landing_build_package.sql` adds `launch_wix_build_packages`,
+`launch_wix_build_validation_results`, and `launch_wix_build_review_items` plus
+`vw_dlf_wix_build_package_dashboard`, `vw_dlf_wix_build_validation_dashboard`,
+`vw_dlf_wix_build_review_queue`, and `vw_dlf_wix_build_readiness`.
+
+`scripts/create_dlf_wix_landing_build_package.py` (dry-run by default; `--real-ok --apply` to write)
+generates one git-ignored Markdown artifact under `exports/wix_build_packages/` plus 1 `validated`
+package, 8 passed validations, and 6 pending review items. It calls no Wix API, creates/publishes no
+Wix page, and creates no live form/webhook. Unverified facts stay as placeholders (`RERA_VERIFY`,
+`PRICE_VERIFY`, `BROCHURE_LINK_PENDING`, `WIX_PAGE_PENDING`, `VERIFY`, `VISUAL_DIRECTION_PENDING`).
+`wix_page_created`/`wix_page_published`/`live_form_created` stay 0; `ready_to_publish`,
+`ready_for_live_lead_capture`, and `ready_for_launch_push` stay false. Cleanup dry-run:
+`scripts/cleanup_dlf_wix_landing_build_package.py`. See
+`docs/PHASE_7_14_DLF_WIX_LANDING_BUILD_PACKAGE.md`.
