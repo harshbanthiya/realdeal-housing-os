@@ -477,3 +477,16 @@ live webhook URL, no webhook secret, and no enabled send nodes. No n8n/Wix/messa
 no workflow or live webhook was created; no inbound leads, contacts, sends, or publishing changed.
 Cleanup dry-run: `scripts/cleanup_dlf_n8n_build_package.py`. See
 `docs/PHASE_7_11_DLF_N8N_BUILD_PACKAGE.md`.
+
+## DLF n8n build package review (Phase 7.12)
+
+`scripts/review_dlf_n8n_build_package.py` reviews the inactive Phase 7.11 package without importing
+or activating anything. This phase approved the safe build-package, security, privacy, and manual
+import review items; the activation blocker remains `needs_more_info`. The package is now
+`approved_for_manual_import`, so `ready_for_manual_import=true`, while `ready_to_activate=false`.
+
+No n8n API call happened, no workflow was created/imported, no live webhook was created, and no
+activation was requested. `workflow_created_in_n8n=0`, `activation_requested=0`, active workflows 0,
+`inbound_leads=0`, contacts 4, and send/publish/communication counts remain 0. Rollback dry-run:
+`scripts/revert_dlf_n8n_build_package_review.py`. See
+`docs/PHASE_7_12_DLF_N8N_BUILD_PACKAGE_REVIEW.md`.

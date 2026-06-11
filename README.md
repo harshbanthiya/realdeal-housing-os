@@ -1201,3 +1201,16 @@ not create a live webhook, and does not touch real leads or contacts. `workflow_
 `activation_requested=0`, `ready_for_manual_import=false`, `ready_to_activate=false`, inbound leads 0,
 contacts 4, send/publish 0. Cleanup dry-run: `scripts/cleanup_dlf_n8n_build_package.py`. See
 `docs/PHASE_7_11_DLF_N8N_BUILD_PACKAGE.md`.
+
+## Phase 7.12 DLF n8n Build Package Review
+
+Phase 7.12 reviews the inactive n8n package for **manual import readiness only**. Script
+`scripts/review_dlf_n8n_build_package.py` (dry-run by default; writes need `--real-ok` + `--apply`)
+approved the safe build-package, security, privacy, and manual-import review items, moved the
+activation blocker to `needs_more_info`, and set the package to `approved_for_manual_import`.
+
+This does not call n8n, import/create a workflow, create a webhook, or request activation.
+`ready_for_manual_import=true`, but `ready_to_activate=false`, `workflow_created_in_n8n=0`,
+`activation_requested=0`, and active workflows 0. `inbound_leads=0`, contacts 4, send/publish 0,
+communications 0. Rollback dry-run: `scripts/revert_dlf_n8n_build_package_review.py`. See
+`docs/PHASE_7_12_DLF_N8N_BUILD_PACKAGE_REVIEW.md`.

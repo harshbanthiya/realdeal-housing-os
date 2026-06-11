@@ -79,8 +79,8 @@ A human must inspect the JSON before any later import attempt:
 5. Confirm send-related nodes are disabled/no-op placeholders.
 6. Confirm review items are resolved before any manual import.
 
-Manual import is **not approved in this phase**. Activation remains blocked even if manual import is
-approved later.
+Manual import is **not approved in this phase**. Phase 7.12 later reviews the package for manual
+import readiness only; activation remains blocked even if manual import is approved.
 
 ## Cleanup dry-run
 
@@ -95,6 +95,6 @@ if any package has `workflow_created_in_n8n=true`, `activation_requested=true`, 
 
 ## Next phase
 
-Next work should be manual review of the build package, or a later controlled inactive import phase.
-No live capture, workflow activation, webhook exposure, sends, or publishing should happen without an
-explicit activation phase.
+Next work is Phase 7.12 manual review of the build package, followed later by a controlled inactive
+import phase if explicitly approved. No live capture, workflow activation, webhook exposure, sends, or
+publishing should happen without an explicit activation phase.
