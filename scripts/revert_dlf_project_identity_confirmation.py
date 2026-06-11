@@ -70,8 +70,10 @@ SELECT
 """
 
 
-def apply_sql(launch_key: str) -> str:
+def apply_sql(launch_key: str, reverted_by: str | None, revert_notes: str | None) -> str:
     lk = sql_literal(launch_key)
+    rb = sql_literal(reverted_by)
+    rn = sql_literal(revert_notes)
     return f"""
 BEGIN;
 CREATE TEMP TABLE tmp_rev AS
@@ -115,7 +117,13 @@ SET project_display_name = COALESCE(t.prev_name, p.project_display_name),
       - 'confirmed_project_display_name' - 'confirmed_public_slug' - 'confirmed_by'
       - 'confirmed_at' - 'previous_display_name' - 'confirmation_phase'
       - 'confirmation_source' - 'confirmation_decision_notes')
-      || jsonb_build_object('project_name_confirmed', false, 'name_confirmation_reverted_phase', '7.6'),
+      || jsonb_build_object(
+           'project_name_confirmed', false,
+           'name_confirmation_reverted_phase', '7.6',
+           'name_confirmation_reverted_by', {rb},
+           'name_confirmation_revert_notes', {rn},
+           'name_confirmation_reverted_at', to_jsonb(now())
+         ),
     updated_at = now()
 FROM tmp_rev t
 WHERE p.id = t.id;
@@ -150,6 +158,8 @@ def main() -> int:
         description="Revert a Phase 7.6 project-identity confirmation. Dry-run by default."
     )
     parser.add_argument("--launch-key", default="dlf-westpark-andheri-west")
+    parser.add_argument("--reviewed-by", default=None)
+    parser.add_argument("--decision-notes", default=None)
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--real-ok", action="store_true")
     args = parser.parse_args()
@@ -165,7 +175,8 @@ def main() -> int:
         print("Refusing: probe returned no usable result.")
         return 1
     confirmations = int(f[0] or 0)
-    has_prev = f[1].strip() == "t"
+    # boolean::text yields 'true'/'false' (not 't'/'f').
+    has_prev = f[1].strip() == "true"
     safety = f[2].strip()
 
     if confirmations != 1:
@@ -185,7 +196,7 @@ def main() -> int:
         print("Writing requires BOTH --real-ok and --apply.")
         return 0
 
-    code, output = run_psql(apply_sql(args.launch_key))
+    code, output = run_psql(apply_sql(args.launch_key, args.reviewed_by, args.decision_notes))
     print("Revert applied:" if code == 0 else "Revert FAILED (rolled back):")
     print(output)
     return code

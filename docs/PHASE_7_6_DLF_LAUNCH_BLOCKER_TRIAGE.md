@@ -6,9 +6,12 @@ two guarded write scripts and one revert script. Nothing here sends, publishes, 
 API, scrapes, activates n8n, enables any send/publish flag, approves campaigns/copy, or
 creates/merges contacts or leads.
 
-The launch remains **safe_blocked**. The single biggest blocker — *the public project name is not
-confirmed* — is left **pending** in this phase because the operator did not supply a confirmed
-public name. This phase deliberately does **not** invent, assume, or web-verify the name.
+The launch remains **safe_blocked**. The biggest blocker — *the public project name* — has now been
+**closed**: the operator supplied the confirmed public name **DLF Westpark** (slug
+`dlf-westpark-andheri-west`), which was applied via the confirmation tool. This is an
+**operator-confirmed identity, not a web-verified claim** — this phase does not invent, assume, or
+web-verify the name. The previous internal/working name `DLF Westend / The Westpark Andheri West`
+(alias `DLF Westend`) is retained as historical context only.
 
 ## Blocker triage views
 
@@ -57,13 +60,20 @@ whole confirmation back if any send/publish flag or `ready_for_launch_push` woul
 
 ### Was the project name confirmed in this phase?
 
-**No.** The operator did not supply an explicit confirmed public name, so the script was run as a
-dry-run only and the database was not changed. `project_name_confirmed` remains a **pending
-blocker**; `public_name_ready_for_copy` remains **false**. The internal alias `DLF Westend` and the
-possible public name `DLF The Westpark / Westpark Phase-I` are **not** treated as confirmed.
+**Yes — applied.** The operator supplied the confirmed public name, so the confirmation was run with
+`--real-ok --apply`:
 
-When the operator supplies the confirmed public name, run the command above with `--real-ok
---apply`.
+- confirmed public name: **DLF Westpark**
+- confirmed public slug: **dlf-westpark-andheri-west**
+- previous internal/working name (captured in `raw_context.previous_display_name`): **DLF Westend /
+  The Westpark Andheri West** (alias `DLF Westend`)
+- confirmed_by: **h b**
+
+Result: `launch_projects.project_display_name` = `DLF Westpark`;
+`raw_context.project_name_confirmed` = `true`; the `project_name_confirmed` readiness check is
+**passed**; the `verify_project_name` operator task is **done**; `public_name_ready_for_copy` is now
+**true**. The project-identity blocker is **closed**. No send/publish/external/n8n/contact/lead/
+message change occurred, and `ready_for_launch_push` stayed **false**.
 
 ## Readiness review tooling
 
@@ -97,8 +107,11 @@ confirmation. With no confirmation applied, the dry-run reports "nothing to reve
 `vw_dlf_launch_activation_guardrail` and `vw_dlf_operator_safety_posture` both report
 `safe_blocked`: `send_enabled_count=0`, `publish_enabled_count=0`, `external_call_allowed_count=0`,
 `active_n8n_workflows=0`, `live_lead_capture_ready=false`, `contacts_approved_for_campaign=0`,
-`communication_sent=0`, `published_count=0`, `ready_for_launch_push=false`. The primary hard-stop
-reason remains *project name not confirmed*. Contacts remain `4`; inbound leads remain `0`.
+`communication_sent=0`, `published_count=0`, `ready_for_launch_push=false`. With the project name
+now confirmed, the hard-stop reason has advanced to *3 blocker readiness check(s) outstanding* —
+namely **consent_ready**, **lead_privacy_reviewed**, and **whatsapp_template_approved** — plus the
+remaining high/normal blockers (suppression, copy review, lead capture, n8n). Contacts remain `4`;
+inbound leads remain `0`.
 
 ## Why no sends / publishing / API calls happened
 
@@ -109,9 +122,13 @@ in-transaction guards that refuse if any activation flag would flip.
 
 ## Next steps
 
-1. Operator supplies the confirmed public project name → run `confirm_dlf_project_identity.py
-   --real-ok --apply`.
-2. Approve key landing page / message / social drafts (still draft, send/publish off).
-3. Review contact permission candidates (consent + suppression).
-4. Review lead intake and n8n blueprints (no activation yet).
-5. Controlled test lead capture later, once the above are clear.
+1. ~~Operator confirms the public project name~~ — **done** (DLF Westpark confirmed and applied).
+2. Clear the remaining blocker readiness checks: consent_ready, lead_privacy_reviewed,
+   whatsapp_template_approved (use `review_dlf_launch_readiness_check.py` for non-activation checks).
+3. Approve key landing page / message / social drafts (still draft, send/publish off).
+4. Review contact permission candidates (consent + suppression).
+5. Review lead intake and n8n blueprints (no activation yet).
+6. Controlled test lead capture later, once the above are clear.
+
+The confirmation can be reversed with `revert_dlf_project_identity_confirmation.py --real-ok
+--apply` (refuses if anything was activated after confirmation).

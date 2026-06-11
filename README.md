@@ -1093,8 +1093,13 @@ python3 scripts/review_dlf_launch_readiness_check.py \
 python3 scripts/revert_dlf_project_identity_confirmation.py --real-ok --apply
 ```
 
-In this phase **no confirmed name was supplied**, so the confirmation ran as a dry-run only:
-`project_name_confirmed` remains a **pending blocker** and the launch stays `safe_blocked`. The
+In this phase the operator confirmed the public name **DLF Westpark** (slug
+`dlf-westpark-andheri-west`), applied via the confirmation tool: `project_display_name` = `DLF
+Westpark`, `project_name_confirmed=true` (readiness check **passed**, `verify_project_name` task
+**done**), previous name `DLF Westend / The Westpark Andheri West` captured. This is an
+operator-confirmed identity, **not** web-verified. The launch still stays `safe_blocked` —
+`ready_for_launch_push=false` — because consent, suppression, copy, lead capture, and n8n are not
+ready (hard-stop reason advanced to *3 blocker readiness checks outstanding*). The
 confirmation/readiness scripts refuse to enable send/publish, activate n8n, or mark
 `ready_for_launch_push`, with in-transaction guards that roll back if any activation flag would flip.
-The name is never invented or web-verified. See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.
+See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.

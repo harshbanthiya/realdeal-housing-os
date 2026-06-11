@@ -390,7 +390,10 @@ confirmed), and `vw_dlf_launch_activation_guardrail` (the hard activation guardr
 `hard_stop_reason`). Three guarded scripts (dry-run by default; writes require `--real-ok` +
 `--apply`): `confirm_dlf_project_identity.py` confirms the public name **only from an
 operator-supplied value**, `review_dlf_launch_readiness_check.py` records non-activation readiness
-reviews, and `revert_dlf_project_identity_confirmation.py` undoes a confirmation. In this phase no
-confirmed name was supplied, so the name stays a pending blocker and the launch stays `safe_blocked`
-(`send_enabled=0`, `publish_enabled=0`, no external automation, no activation). The name is never
-invented or web-verified. See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.
+reviews, and `revert_dlf_project_identity_confirmation.py` undoes a confirmation. In this phase the
+operator confirmed the public name **DLF Westpark** (slug `dlf-westpark-andheri-west`), applied via
+the tool: `project_name_confirmed=true`, readiness check passed, `verify_project_name` task done,
+previous name `DLF Westend / The Westpark Andheri West` captured — an operator-confirmed identity,
+not web-verified. The launch still stays `safe_blocked` (`send_enabled=0`, `publish_enabled=0`, no
+external automation, no activation, `ready_for_launch_push=false`) because consent, suppression,
+copy, lead capture, and n8n remain not ready. See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.

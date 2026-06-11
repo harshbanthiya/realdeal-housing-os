@@ -291,13 +291,15 @@ See `docs/PHASE_7_5_DLF_OPERATOR_COCKPIT.md`.
 
 **DLF launch blocker triage (Phase 7.6):** open `vw_dlf_launch_activation_guardrail` first
 (`safety_status` must be **safe_blocked**, `ready_for_launch_push` **false**, all activation counts
-**0**; read `hard_stop_reason`), then `vw_dlf_project_identity_status` (`public_name_ready_for_copy`
-must be **false** until an operator confirms the public name — do not assume `DLF Westend` vs
-`DLF The Westpark / Westpark Phase-I`), then `vw_dlf_launch_blocker_triage` to work open blockers by
-area (`recommended_action`, `can_be_closed_by_operator`, `requires_external_action`). These are
-count/status views only — no names, phones, emails, addresses, or raw copy. Confirm the name only
-with an operator-supplied value via `scripts/confirm_dlf_project_identity.py --real-ok --apply`. See
-`docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.
+**0**; read `hard_stop_reason` — now *3 blocker readiness checks outstanding*), then
+`vw_dlf_project_identity_status` (`public_name_ready_for_copy` is now **true**: the operator
+confirmed the public name **DLF Westpark**, slug `dlf-westpark-andheri-west`; previous working name
+`DLF Westend / The Westpark Andheri West` is historical context only), then
+`vw_dlf_launch_blocker_triage` to work the remaining open blockers by area (`recommended_action`,
+`can_be_closed_by_operator`, `requires_external_action`). These are count/status views only — no
+names, phones, emails, addresses, or raw copy. The name was confirmed with an operator-supplied
+value via `scripts/confirm_dlf_project_identity.py --real-ok --apply` (reversible via
+`revert_dlf_project_identity_confirmation.py`). See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.
 
 ---
 
