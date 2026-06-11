@@ -125,7 +125,9 @@ in-transaction guards that refuse if any activation flag would flip.
 1. ~~Operator confirms the public project name~~ — **done** (DLF Westpark confirmed and applied).
 2. Clear the remaining blocker readiness checks: consent_ready, lead_privacy_reviewed,
    whatsapp_template_approved (use `review_dlf_launch_readiness_check.py` for non-activation checks).
-3. Approve key landing page / message / social drafts (still draft, send/publish off).
+3. ~~Internal campaign copy / consent-language review~~ — **done in Phase 7.7** (project-name
+   placeholder replaced with DLF Westpark; 8 copy items approved, 21 needs_more_info; see
+   `docs/PHASE_7_7_DLF_CAMPAIGN_COPY_REVIEW.md`).
 4. Review contact permission candidates (consent + suppression).
 5. Review lead intake and n8n blueprints (no activation yet).
 6. Controlled test lead capture later, once the above are clear.

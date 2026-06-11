@@ -301,6 +301,16 @@ names, phones, emails, addresses, or raw copy. The name was confirmed with an op
 value via `scripts/confirm_dlf_project_identity.py --real-ok --apply` (reversible via
 `revert_dlf_project_identity_confirmation.py`). See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.
 
+**DLF campaign copy review (Phase 7.7):** open `vw_launch_message_template_dashboard` and
+`vw_launch_social_content_dashboard` (these expose only `*_char_count`, **never full copy**) and
+`vw_launch_draft_review_queue` to see copy/consent review outcomes. After this phase the
+`[PROJECT_NAME_CONFIRM]` placeholder is replaced by **DLF Westpark**; copy/consent review items are
+**8 approved** (internal copy review only) / **21 needs_more_info** (copy still carries factual
+placeholders RERA/price/brochure/Wix/`[VERIFY]`/visual-direction). Templates/social stay `draft` with
+send/publish off; `whatsapp_template_approved` stays **pending** (provider approval is separate). The
+review was done via `scripts/review_dlf_campaign_copy.py --real-ok --apply` (reversible via
+`scripts/revert_dlf_campaign_copy_review.py`). See `docs/PHASE_7_7_DLF_CAMPAIGN_COPY_REVIEW.md`.
+
 ---
 
 ## 5. What each view means

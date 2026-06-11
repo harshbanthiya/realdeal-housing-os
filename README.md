@@ -1103,3 +1103,21 @@ ready (hard-stop reason advanced to *3 blocker readiness checks outstanding*). T
 confirmation/readiness scripts refuse to enable send/publish, activate n8n, or mark
 `ready_for_launch_push`, with in-transaction guards that roll back if any activation flag would flip.
 See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.
+
+## Phase 7.7 DLF Westpark Campaign Copy & Consent Review
+
+Phase 7.7 is an internal review of the DLF launch campaign copy and consent/opt-out language. Script
+`scripts/review_dlf_campaign_copy.py` (dry-run by default; writes need `--real-ok` + `--apply`)
+replaces the confirmed-name placeholder `[PROJECT_NAME_CONFIRM]` → **DLF Westpark** in draft text
+fields (templates / social / landing), then marks copy/consent `launch_draft_review_items`:
+internally-clean copy → `approved`, copy that still carries a factual placeholder
+(`[RERA_VERIFY]`/`[PRICE_VERIFY]`/`[BROCHURE_LINK_PENDING]`/`[WIX_PAGE_PENDING]`/`[VERIFY]`/
+`[VISUAL_DIRECTION_PENDING]`) → `needs_more_info`. Result this phase: project-name placeholder count
+**0**; **8 approved**, **21 needs_more_info**; factual placeholders preserved.
+
+It writes only draft text + `raw_context` and the review marks. It never enables send/publish, never
+passes any readiness check (so `whatsapp_template_approved` stays **pending** — provider approval is
+out of scope), and never touches contacts/leads; an in-transaction guard rolls back if any activation
+flag would flip. Launch stays `safe_blocked`, `ready_for_launch_push=false`, send/publish 0,
+contacts 4, leads 0. Reversible via `scripts/revert_dlf_campaign_copy_review.py`. See
+`docs/PHASE_7_7_DLF_CAMPAIGN_COPY_REVIEW.md`.

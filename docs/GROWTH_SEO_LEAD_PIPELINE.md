@@ -397,3 +397,16 @@ previous name `DLF Westend / The Westpark Andheri West` captured — an operator
 not web-verified. The launch still stays `safe_blocked` (`send_enabled=0`, `publish_enabled=0`, no
 external automation, no activation, `ready_for_launch_push=false`) because consent, suppression,
 copy, lead capture, and n8n remain not ready. See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.
+
+## DLF Westpark campaign copy & consent review (Phase 7.7)
+
+Internal copy review. `scripts/review_dlf_campaign_copy.py` (dry-run by default; writes need
+`--real-ok` + `--apply`) replaces `[PROJECT_NAME_CONFIRM]` → **DLF Westpark** in draft text fields
+(templates/social/landing) and marks copy/consent `launch_draft_review_items`: internally-clean copy
+→ `approved`, copy still carrying a factual placeholder (RERA/price/brochure/Wix/`[VERIFY]`/
+visual-direction) → `needs_more_info`. This phase: project-name placeholder count 0; 8 approved, 21
+needs_more_info; factual placeholders preserved. It writes only draft text + `raw_context` and review
+marks; never enables send/publish, never passes a readiness check (so `whatsapp_template_approved`
+stays pending — provider approval is separate), never touches contacts/leads. Launch stays
+`safe_blocked`, send/publish 0, contacts 4, leads 0. Reversible via
+`scripts/revert_dlf_campaign_copy_review.py`. See `docs/PHASE_7_7_DLF_CAMPAIGN_COPY_REVIEW.md`.
