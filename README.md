@@ -1066,3 +1066,35 @@ python3 scripts/dlf_operator_cockpit_summary.py \
 
 See `docs/PHASE_7_5_DLF_OPERATOR_COCKPIT.md`. Next: work the blocker/review queues; activation
 requires separate explicit approval.
+
+## Phase 7.6 DLF Launch Blocker Triage & Project-Name Confirmation
+
+Phase 7.6 adds safe blocker-triage views plus guarded tooling to confirm the public project name
+**only when an operator explicitly supplies it**. Migration `schemas/027_dlf_launch_blocker_triage.sql`
+adds 3 views (no new tables): `vw_dlf_launch_blocker_triage` (open blockers grouped by area —
+project_identity / consent / suppression / copy_review / lead_capture / n8n / publishing / sending),
+`vw_dlf_project_identity_status` (name-confirmation state; `public_name_ready_for_copy=false` until
+confirmed), and `vw_dlf_launch_activation_guardrail` (the hard activation guardrail + `hard_stop_reason`).
+
+Scripts (all dry-run by default; writes require `--real-ok` **and** `--apply`):
+
+```bash
+# Confirm the public name — ONLY with an operator-supplied confirmed name:
+python3 scripts/confirm_dlf_project_identity.py \
+  --launch-key dlf-westpark-andheri-west \
+  --confirmed-project-display-name "<OPERATOR-SUPPLIED NAME>" \
+  --confirmed-by "h b" --decision-notes "..." --real-ok --apply
+
+# Review a non-activation readiness check:
+python3 scripts/review_dlf_launch_readiness_check.py \
+  --check-type consent_ready --status needs_review --reviewed-by "h b" --real-ok --apply
+
+# Revert a Phase 7.6 confirmation:
+python3 scripts/revert_dlf_project_identity_confirmation.py --real-ok --apply
+```
+
+In this phase **no confirmed name was supplied**, so the confirmation ran as a dry-run only:
+`project_name_confirmed` remains a **pending blocker** and the launch stays `safe_blocked`. The
+confirmation/readiness scripts refuse to enable send/publish, activate n8n, or mark
+`ready_for_launch_push`, with in-transaction guards that roll back if any activation flag would flip.
+The name is never invented or web-verified. See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.

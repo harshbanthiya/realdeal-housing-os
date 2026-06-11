@@ -80,3 +80,8 @@ The following must happen in later explicit phases before any send/publish activ
 Phase 7.5 does not change launch activation state. It does not call Wix, n8n, WhatsApp, email, or
 social APIs. It does not create webhooks, create inbound leads, create or merge contacts, send
 messages, or publish content.
+
+## Next phase
+
+Phase 7.6 adds blocker-triage views and guarded project-name confirmation / readiness review
+tooling on top of this cockpit. See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.

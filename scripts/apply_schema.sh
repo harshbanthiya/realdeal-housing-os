@@ -30,6 +30,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/024_dlf_lead_intake_attribution.sql"
   "$PROJECT_ROOT/schemas/025_n8n_launch_workflow_blueprint.sql"
   "$PROJECT_ROOT/schemas/026_dlf_operator_cockpit.sql"
+  "$PROJECT_ROOT/schemas/027_dlf_launch_blocker_triage.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

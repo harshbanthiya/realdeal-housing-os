@@ -379,3 +379,18 @@ summary helper `scripts/dlf_operator_cockpit_summary.py` prints counts only. The
 designed to show why the launch is blocked while keeping `send_enabled=0`, `publish_enabled=0`,
 no external automation, no live lead capture, no communications, and no publishing. See
 `docs/PHASE_7_5_DLF_OPERATOR_COCKPIT.md`.
+
+## DLF launch blocker triage & project-name confirmation (Phase 7.6)
+
+Migration `schemas/027_dlf_launch_blocker_triage.sql` adds three views (no new tables):
+`vw_dlf_launch_blocker_triage` (open readiness checks + operator tasks grouped into blocker areas
+with `recommended_action`, `can_be_closed_by_operator`, `requires_external_action`),
+`vw_dlf_project_identity_status` (name-confirmation state; `public_name_ready_for_copy=false` until
+confirmed), and `vw_dlf_launch_activation_guardrail` (the hard activation guardrail and
+`hard_stop_reason`). Three guarded scripts (dry-run by default; writes require `--real-ok` +
+`--apply`): `confirm_dlf_project_identity.py` confirms the public name **only from an
+operator-supplied value**, `review_dlf_launch_readiness_check.py` records non-activation readiness
+reviews, and `revert_dlf_project_identity_confirmation.py` undoes a confirmation. In this phase no
+confirmed name was supplied, so the name stays a pending blocker and the launch stays `safe_blocked`
+(`send_enabled=0`, `publish_enabled=0`, no external automation, no activation). The name is never
+invented or web-verified. See `docs/PHASE_7_6_DLF_LAUNCH_BLOCKER_TRIAGE.md`.
