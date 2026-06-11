@@ -102,6 +102,7 @@ any inbound lead exists from this blueprint source.
 
 ## Next phase
 
-Phase 7.5 adds a view-only operator cockpit on top of the launch, lead-intake, and n8n readiness
-layers. It does not build or activate n8n; it only gives the operator a daily blocked/safety
-dashboard. See `docs/PHASE_7_5_DLF_OPERATOR_COCKPIT.md`.
+Phase 7.5 added a view-only operator cockpit on top of the launch, lead-intake, and n8n readiness
+layers. Phase 7.11 later prepares an ignored, inactive n8n workflow template package for human
+inspection only. It still does not call n8n, import a workflow, create a webhook, or activate
+anything. See `docs/PHASE_7_11_DLF_N8N_BUILD_PACKAGE.md`.

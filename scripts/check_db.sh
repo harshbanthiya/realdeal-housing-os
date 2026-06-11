@@ -142,7 +142,10 @@ WITH expected(table_name) AS (
     ('launch_contact_permission_decision_log'),
     ('launch_test_lead_payloads'),
     ('launch_test_lead_validation_results'),
-    ('launch_test_lead_review_items')
+    ('launch_test_lead_review_items'),
+    ('launch_n8n_build_packages'),
+    ('launch_n8n_build_validation_results'),
+    ('launch_n8n_build_review_items')
 )
 SELECT
   expected.table_name,
@@ -308,7 +311,11 @@ WITH expected(view_name) AS (
     ('vw_dlf_test_lead_payload_dashboard'),
     ('vw_dlf_test_lead_validation_dashboard'),
     ('vw_dlf_test_lead_review_queue'),
-    ('vw_dlf_test_lead_readiness')
+    ('vw_dlf_test_lead_readiness'),
+    ('vw_dlf_n8n_build_package_dashboard'),
+    ('vw_dlf_n8n_build_validation_dashboard'),
+    ('vw_dlf_n8n_build_review_queue'),
+    ('vw_dlf_n8n_build_readiness')
 )
 SELECT
   expected.view_name,

@@ -488,6 +488,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Seed DLF n8n workflow blueprint | `scripts/seed_dlf_n8n_workflow_blueprint.py` |
 | Dry-run cleanup of DLF n8n workflow blueprint | `scripts/cleanup_dlf_n8n_workflow_blueprint.py` |
 | Print DLF operator cockpit counts | `scripts/dlf_operator_cockpit_summary.py` |
+| Create inactive DLF n8n build package | `scripts/create_dlf_n8n_workflow_template.py` |
+| Dry-run cleanup of DLF n8n build package | `scripts/cleanup_dlf_n8n_build_package.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -517,6 +519,12 @@ Phase 7.5 adds DLF operator cockpit views for daily read-only execution:
 `vw_dlf_operator_audience_readiness`, `vw_dlf_operator_lead_intake_readiness`,
 `vw_dlf_operator_n8n_readiness`, `vw_dlf_operator_content_readiness`, and
 `vw_dlf_operator_safety_posture`.
+
+Phase 7.11 adds DLF inactive n8n build-package views for read-only operator review:
+`vw_dlf_n8n_build_package_dashboard`, `vw_dlf_n8n_build_validation_dashboard`,
+`vw_dlf_n8n_build_review_queue`, and `vw_dlf_n8n_build_readiness`. These views show local package
+status, validation checks, review gates, and activation blockers while n8n workflow creation and
+activation remain 0/false.
 
 ---
 

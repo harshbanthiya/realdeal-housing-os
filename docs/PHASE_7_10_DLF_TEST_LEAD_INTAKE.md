@@ -76,6 +76,6 @@ unlock live capture. `send_enabled=0`, `publish_enabled=0`, `external_call_allow
 ## Next steps
 
 1. Approve lead field mappings (move them out of `draft`).
-2. Build the inactive n8n workflow (no activation).
-3. Run a local webhook test later (still no live external endpoint).
+2. Review the Phase 7.11 inactive n8n workflow build package (no import, no activation).
+3. Run a controlled inactive import later only after explicit approval.
 4. Controlled live lead capture only after explicit approval + consent basis.

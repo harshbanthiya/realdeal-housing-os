@@ -459,3 +459,21 @@ failed, 1 needs_review), 13 review items. All payloads `uses_fake_data=true`,
 real/external residue or activation. `ready_for_live_lead_capture` mirrors the real false gate. Test
 rows retained for dashboard QA (tagged `phase=7.10`); remove via
 `scripts/cleanup_dlf_test_lead_intake.py`. See `docs/PHASE_7_10_DLF_TEST_LEAD_INTAKE.md`.
+
+## DLF inactive n8n workflow build package (Phase 7.11)
+
+Migration `schemas/032_dlf_n8n_build_package.sql` adds 3 build-package tracking tables
+(`launch_n8n_build_packages`, `launch_n8n_build_validation_results`,
+`launch_n8n_build_review_items`) and 4 views (`vw_dlf_n8n_build_package_dashboard`,
+`vw_dlf_n8n_build_validation_dashboard`, `vw_dlf_n8n_build_review_queue`,
+`vw_dlf_n8n_build_readiness`). `scripts/create_dlf_n8n_workflow_template.py` creates a local inactive
+n8n template under ignored `exports/n8n_templates/` and records package/validation/review rows for
+manual inspection.
+
+Current package state: 1 validated build package, 7 passed validation checks, 5 pending review items,
+`workflow_created_in_n8n=0`, `activation_requested=0`, active workflows 0,
+`ready_for_manual_import=false`, and `ready_to_activate=false`. The template has no credentials, no
+live webhook URL, no webhook secret, and no enabled send nodes. No n8n/Wix/messaging API was called;
+no workflow or live webhook was created; no inbound leads, contacts, sends, or publishing changed.
+Cleanup dry-run: `scripts/cleanup_dlf_n8n_build_package.py`. See
+`docs/PHASE_7_11_DLF_N8N_BUILD_PACKAGE.md`.

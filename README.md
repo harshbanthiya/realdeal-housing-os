@@ -1183,3 +1183,21 @@ in-transaction guard refuses any real/external test residue, send/publish, or a 
 `ready_for_live_lead_capture=false`, launch `safe_blocked`. Test rows are **retained** for dashboard QA
 (clearly fake, tagged `phase=7.10`); remove with `scripts/cleanup_dlf_test_lead_intake.py`. See
 `docs/PHASE_7_10_DLF_TEST_LEAD_INTAKE.md`.
+
+## Phase 7.11 DLF Inactive n8n Workflow Build Package
+
+Phase 7.11 prepares an importable but **inactive** n8n workflow template package for DLF lead intake.
+Migration `schemas/032_dlf_n8n_build_package.sql` adds 3 tracking tables
+(`launch_n8n_build_packages`, `launch_n8n_build_validation_results`,
+`launch_n8n_build_review_items`) and 4 views (`vw_dlf_n8n_build_package_dashboard`,
+`vw_dlf_n8n_build_validation_dashboard`, `vw_dlf_n8n_build_review_queue`,
+`vw_dlf_n8n_build_readiness`). The generator `scripts/create_dlf_n8n_workflow_template.py` writes the
+local artifact to ignored `exports/n8n_templates/dlf-westpark-lead-intake-inactive-template.json` and
+records 1 validated build package, 7 passed validations, and 5 pending review items.
+
+The package contains no credentials, no live webhook URL, no webhook secret, no active workflow flag,
+and no executable send nodes. It does not call n8n, does not create/import/activate a workflow, does
+not create a live webhook, and does not touch real leads or contacts. `workflow_created_in_n8n=0`,
+`activation_requested=0`, `ready_for_manual_import=false`, `ready_to_activate=false`, inbound leads 0,
+contacts 4, send/publish 0. Cleanup dry-run: `scripts/cleanup_dlf_n8n_build_package.py`. See
+`docs/PHASE_7_11_DLF_N8N_BUILD_PACKAGE.md`.
