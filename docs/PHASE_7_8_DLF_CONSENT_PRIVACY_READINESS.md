@@ -90,7 +90,9 @@ items — and **not** applied.)
 
 ## Next steps
 
-1. Explicit contact permission review (record real `channel_permissions` allowed/denied basis before
-   any contact use).
+1. ~~Explicit contact permission review~~ — **Phase 7.9** built the evidence layer: 10 permission
+   evidence rows (all needs_more_info, 0 allowed) + 5 suppression checks (clear); contacts still
+   blocked, none approved. Real `channel_permissions` allowed rows are still required. See
+   `docs/PHASE_7_9_DLF_CONTACT_PERMISSION_EVIDENCE.md`.
 2. WhatsApp provider template approval planning (external).
 3. Controlled test lead capture later, once consent + suppression + provider approval are in place.

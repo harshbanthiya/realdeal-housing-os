@@ -426,3 +426,21 @@ allowed). It never grants a permission, never approves a contact for campaign, n
 executed); an in-transaction guard enforces all of this. Launch stays `safe_blocked`, send/publish 0,
 contacts 4, leads 0. Reversible via `scripts/revert_dlf_consent_privacy_readiness.py`. See
 `docs/PHASE_7_8_DLF_CONSENT_PRIVACY_READINESS.md`.
+
+## DLF contact permission evidence & suppression review (Phase 7.9)
+
+Migration `schemas/030_dlf_contact_permission_evidence.sql` adds 3 tables
+(`launch_contact_permission_evidence`, `launch_contact_suppression_checks`,
+`launch_contact_permission_decision_log`) + 4 masked views (evidence / suppression-check / decision
+dashboards + `vw_dlf_campaign_selection_guardrail`). Script
+`scripts/review_dlf_contact_permission_evidence.py` (dry-run by default; writes need `--real-ok` +
+`--apply`) created 10 evidence rows (5 candidates × whatsapp/email, all **needs_more_info** — 0
+allowed since 0 channel_permissions allowed), 5 suppression checks (all **clear**, no list write),
+approved the 5 suppression_review items (list-clear only, not consent), logged 30 audit rows. A
+`permission_decision='allowed'` is only ever derived from a real `channel_permissions` allowed row; an
+in-transaction guard refuses any unbacked allow/suppress, approved-for-segment, granted permission,
+passed consent_ready/whatsapp_template_approved, or send/publish/n8n activation. Candidates stay
+needs_permission_review, approved_for_segment 0, ready_for_campaign_selection false, launch
+`safe_blocked`, contacts 4, leads 0. Reversible via
+`scripts/revert_dlf_contact_permission_evidence.py`. See
+`docs/PHASE_7_9_DLF_CONTACT_PERMISSION_EVIDENCE.md`.

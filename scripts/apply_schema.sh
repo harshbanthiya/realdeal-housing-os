@@ -32,6 +32,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/026_dlf_operator_cockpit.sql"
   "$PROJECT_ROOT/schemas/027_dlf_launch_blocker_triage.sql"
   "$PROJECT_ROOT/schemas/029_dlf_consent_privacy_readiness.sql"
+  "$PROJECT_ROOT/schemas/030_dlf_contact_permission_evidence.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

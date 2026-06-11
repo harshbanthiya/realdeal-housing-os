@@ -323,6 +323,19 @@ no channel permission is granted. Done via `scripts/review_dlf_consent_privacy_r
 --real-ok --apply` (reversible via `scripts/revert_dlf_consent_privacy_readiness.py`). See
 `docs/PHASE_7_8_DLF_CONSENT_PRIVACY_READINESS.md`.
 
+**DLF contact permission evidence (Phase 7.9):** open `vw_dlf_campaign_selection_guardrail` first
+(`ready_for_campaign_selection` must be **false**; explicit_whatsapp/email_allowed must be **0**; read
+`hard_stop_reason`), then `vw_dlf_contact_permission_decision_dashboard` (per-candidate posture, masked
+names — **no phone/email**), `vw_dlf_contact_permission_evidence_dashboard` (evidence rows — 10, all
+`needs_more_info`), and `vw_dlf_contact_suppression_check_dashboard` (5 suppression checks, all
+`clear`). After this phase candidates stay `needs_permission_review`, suppression_status `clear`,
+`suppression_review` items `approved` (list-clear only — **not** consent), but WhatsApp/email
+permission stays `needs_more_info` and `approved_for_segment` stays **0**. No channel permission is
+granted (a `permission_decision='allowed'` requires a real `channel_permissions` allowed row). Done via
+`scripts/review_dlf_contact_permission_evidence.py --real-ok --apply` (reversible via
+`scripts/revert_dlf_contact_permission_evidence.py`). See
+`docs/PHASE_7_9_DLF_CONTACT_PERMISSION_EVIDENCE.md`.
+
 ---
 
 ## 5. What each view means
