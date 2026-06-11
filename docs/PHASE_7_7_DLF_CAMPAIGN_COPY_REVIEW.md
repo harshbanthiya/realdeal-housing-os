@@ -107,8 +107,11 @@ social / 1 landing rows — and **not** applied.)
 
 ## Next steps
 
-1. Contact permission / suppression review (consent + suppression blockers).
-2. Lead privacy review (`lead_privacy_reviewed`).
+1. ~~Contact permission / suppression review + lead privacy review~~ — **done in Phase 7.8**:
+   `lead_privacy_reviewed` passed (process), suppression process logged, consent_ready → needs_review,
+   9 permission reviews → needs_more_info; no contact approved. See
+   `docs/PHASE_7_8_DLF_CONSENT_PRIVACY_READINESS.md`.
+2. Explicit contact permission (real `channel_permissions` allowed/denied basis).
 3. Wix form / landing page approval.
 4. n8n blueprint review (no activation).
 5. Controlled test lead capture later, once the above are clear.

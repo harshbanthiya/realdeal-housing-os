@@ -311,6 +311,18 @@ send/publish off; `whatsapp_template_approved` stays **pending** (provider appro
 review was done via `scripts/review_dlf_campaign_copy.py --real-ok --apply` (reversible via
 `scripts/revert_dlf_campaign_copy_review.py`). See `docs/PHASE_7_7_DLF_CAMPAIGN_COPY_REVIEW.md`.
 
+**DLF consent/privacy readiness (Phase 7.8):** open `vw_dlf_consent_privacy_readiness` first
+(channel_permissions_allowed must be **0**; consent_ready / lead_privacy process status), then
+`vw_dlf_contact_permission_gap_dashboard` (who is blocked by unknown consent — counts only, **no
+names**), `vw_dlf_lead_form_privacy_dashboard` (consent + PII field counts, privacy review status),
+and `vw_dlf_suppression_readiness_dashboard` (suppression rows / process status). After this phase
+`lead_privacy_reviewed` is **passed** (process), `consent_ready` is **needs_review** (NOT passed — no
+explicit consent basis), `whatsapp_template_approved` and `suppression_checked` stay **pending**, and
+9 WhatsApp/email permission reviews are **needs_more_info**. No contact is approved for campaign and
+no channel permission is granted. Done via `scripts/review_dlf_consent_privacy_readiness.py
+--real-ok --apply` (reversible via `scripts/revert_dlf_consent_privacy_readiness.py`). See
+`docs/PHASE_7_8_DLF_CONSENT_PRIVACY_READINESS.md`.
+
 ---
 
 ## 5. What each view means

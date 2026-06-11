@@ -410,3 +410,19 @@ marks; never enables send/publish, never passes a readiness check (so `whatsapp_
 stays pending — provider approval is separate), never touches contacts/leads. Launch stays
 `safe_blocked`, send/publish 0, contacts 4, leads 0. Reversible via
 `scripts/revert_dlf_campaign_copy_review.py`. See `docs/PHASE_7_7_DLF_CAMPAIGN_COPY_REVIEW.md`.
+
+## DLF consent, suppression & lead-privacy readiness (Phase 7.8)
+
+Migration `schemas/029_dlf_consent_privacy_readiness.sql` adds 1 audit table
+(`launch_consent_privacy_review_log`) + 4 dashboards (`vw_dlf_consent_privacy_readiness`,
+`vw_dlf_contact_permission_gap_dashboard`, `vw_dlf_lead_form_privacy_dashboard`,
+`vw_dlf_suppression_readiness_dashboard`). Script `scripts/review_dlf_consent_privacy_readiness.py`
+(dry-run by default; writes need `--real-ok` + `--apply`) logs the lead-form-consent /
+privacy-field-mapping / suppression PROCESS as process_approved, passes **lead_privacy_reviewed**
+(consent fields + PII mappings present, no live capture), moves 9 WhatsApp/email permission reviews to
+**needs_more_info**, and sets **consent_ready needs_review** (never passed — 0 channel_permissions
+allowed). It never grants a permission, never approves a contact for campaign, never passes
+`whatsapp_template_approved` (provider approval external) or `suppression_checked` (process ≠
+executed); an in-transaction guard enforces all of this. Launch stays `safe_blocked`, send/publish 0,
+contacts 4, leads 0. Reversible via `scripts/revert_dlf_consent_privacy_readiness.py`. See
+`docs/PHASE_7_8_DLF_CONSENT_PRIVACY_READINESS.md`.
