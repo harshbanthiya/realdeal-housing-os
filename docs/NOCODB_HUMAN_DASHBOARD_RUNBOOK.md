@@ -616,6 +616,17 @@ key. In this phase tracking was initialized only (no operator staging site suppl
 `ready_for_fake_lead_test=false`, `ready_for_production_publish=false`. Wix API permission/key usage
 is explicitly deferred to a later capability-map phase.
 
+Phase 7.21 adds the Wix API permission/capability-map views for read-only operator review:
+`vw_wix_api_permission_catalog_dashboard`, `vw_wix_api_integration_use_case_dashboard`,
+`vw_wix_api_key_profile_dashboard`, `vw_wix_api_permission_review_queue`, and
+`vw_dlf_wix_api_readiness`. These map 46 Wix permissions (6 staging / 3 read-only / 14 later / 3
+defer / 20 avoid) to 16 OS use cases and 4 **planned** key profiles (staging discovery, staging build
+later, tracking later, production future). No secret or API key is ever stored — `secret_value_stored`
+and `external_call_allowed` stay false, and `ready_for_api_key_creation`/`ready_for_api_call_test`
+stay false. **Never paste a Wix API key into NocoDB, Claude, Codex, or any chat**; keys live only in a
+git-ignored `.env`, Keychain, 1Password, or the n8n credential vault when eventually created
+externally.
+
 ---
 
 ## 14. NocoDB is for review/inspection first

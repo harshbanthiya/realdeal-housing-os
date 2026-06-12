@@ -94,3 +94,7 @@ inbound lead exists.
   accessibility/performance) and then a **fake staging lead test**.
 - **Create a Wix API permission / capability map** as a separate, later, explicitly-gated phase —
   it is intentionally out of scope here.
+
+> **Follow-up:** Phase 7.21 builds that review-gated Wix API permission/capability map (46 permissions
+> mapped, 4 planned key profiles, no secrets/keys stored). See
+> `docs/PHASE_7_21_WIX_API_PERMISSION_CAPABILITY_MAP.md`.

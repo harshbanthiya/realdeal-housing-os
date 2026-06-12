@@ -1359,3 +1359,22 @@ form/webhook, no external tracking; `ready_for_production_publish` and `ready_fo
 stay false; no leads/contacts/messages changed. Reversible via
 `scripts/revert_dlf_wix_staging_build_progress.py` (dry-run by default). See
 `docs/PHASE_7_20_WIX_STAGING_BUILD_TRACKING.md`.
+
+## Phase 7.21 Wix API Permission & Capability Map
+
+Phase 7.21 builds a review-gated map of Wix API permissions → OS capabilities, defines **future**
+API-key profiles, and queues human review **before any key is created or used** — storing **no
+secrets and no API keys**. Migration `schemas/040_wix_api_permission_capability_map.sql` adds
+`wix_api_permission_catalog`, `wix_api_integration_use_cases`, `wix_api_key_profiles`,
+`wix_api_permission_review_items` plus five views including the real gate `vw_dlf_wix_api_readiness`.
+
+`scripts/seed_wix_api_permission_capability_map.py` (dry-run by default; `--real-ok --apply`) seeds
+46 permission catalog rows (6 `allow_staging_only`, 3 `read_only_preferred`, 14 `allow_later`, 3
+`defer`, 20 `avoid`), 16 integration use cases, 4 planned key profiles (staging discovery / staging
+build later / tracking later / production future — all `secret_value_stored=false`,
+`external_call_allowed=false`), and 10 pending review items. No Wix API call, no API key
+requested/read/stored, no `.env` Wix-secret inspection, no publish/send/leads/contacts. The readiness
+view keeps `active_key_profiles`, `external_call_allowed_count`, `publish_permission_allowed_count`,
+`send_permission_allowed_count` at 0 and `ready_for_api_call_test=false`. Cleanup dry-run:
+`scripts/cleanup_wix_api_permission_capability_map.py`. See
+`docs/PHASE_7_21_WIX_API_PERMISSION_CAPABILITY_MAP.md`.

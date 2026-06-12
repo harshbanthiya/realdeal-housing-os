@@ -167,7 +167,11 @@ WITH expected(table_name) AS (
     ('wix_staging_build_checklist_items'),
     ('wix_staging_qa_checks'),
     ('wix_staging_review_items'),
-    ('wix_staging_build_action_log')
+    ('wix_staging_build_action_log'),
+    ('wix_api_permission_catalog'),
+    ('wix_api_integration_use_cases'),
+    ('wix_api_key_profiles'),
+    ('wix_api_permission_review_items')
 )
 SELECT
   expected.table_name,
@@ -366,7 +370,12 @@ WITH expected(view_name) AS (
     ('vw_wix_staging_review_queue'),
     ('vw_dlf_wix_staging_readiness'),
     ('vw_wix_staging_build_action_log_dashboard'),
-    ('vw_dlf_wix_staging_build_progress')
+    ('vw_dlf_wix_staging_build_progress'),
+    ('vw_wix_api_permission_catalog_dashboard'),
+    ('vw_wix_api_integration_use_case_dashboard'),
+    ('vw_wix_api_key_profile_dashboard'),
+    ('vw_wix_api_permission_review_queue'),
+    ('vw_dlf_wix_api_readiness')
 )
 SELECT
   expected.view_name,

@@ -590,3 +590,15 @@ API-deferral logged. No Wix API call / no API key read / no real domain / no ind
 live form/webhook / no tracking; `ready_for_production_publish` and `ready_for_fake_lead_test` false; no
 leads/contacts/messages changed. Reversible via `scripts/revert_dlf_wix_staging_build_progress.py`. See
 `docs/PHASE_7_20_WIX_STAGING_BUILD_TRACKING.md`.
+
+Phase 7.21 builds a review-gated Wix API permission/capability map (migration
+`schemas/040_wix_api_permission_capability_map.sql`: `wix_api_permission_catalog`,
+`wix_api_integration_use_cases`, `wix_api_key_profiles`, `wix_api_permission_review_items` + five
+views incl. real gate `vw_dlf_wix_api_readiness`). `scripts/seed_wix_api_permission_capability_map.py`
+seeds 46 permission rows (staging/read 9, later/defer 17, avoid 20), 16 use cases, 4 planned key
+profiles (no secrets, no external calls), and 10 pending reviews — guiding future key creation without
+using any credential. No Wix API call / no API key requested-read-stored / no .env Wix-secret
+inspection / no publish/send/leads/contacts. `ready_for_api_key_creation` and `ready_for_api_call_test`
+false; active/external/publish/send permission counts 0. Cleanup dry-run:
+`scripts/cleanup_wix_api_permission_capability_map.py`. See
+`docs/PHASE_7_21_WIX_API_PERMISSION_CAPABILITY_MAP.md`.
