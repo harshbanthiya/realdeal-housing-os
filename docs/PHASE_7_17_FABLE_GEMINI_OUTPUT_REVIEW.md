@@ -128,3 +128,8 @@ refinement actions (`action_status` → `accepted`) through the review queue, th
 a **refined Fable follow-up prompt** that folds in the accepted refinements or author the
 **Wix design build spec**. Connecting tracking/messaging, building live forms/webhooks, and
 publishing Wix pages remain separate explicit phases and stay blocked.
+
+> **Follow-up:** Phase 7.18 approved this direction — the captured output became
+> `accepted_direction`, the Gemini review `accepted_guidance`, and all 12 refinement actions
+> `accepted` (14 review items approved). See
+> `docs/PHASE_7_18_GALLERY_WHITE_APPROVED_DESIGN_SPEC.md`.

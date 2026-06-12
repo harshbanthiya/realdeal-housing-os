@@ -1301,3 +1301,21 @@ and `ready_for_wix_design_build` stays false until a human approves the output a
 one refinement action. Cleanup dry-run:
 `scripts/cleanup_dlf_fable_design_output_capture.py`. See
 `docs/PHASE_7_17_FABLE_GEMINI_OUTPUT_REVIEW.md`.
+
+## Phase 7.18 Gallery White Approved Design Direction
+
+Phase 7.18 records the human review decision: **"Gallery White" is accepted as the DLF Westpark
+public website design direction**, the Gemini critique is accepted as guidance, and all twelve
+refinement actions are accepted. `scripts/review_dlf_gallery_white_design_direction.py` (dry-run
+by default; `--real-ok --apply`, with required `--reviewed-by`/`--decision-notes`) sets the
+captured output to `accepted_direction`, the Gemini review to `accepted_guidance`, the 12
+`design_refinement_actions` to `accepted`, and approves all 14 `fable_design_review_items` — which
+flips the computed `vw_dlf_design_output_readiness` to `ready_for_fable_followup = true` and
+`ready_for_wix_design_build = true`.
+
+No Fable/Gemini/Wix/Meta/WhatsApp/email/n8n call happens; no publishing, no live forms/webhooks, no
+contact/lead/message changes. `external_call_made_count` stays 0 and `ready_for_launch_push` stays
+false — `ready_for_wix_design_build` is a design-readiness signal, not a launch gate. An
+in-transaction guard refuses on any contact-data/secret/external/send/publish/launch flag. Reversible
+via `scripts/revert_dlf_gallery_white_design_review.py` (dry-run by default). The approved, refined
+spec is in `docs/PHASE_7_18_GALLERY_WHITE_APPROVED_DESIGN_SPEC.md`.

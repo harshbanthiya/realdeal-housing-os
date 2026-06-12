@@ -585,6 +585,15 @@ scan found no contact data, secrets, or DB IDs. No Fable/Gemini/external call ha
 `external_call_made_count` stays 0 and `ready_for_wix_design_build` stays false until a human
 approves the captured output and at least one refinement action.
 
+Phase 7.18 records the approval decision over those same views: the operator runs
+`scripts/review_dlf_gallery_white_design_direction.py` (terminal, dry-run by default), which sets
+the captured output to `accepted_direction`, the Gemini review to `accepted_guidance`, the 12
+refinement actions to `accepted`, and approves all 14 review items. Read-only in NocoDB,
+`vw_dlf_design_output_readiness` then shows `ready_for_fable_followup` and
+`ready_for_wix_design_build` as true (a design-readiness signal only — `ready_for_launch_push`
+stays false, send/publish stay 0, and no Fable/Gemini/Wix/external call occurs). Reversible via
+`scripts/revert_dlf_gallery_white_design_review.py`.
+
 ---
 
 ## 14. NocoDB is for review/inspection first

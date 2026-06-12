@@ -556,3 +556,14 @@ proposed refinement actions, and 14 pending reviews. Raw Fable/Gemini files stay
 approve the output and a refinement action. Cleanup dry-run:
 `scripts/cleanup_dlf_fable_design_output_capture.py`. See
 `docs/PHASE_7_17_FABLE_GEMINI_OUTPUT_REVIEW.md`.
+
+Phase 7.18 records the human review decision: "Gallery White" accepted as the DLF Westpark public
+website design direction, the Gemini critique accepted as guidance, and all 12 refinement actions
+accepted. `scripts/review_dlf_gallery_white_design_direction.py` (dry-run by default; `--real-ok
+--apply`) sets the output to `accepted_direction`, the Gemini review to `accepted_guidance`, the 12
+actions to `accepted`, and approves all 14 review items — flipping the computed
+`vw_dlf_design_output_readiness` to `ready_for_fable_followup`/`ready_for_wix_design_build` true.
+No Fable/Gemini/Wix/external call; no publishing/live forms/webhooks; no contact/lead/message
+changes; `external_call_made_count` stays 0 and `ready_for_launch_push` stays false. Reversible via
+`scripts/revert_dlf_gallery_white_design_review.py`. See
+`docs/PHASE_7_18_GALLERY_WHITE_APPROVED_DESIGN_SPEC.md`.
