@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Gallery White — luxury editorial theme tokens */
+@theme {
+  --color-teal: #1f3d4d;
+  --color-teal-soft: #2c5364;
+  --color-ink: #1a1a1a;
+  --color-mist: #eef1ef;
+  --color-mist-deep: #e3e8e5;
+  --color-warm: #c2493d;
+  --font-sans: var(--font-manrope);
+  --font-mono: var(--font-mono-token);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #ffffff;
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #1f3d4d;
+  color: #fff;
+}

@@ -150,3 +150,6 @@ ms-playwright/
 
 # Re-ignore macOS AppleDouble files even inside allowlisted source folders.
 **/._*
+
+# Wix MCP connector config — user-scope only, never commit
+.mcp.json

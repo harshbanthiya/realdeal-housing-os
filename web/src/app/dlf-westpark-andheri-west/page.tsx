@@ -1,0 +1,384 @@
+import type { Metadata } from "next";
+import { Reveal } from "@/components/reveal";
+import { PendingChip, Tokenize } from "@/components/placeholder";
+import { StickyCta } from "@/components/sticky-cta";
+import { project, facts, residences, amenities, faqs } from "@/lib/content";
+
+export const metadata: Metadata = {
+  title: project.seoTitle,
+  description: project.seoDescription,
+};
+
+function Eyebrow({ n, label }: { n: string; label: string }) {
+  return (
+    <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-ink/45">
+      <span className="font-mono text-warm">{n}</span>
+      <span className="h-px w-8 bg-mist-deep" />
+      {label}
+    </p>
+  );
+}
+
+export default function DlfWestparkPage() {
+  return (
+    <article>
+      {/* 01 — HERO */}
+      <section className="mx-auto max-w-6xl px-6 pb-20 pt-16 md:pt-24">
+        <Reveal>
+          <p className="mb-6 flex items-center gap-2 text-sm font-medium text-ink/55">
+            <span className="inline-block h-2 w-2 rounded-full bg-warm" />
+            {project.developer} · {project.locality}
+          </p>
+          <h1 className="max-w-4xl text-[clamp(2.5rem,6.5vw,5.25rem)] font-extrabold leading-[1.03] tracking-tight text-teal">
+            {project.name}
+          </h1>
+          <p className="mt-7 max-w-2xl text-xl leading-relaxed text-ink/70">
+            {project.heroTagline}
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-ink/60">
+            <span>Pricing <PendingChip token="PRICE_VERIFY" /></span>
+            <span>RERA <PendingChip token="RERA_VERIFY" /></span>
+            <span>Micro-market · {project.microMarket}</span>
+          </div>
+          <div className="mt-10 flex flex-wrap gap-4">
+            <a
+              href="#enquiry"
+              className="rounded-full bg-teal px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Request details
+            </a>
+            <a
+              href="#facts"
+              className="rounded-full border border-mist-deep px-6 py-3.5 text-sm font-semibold text-teal transition-colors hover:bg-mist"
+            >
+              See verified facts
+            </a>
+          </div>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <div className="mt-14 aspect-[21/9] w-full rounded-2xl border border-dashed border-mist-deep bg-mist/50">
+            <div className="flex h-full items-center justify-center font-mono text-sm text-ink/40">
+              VISUAL_DIRECTION_PENDING — hero photography (no stock; real shoot pending)
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* 02 — PROJECT OVERVIEW */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <Reveal>
+          <Eyebrow n="02" label="Project overview" />
+          <p className="max-w-3xl text-2xl font-medium leading-snug tracking-tight text-teal md:text-3xl">
+            {project.overview}
+          </p>
+        </Reveal>
+      </section>
+
+      {/* 03 — DLF TRUST / DEVELOPER */}
+      <section className="border-y border-mist-deep bg-mist/40">
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <Reveal>
+            <Eyebrow n="03" label="Developer context" />
+            <div className="grid gap-10 md:grid-cols-[1.2fr_1fr]">
+              <h2 className="text-3xl font-bold leading-tight tracking-tight text-teal md:text-4xl">
+                Built by DLF — verified before it&rsquo;s published.
+              </h2>
+              <p className="self-end text-ink/65">
+                Developer and full project particulars remain under review (
+                <PendingChip token="VERIFY" />). We show DLF as the named
+                developer based on operator confirmation, and will replace every
+                pending marker with a sourced fact before anything goes live.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* 04 — LOCATION */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <Reveal>
+          <Eyebrow n="04" label="Location" />
+          <div className="grid gap-12 md:grid-cols-2">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-teal md:text-4xl">
+                Andheri West · D.N. Nagar / Link Road
+              </h2>
+              <p className="mt-5 text-ink/65">
+                Positioned in one of Mumbai&rsquo;s most established western
+                micro-markets. Exact addressing, distances and connectivity
+                times are human-reviewable and stay <PendingChip token="VERIFY" />{" "}
+                until confirmed.
+              </p>
+              <ul className="mt-6 space-y-2 text-sm text-ink/60">
+                <li>· Commute &amp; metro access — <PendingChip token="VERIFY" /></li>
+                <li>· Schools &amp; institutions — <PendingChip token="VERIFY" /></li>
+                <li>· Retail &amp; lifestyle — <PendingChip token="VERIFY" /></li>
+              </ul>
+            </div>
+            <div className="aspect-square rounded-2xl border border-dashed border-mist-deep bg-mist/50">
+              <div className="flex h-full items-center justify-center text-center font-mono text-sm text-ink/40">
+                Map card — Transit / Schools / Retail
+                <br />
+                (static; live embed deferred)
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* 05 — LIFESTYLE & AMENITIES */}
+      <section className="border-t border-mist-deep bg-teal text-white">
+        <div className="mx-auto max-w-6xl px-6 py-24">
+          <Reveal>
+            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+              <span className="font-mono text-warm">05</span>
+              <span className="h-px w-8 bg-white/25" />
+              Lifestyle &amp; amenities
+            </p>
+            <h2 className="max-w-2xl text-3xl font-bold tracking-tight md:text-4xl">
+              The everyday, considered.
+            </h2>
+          </Reveal>
+          <div className="mt-12 grid gap-px overflow-hidden rounded-2xl bg-white/15 sm:grid-cols-2 lg:grid-cols-3">
+            {amenities.map((a, i) => (
+              <Reveal key={a.name} delay={i * 0.05}>
+                <div className="h-full bg-teal p-7">
+                  <div className="font-mono text-xs uppercase tracking-wider text-warm">
+                    {a.category}
+                  </div>
+                  <div className="mt-3 text-lg font-semibold">{a.name}</div>
+                  <p className="mt-2 text-sm leading-relaxed text-white/55">
+                    <Tokenize text={a.description} />
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 06 — RESIDENCES */}
+      <section className="mx-auto max-w-6xl px-6 py-24">
+        <Reveal>
+          <Eyebrow n="06" label="Residences" />
+          <h2 className="text-3xl font-bold tracking-tight text-teal md:text-4xl">
+            Configurations
+          </h2>
+        </Reveal>
+        <div className="mt-10 divide-y divide-mist-deep border-y border-mist-deep">
+          {residences.map((r, i) => (
+            <Reveal key={r.config} delay={i * 0.05}>
+              <div className="grid items-center gap-4 py-6 md:grid-cols-[1.4fr_1fr_1fr_auto]">
+                <div className="text-lg font-semibold text-teal">{r.config}</div>
+                <div className="text-sm text-ink/60">
+                  Carpet area · <PendingChip token={r.carpetArea} />
+                </div>
+                <div className="text-sm text-ink/60">
+                  Price · <PendingChip token={r.price} />
+                </div>
+                <a
+                  href="#enquiry"
+                  className="justify-self-start rounded-full border border-mist-deep px-4 py-2 text-xs font-semibold text-teal transition-colors hover:bg-mist md:justify-self-end"
+                >
+                  Request details
+                </a>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* 07 — GALLERY / VIDEO */}
+      <section className="mx-auto max-w-6xl px-6 pb-24">
+        <Reveal>
+          <Eyebrow n="07" label="Gallery" />
+        </Reveal>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {["Façade", "Interiors", "Amenity deck", "Views", "Lobby", "Walkthrough video"].map(
+            (label, i) => (
+              <Reveal key={label} delay={i * 0.04}>
+                <div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-mist-deep bg-mist/50 text-center font-mono text-xs text-ink/40">
+                  {label}
+                  <br />
+                  VISUAL_DIRECTION_PENDING
+                </div>
+              </Reveal>
+            )
+          )}
+        </div>
+      </section>
+
+      {/* 08 — VERIFIED FACTS LEDGER */}
+      <section id="facts" className="border-y border-mist-deep bg-mist/40">
+        <div className="mx-auto max-w-6xl px-6 py-24">
+          <Reveal>
+            <Eyebrow n="08" label="Verified facts ledger" />
+            <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-teal md:text-4xl">
+              Every claim, with its verification status.
+            </h2>
+          </Reveal>
+          <div className="mt-10 overflow-hidden rounded-2xl border border-mist-deep bg-white">
+            {facts.map((f, i) => (
+              <Reveal key={f.key} delay={i * 0.03}>
+                <div className="grid items-center gap-3 border-b border-mist px-6 py-4 last:border-0 md:grid-cols-[1fr_1.4fr_auto]">
+                  <div className="text-sm font-semibold text-teal">{f.label}</div>
+                  <div className="text-sm text-ink/70">
+                    <Tokenize text={f.value} />
+                  </div>
+                  <StatusBadge status={f.status} />
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <p className="mt-4 font-mono text-xs text-ink/45">
+            Source of truth: local Postgres OS · website snapshot only · no value
+            published until verified.
+          </p>
+        </div>
+      </section>
+
+      {/* 09 — PREVIEW-ONLY ENQUIRY */}
+      <section id="enquiry" className="mx-auto max-w-6xl px-6 py-24">
+        <Reveal>
+          <Eyebrow n="09" label="Enquiry" />
+          <div className="grid gap-12 md:grid-cols-[1fr_1.1fr]">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-teal md:text-4xl">
+                Request details
+              </h2>
+              <p className="mt-5 max-w-md text-ink/65">
+                This is a staging preview. The form below does{" "}
+                <strong className="text-teal">not</strong> submit — there is no
+                live capture, no automation, and no contact is created. Enquiries
+                are manual-review only.
+              </p>
+              <p className="mt-4 inline-flex rounded-md bg-mist px-3 py-2 font-mono text-xs text-ink/60">
+                send_enabled = false · webhook = none · CRM_write = none
+              </p>
+            </div>
+
+            {/* Preview-only form: no action, submit disabled, consent unchecked */}
+            <form
+              aria-disabled
+              onSubmit={undefined}
+              className="rounded-2xl border border-mist-deep bg-white p-7"
+            >
+              <div className="grid gap-4">
+                <Field label="Name" placeholder="Your name" />
+                <Field label="Contact method" placeholder="Phone or email" />
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/50">
+                    Buying intent
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {["End use", "Investment", "Just exploring"].map((p) => (
+                      <span
+                        key={p}
+                        className="rounded-full border border-mist-deep px-3 py-1.5 text-xs text-ink/60"
+                      >
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <Field label="Message" placeholder="Anything specific?" textarea />
+                <label className="flex items-start gap-2.5 text-xs text-ink/60">
+                  <input type="checkbox" disabled className="mt-0.5" />
+                  I consent to be contacted about this enquiry.
+                </label>
+                <label className="flex items-start gap-2.5 text-xs text-ink/60">
+                  <input type="checkbox" disabled className="mt-0.5" />
+                  I have read the privacy note.
+                </label>
+                <button
+                  type="button"
+                  disabled
+                  className="mt-1 cursor-not-allowed rounded-full bg-mist-deep px-6 py-3.5 text-sm font-semibold text-ink/50"
+                >
+                  Preview only — no live submission
+                </button>
+              </div>
+            </form>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* 10 — FAQ (native disclosures, SEO text in DOM) */}
+      <section className="border-t border-mist-deep bg-mist/30">
+        <div className="mx-auto max-w-3xl px-6 py-24">
+          <Reveal>
+            <Eyebrow n="10" label="FAQ" />
+            <h2 className="text-3xl font-bold tracking-tight text-teal md:text-4xl">
+              Questions, answered honestly.
+            </h2>
+          </Reveal>
+          <div className="mt-10 divide-y divide-mist-deep border-y border-mist-deep">
+            {faqs.map((f) => (
+              <details key={f.question} className="group py-5">
+                <summary className="flex cursor-pointer items-center justify-between gap-4 text-lg font-semibold text-teal marker:content-['']">
+                  {f.question}
+                  <span className="font-mono text-ink/40 transition-transform group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-ink/65">
+                  <Tokenize text={f.answer} />
+                </p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <StickyCta />
+    </article>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    operator_confirmed: { label: "Confirmed", cls: "bg-teal/10 text-teal" },
+    pending_review: { label: "Under review", cls: "bg-warm/10 text-warm" },
+    pending: { label: "Pending", cls: "bg-mist text-ink/50" },
+  };
+  const s = map[status] ?? map.pending;
+  return (
+    <span
+      className={`justify-self-start rounded-full px-2.5 py-1 font-mono text-[11px] font-medium md:justify-self-end ${s.cls}`}
+    >
+      {s.label}
+    </span>
+  );
+}
+
+function Field({
+  label,
+  placeholder,
+  textarea,
+}: {
+  label: string;
+  placeholder: string;
+  textarea?: boolean;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/50">
+        {label}
+      </label>
+      {textarea ? (
+        <textarea
+          disabled
+          rows={3}
+          placeholder={placeholder}
+          className="w-full resize-none rounded-lg border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35 focus:bg-white focus:outline-none"
+        />
+      ) : (
+        <input
+          disabled
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35 focus:bg-white focus:outline-none"
+        />
+      )}
+    </div>
+  );
+}
