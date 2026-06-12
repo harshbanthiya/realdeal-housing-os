@@ -98,3 +98,7 @@ inbound lead exists.
 > **Follow-up:** Phase 7.21 builds that review-gated Wix API permission/capability map (46 permissions
 > mapped, 4 planned key profiles, no secrets/keys stored). See
 > `docs/PHASE_7_21_WIX_API_PERMISSION_CAPABILITY_MAP.md`.
+
+> **Follow-up:** Phase 7.22 then records the operator's manually created staging site (this script's
+> full path) — staging site → `created_manually`, shell build `in_progress`, safety checks passed,
+> `ready_for_staging_qa=true`. See `docs/PHASE_7_22_WIX_STAGING_SITE_RECORDED.md`.

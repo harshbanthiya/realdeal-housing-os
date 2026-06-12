@@ -627,6 +627,15 @@ stay false. **Never paste a Wix API key into NocoDB, Claude, Codex, or any chat*
 git-ignored `.env`, Keychain, 1Password, or the n8n credential vault when eventually created
 externally.
 
+Phase 7.22 records the operator's manually created Wix staging/preview site. In the staging views
+(`vw_dlf_wix_staging_build_progress`, `vw_wix_staging_build_action_log_dashboard`) the staging site
+now reads `created_manually` with its name + `*.wixstudio.com` preview URL; 12 build checklist items
+are `in_progress` and the safety checklist + absence QA (`domain_not_connected`/`noindex`/
+`webhook_disabled`/`tracking_disabled`) are passed. `safety_flags_clean=true`,
+`ready_for_staging_qa=true`, `ready_for_fake_lead_test=false`, `ready_for_production_publish=false`.
+No Wix API call/key, no real domain, no indexing, no publish, no live form/webhook/tracking — all
+recorded via the terminal script (NocoDB stays read-only).
+
 ---
 
 ## 14. NocoDB is for review/inspection first

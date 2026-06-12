@@ -1378,3 +1378,20 @@ view keeps `active_key_profiles`, `external_call_allowed_count`, `publish_permis
 `send_permission_allowed_count` at 0 and `ready_for_api_call_test=false`. Cleanup dry-run:
 `scripts/cleanup_wix_api_permission_capability_map.py`. See
 `docs/PHASE_7_21_WIX_API_PERMISSION_CAPABILITY_MAP.md`.
+
+## Phase 7.22 Manual Wix Staging Site Recorded
+
+Phase 7.22 records the **manually created** Wix staging/preview site (built by the operator outside
+the OS) and marks initial Gallery White build progress — reusing the Phase 7.20 tracking script, no
+new migration. The staging site is now `created_manually` with its name and a `*.wixstudio.com`
+preview URL stored in `wix_staging_sites` (DB only; the literal URL is not committed to the repo). The
+Gallery White shell build moved hero/navigation/content sections to `in_progress` (12 checklist items
+in progress), and the safety checklist + absence QA (`domain_not_connected`, `noindex`,
+`webhook_disabled`, `tracking_disabled`) are passed (2 checklist + 5 QA).
+
+Every live gate stays off: no real domain, no public indexing, no published page, no live
+form/webhook, no external tracking, no Wix API call, no API key read/stored (deferral re-logged).
+`ready_for_staging_qa` is now true; `ready_for_fake_lead_test` and `ready_for_production_publish` stay
+false; no leads/contacts/messages changed. Reversible via
+`scripts/revert_dlf_wix_staging_build_progress.py` (dry-run by default). See
+`docs/PHASE_7_22_WIX_STAGING_SITE_RECORDED.md`.

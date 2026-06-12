@@ -602,3 +602,13 @@ inspection / no publish/send/leads/contacts. `ready_for_api_key_creation` and `r
 false; active/external/publish/send permission counts 0. Cleanup dry-run:
 `scripts/cleanup_wix_api_permission_capability_map.py`. See
 `docs/PHASE_7_21_WIX_API_PERMISSION_CAPABILITY_MAP.md`.
+
+Phase 7.22 records the manually created Wix staging/preview site (operator-built outside the OS) and
+marks initial Gallery White build progress, reusing the Phase 7.20 script (no new migration). Staging
+site → `created_manually` (name + `*.wixstudio.com` preview URL stored in DB only); 12 checklist items
+`in_progress`; safety checklist + absence QA passed (2 + 5). All live gates stay off (no real domain /
+indexing / publish / live form / webhook / tracking / Wix API call / key read-or-store; deferral
+re-logged). `ready_for_staging_qa` true; `ready_for_fake_lead_test` / `ready_for_production_publish`
+false; no leads/contacts/messages changed. Reversible via
+`scripts/revert_dlf_wix_staging_build_progress.py`. See
+`docs/PHASE_7_22_WIX_STAGING_SITE_RECORDED.md`.
