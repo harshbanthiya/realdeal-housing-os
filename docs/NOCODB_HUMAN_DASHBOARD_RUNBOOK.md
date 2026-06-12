@@ -605,6 +605,17 @@ no public indexing, no Wix API call, no page published, no live form/webhook, no
 `ready_for_production_publish` stay false. NocoDB is read-only here — the manual Wix build and QA
 happen in Wix, recorded back through the guarded terminal scripts.
 
+Phase 7.20 adds the manual Wix staging build-tracking views for read-only operator review:
+`vw_wix_staging_build_action_log_dashboard` (append-only audit log of manual build progress) and
+`vw_dlf_wix_staging_build_progress` (staging_status, checklist_started/passed, qa_passed,
+`api_permission_review_deferred_count`, `safety_flags_clean`, `ready_for_staging_qa`,
+`ready_for_fake_lead_test`). Build progress is recorded via the terminal script
+`scripts/record_dlf_wix_staging_build_progress.py`, which never calls a Wix API or reads a Wix API
+key. In this phase tracking was initialized only (no operator staging site supplied): 2 setup items
+`in_progress`, 1 `api_permission_review_deferred` audit row; `safety_flags_clean=true`,
+`ready_for_fake_lead_test=false`, `ready_for_production_publish=false`. Wix API permission/key usage
+is explicitly deferred to a later capability-map phase.
+
 ---
 
 ## 14. NocoDB is for review/inspection first

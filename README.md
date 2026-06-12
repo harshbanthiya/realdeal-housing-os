@@ -1337,3 +1337,25 @@ build exists), and `ready_for_production_publish = false` (always). No Wix/n8n/M
 email call; no publishing; no leads/contacts/messages changed. Cleanup dry-run:
 `scripts/cleanup_dlf_wix_staging_site_plan.py`. See
 `docs/PHASE_7_19_WIX_STAGING_PREVIEW_SITE_PLAN.md`.
+
+## Phase 7.20 Manual Wix Staging Build Tracking
+
+Phase 7.20 tracks the **human/manual** Wix staging build without calling any Wix API or reading any
+Wix API key. Migration `schemas/039_dlf_wix_staging_build_tracking.sql` adds the append-only
+`wix_staging_build_action_log` plus `vw_wix_staging_build_action_log_dashboard` and
+`vw_dlf_wix_staging_build_progress`.
+
+`scripts/record_dlf_wix_staging_build_progress.py` (dry-run by default; `--real-ok --apply`, with
+required `--performed-by`/`--decision-notes`) records manual build progress: it moves selected
+setup/safety checklist and absence-QA items forward, optionally records an operator-supplied staging
+site name/URL (only with `--confirm-staging-site-created-manually` **and** real details — it never
+fabricates a site), and logs that **Wix API permission/key usage is deferred** to a later
+capability-map phase. `--mark-safety-checks-passed` requires all six `--confirm-*` safety flags.
+
+In this phase no manual staging site was supplied, so build tracking was initialized only: the 2
+setup checklist items moved to `in_progress` and the API-deferral was logged (3 audit rows). No Wix
+API call, no API key read/stored, no real domain, no public indexing, no published page, no live
+form/webhook, no external tracking; `ready_for_production_publish` and `ready_for_fake_lead_test`
+stay false; no leads/contacts/messages changed. Reversible via
+`scripts/revert_dlf_wix_staging_build_progress.py` (dry-run by default). See
+`docs/PHASE_7_20_WIX_STAGING_BUILD_TRACKING.md`.

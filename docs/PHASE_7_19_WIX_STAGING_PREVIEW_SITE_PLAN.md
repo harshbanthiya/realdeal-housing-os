@@ -90,3 +90,8 @@ Track the **manual Wix staging build** (operator marks the site `created_manuall
 `build_in_progress` → `ready_for_qa`, ticking checklist items), then run a **fake staging lead
 test** against the staging form. Production publish, real-domain connection, live forms, tracking,
 and indexing each remain separate, explicitly-gated phases and stay blocked.
+
+> **Follow-up:** Phase 7.20 adds the manual build-tracking audit log + progress view
+> (`schemas/039_dlf_wix_staging_build_tracking.sql`) and the
+> `scripts/record_dlf_wix_staging_build_progress.py` tool (no Wix API call, no API key read; Wix
+> API capability mapping deferred). See `docs/PHASE_7_20_WIX_STAGING_BUILD_TRACKING.md`.
