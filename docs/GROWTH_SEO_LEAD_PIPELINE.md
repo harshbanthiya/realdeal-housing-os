@@ -635,3 +635,14 @@ API/key, publish, real domain, indexing, live form/webhook/tracking, leads, cont
 Cleanup dry-run: `scripts/cleanup_dlf_wix_ai_implementation_route_review.py --launch-key
 dlf-westpark-andheri-west --real-ok`. See
 `docs/PHASE_7_24_WIX_AI_IMPLEMENTATION_ROUTE_REVIEW.md`.
+
+Phase 7.25 records the Wix Studio setup availability pause (migration
+`schemas/043_dlf_wix_setup_availability_check.sql`: three setup availability/path/review tables +
+four views incl. `vw_dlf_wix_ai_setup_readiness`). Because no operator-confirmed capability result
+was provided, `scripts/record_dlf_wix_setup_availability.py` records six checks as
+`needs_more_info`, one selected path as `blocked/needs_more_info`, and five pending setup reviews.
+The operator must check Wix Git Integration + Wix CLI first, then Velo + Custom Element/code-paste
+fallback if needed. AI code execution, fake lead testing, and production publish remain blocked. No
+Wix API/key, publish, real domain, indexing, live form/webhook/tracking, leads, contacts, or
+messages. Cleanup dry-run: `scripts/cleanup_dlf_wix_setup_availability.py --launch-key
+dlf-westpark-andheri-west --real-ok`. See `docs/PHASE_7_25_WIX_SETUP_AVAILABILITY.md`.

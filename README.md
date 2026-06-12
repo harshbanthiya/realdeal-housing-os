@@ -1430,3 +1430,20 @@ Custom Element, preview, and status reporting. No Wix API/key, publish, real dom
 form/webhook/tracking, leads, contacts, or messages. Cleanup dry-run:
 `scripts/cleanup_dlf_wix_ai_implementation_route_review.py --launch-key dlf-westpark-andheri-west
 --real-ok`. See `docs/PHASE_7_24_WIX_AI_IMPLEMENTATION_ROUTE_REVIEW.md`.
+
+## Phase 7.25 Wix Git/CLI Availability Check
+
+Phase 7.25 records that Wix Studio setup capability is still unconfirmed before any AI-assisted Wix
+implementation. Migration `schemas/043_dlf_wix_setup_availability_check.sql` adds three setup
+availability/path/review tables plus four read-only views, including
+`vw_dlf_wix_ai_setup_readiness`. `scripts/record_dlf_wix_setup_availability.py` (dry-run default;
+requires `--real-ok` plus explicit no-API/no-publish/no-live-webhook confirmations) records six
+capability checks as `needs_more_info`, one selected path as `blocked/needs_more_info`, and five
+pending setup reviews.
+
+The exact next operator step is to check Wix Studio for Git Integration + Wix CLI first, then Velo +
+Custom Element/code-paste fallback if needed. AI code execution remains blocked until setup status is
+reported and reviewed. No Wix API/key, real domain, indexing, publish, live form/webhook/tracking,
+leads, contacts, or messages. Cleanup dry-run:
+`scripts/cleanup_dlf_wix_setup_availability.py --launch-key dlf-westpark-andheri-west --real-ok`.
+See `docs/PHASE_7_25_WIX_SETUP_AVAILABILITY.md`.

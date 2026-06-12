@@ -45,6 +45,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/040_wix_api_permission_capability_map.sql"
   "$PROJECT_ROOT/schemas/041_dlf_wix_ai_build_execution_plan.sql"
   "$PROJECT_ROOT/schemas/042_dlf_wix_ai_implementation_route_review.sql"
+  "$PROJECT_ROOT/schemas/043_dlf_wix_setup_availability_check.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

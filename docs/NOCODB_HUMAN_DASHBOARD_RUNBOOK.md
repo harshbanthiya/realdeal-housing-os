@@ -504,6 +504,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Dry-run cleanup of DLF Wix AI build plan | `scripts/cleanup_dlf_wix_ai_build_plan.py` |
 | Review DLF Wix AI implementation route | `scripts/review_dlf_wix_ai_implementation_route.py` |
 | Dry-run cleanup of DLF Wix AI route review | `scripts/cleanup_dlf_wix_ai_implementation_route_review.py` |
+| Record DLF Wix setup availability | `scripts/record_dlf_wix_setup_availability.py` |
+| Dry-run cleanup of DLF Wix setup availability | `scripts/cleanup_dlf_wix_setup_availability.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -657,6 +659,15 @@ the selected `wix_git_cli` route, `wix_custom_element_velo` fallback, 11 passed 
 7 pending minimum operator setup tasks, 3 planned AI execution steps, and 8 pending review gates.
 `ready_for_operator_setup` may be true, but AI execution/code paste, fake lead testing, and production
 publish remain blocked until review and setup clear. This is not a manual drag/drop build.
+
+Phase 7.25 adds Wix setup availability views for read-only operator review:
+`vw_wix_ai_setup_availability_dashboard`, `vw_wix_ai_selected_execution_path_dashboard`,
+`vw_wix_ai_setup_review_queue`, and `vw_dlf_wix_ai_setup_readiness`. These show that Git Integration,
+Wix CLI, GitHub connection, Velo, Custom Element, and code-paste capability are still
+`needs_more_info`; selected path is `blocked/needs_more_info`; five setup reviews are pending. The
+operator should check Wix Studio capability and report status. AI code execution, fake lead testing,
+production publish, Wix API usage, live forms/webhooks/tracking, leads, contacts, and messages remain
+blocked.
 
 ---
 

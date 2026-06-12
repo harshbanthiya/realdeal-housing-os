@@ -118,10 +118,12 @@ plans/artifacts plus ignored `exports/` files.
 
 ## Next Phase
 
+Phase 7.25 records a safe `needs_more_info` pause until the operator checks Wix Studio capability.
+
 1. Check Git Integration + Wix CLI availability.
-2. If available, connect Git/Wix CLI and report status.
-3. If unavailable, enable Velo and add one Custom Element.
-4. Then let Codex/Claude perform the AI-assisted code sync/paste.
+2. If available, report that status for the `wix_git_cli` path.
+3. If unavailable, check Velo, Custom Element, and code-paste availability.
+4. Then let Codex/Claude perform the AI-assisted code sync/paste only after setup status is reviewed.
 5. Preview the staging site.
 6. Run staging QA.
 
