@@ -76,7 +76,10 @@ live/domain/index/publish/webhook/api flag or if any inbound lead exists.
 
 ## Next phase
 
-Continue the Gallery White staging build, then a **staging QA pass** (mobile/desktop/form/consent/
-placeholder/SEO/accessibility/performance), then a **fake staging lead test**. Production publish,
-real-domain connection, live forms, tracking, and any Wix API call each remain separate,
-explicitly-gated phases.
+Phase 7.23 creates the local Wix AI build execution package for Gallery White before any manual
+Wix implementation continues. It generates ignored code/setup artifacts, records review gates, and
+keeps the same hard stops: no Wix API/key, no domain/indexing/publish, no live form/webhook/tracking,
+and no lead/contact/message changes. After artifact review, continue the Gallery White staging build,
+then a **staging QA pass** (mobile/desktop/form/consent/placeholder/SEO/accessibility/performance),
+then a **fake staging lead test**. Production publish, real-domain connection, live forms, tracking,
+and any Wix API call each remain separate, explicitly-gated phases.

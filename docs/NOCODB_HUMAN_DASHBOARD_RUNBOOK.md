@@ -500,6 +500,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Dry-run cleanup of DLF Wix UX masterplan | `scripts/cleanup_dlf_wix_ux_integration_masterplan.py` |
 | Create DLF Fable UI/UX handoff package | `scripts/create_dlf_fable_uiux_handoff_package.py` |
 | Dry-run cleanup of DLF Fable handoff package | `scripts/cleanup_dlf_fable_uiux_handoff_package.py` |
+| Create DLF Wix AI build execution plan | `scripts/create_dlf_wix_ai_build_plan.py` |
+| Dry-run cleanup of DLF Wix AI build plan | `scripts/cleanup_dlf_wix_ai_build_plan.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -635,6 +637,15 @@ are `in_progress` and the safety checklist + absence QA (`domain_not_connected`/
 `ready_for_staging_qa=true`, `ready_for_fake_lead_test=false`, `ready_for_production_publish=false`.
 No Wix API call/key, no real domain, no indexing, no publish, no live form/webhook/tracking — all
 recorded via the terminal script (NocoDB stays read-only).
+
+Phase 7.23 adds Wix AI build execution views for read-only operator review:
+`vw_wix_ai_build_execution_plan_dashboard`, `vw_wix_ai_build_artifact_dashboard`,
+`vw_wix_ai_build_step_dashboard`, `vw_wix_ai_build_validation_dashboard`,
+`vw_wix_ai_build_review_queue`, and `vw_dlf_wix_ai_build_readiness`. These show the generated local
+Gallery White implementation package, the preferred Wix Git Integration + Wix CLI route, the fallback
+Custom Element + Velo route, 13 validation results, and 9 review gates. Artifacts stay ignored under
+`exports/wix_ai_builds/`. Code review/operator setup can be ready, but Wix implementation, fake lead
+testing, publishing, live forms/webhooks/tracking, and API usage remain blocked until later phases.
 
 ---
 

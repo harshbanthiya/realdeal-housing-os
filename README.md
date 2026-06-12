@@ -1395,3 +1395,21 @@ form/webhook, no external tracking, no Wix API call, no API key read/stored (def
 false; no leads/contacts/messages changed. Reversible via
 `scripts/revert_dlf_wix_staging_build_progress.py` (dry-run by default). See
 `docs/PHASE_7_22_WIX_STAGING_SITE_RECORDED.md`.
+
+## Phase 7.23 Wix AI Build Execution Plan
+
+Phase 7.23 generates a local, review-gated **Wix AI build execution package** for the approved
+Gallery White direction. Migration `schemas/041_dlf_wix_ai_build_execution_plan.sql` adds five
+planning/review tables plus six read-only views, including `vw_dlf_wix_ai_build_readiness`.
+`scripts/create_dlf_wix_ai_build_plan.py` (dry-run by default; `--real-ok --apply`) writes 11 local
+artifacts under git-ignored `exports/wix_ai_builds/dlf-westpark-gallery-white-v1/`, records 1
+execution plan, 9 implementation steps, 13 passed validations, and 9 pending review items. Preferred
+route is Wix Git Integration + Wix CLI for Sites if the operator can use it; fallback is a
+Wix-hosted Custom Element + Velo page-code path.
+
+This phase still makes **no Wix API call**, requests/reads/stores **no Wix API key**, connects no
+GitHub/Wix account, publishes nothing, enables no real domain/indexing/live form/webhook/tracking,
+and changes no leads/contacts/messages. `ready_for_code_review` and `ready_for_operator_setup` may
+be true; `ready_for_wix_implementation`, `ready_for_fake_lead_test`, and production publish remain
+blocked. Cleanup dry-run: `scripts/cleanup_dlf_wix_ai_build_plan.py --launch-key
+dlf-westpark-andheri-west --real-ok`. See `docs/PHASE_7_23_WIX_AI_BUILD_EXECUTION_PLAN.md`.

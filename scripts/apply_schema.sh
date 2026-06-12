@@ -43,6 +43,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/038_dlf_wix_staging_site_plan.sql"
   "$PROJECT_ROOT/schemas/039_dlf_wix_staging_build_tracking.sql"
   "$PROJECT_ROOT/schemas/040_wix_api_permission_capability_map.sql"
+  "$PROJECT_ROOT/schemas/041_dlf_wix_ai_build_execution_plan.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

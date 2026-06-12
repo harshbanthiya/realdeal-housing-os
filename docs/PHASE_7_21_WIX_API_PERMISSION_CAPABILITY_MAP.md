@@ -87,7 +87,8 @@ secret-bearing, any publish/send permission is allowed, or any review item is ap
 
 ## Next phase
 
-A **controlled API-key readiness check** (operator creates a minimal staging key *externally*, OS
-records the profile as `approved_to_create` → `created_externally` with the secret stored only in an
-ignored `.env`/vault, never in repo/prompt), **or** continue the **manual Wix staging build**. Any
-actual Wix API call remains a separate, explicitly-gated phase.
+The Phase 7.23 Wix AI build execution plan uses this map as a safety source for route selection,
+but does **not** create or use any key. A **controlled API-key readiness check** (operator creates a
+minimal staging key *externally*, OS records the profile as `approved_to_create` →
+`created_externally` with the secret stored only in an ignored `.env`/vault, never in repo/prompt)
+remains a separate future phase. Any actual Wix API call remains separate and explicitly gated.
