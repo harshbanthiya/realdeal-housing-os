@@ -594,6 +594,17 @@ refinement actions to `accepted`, and approves all 14 review items. Read-only in
 stays false, send/publish stay 0, and no Fable/Gemini/Wix/external call occurs). Reversible via
 `scripts/revert_dlf_gallery_white_design_review.py`.
 
+Phase 7.19 adds DLF Wix staging/preview-site views for read-only operator review:
+`vw_wix_staging_site_dashboard`, `vw_wix_staging_build_checklist_dashboard`,
+`vw_wix_staging_qa_dashboard`, `vw_wix_staging_review_queue`, and `vw_dlf_wix_staging_readiness`.
+These track a manually-created Wix staging site (1 `planned`), a 20-item Gallery White build
+checklist, 13 pre-publish QA checks, and 7 pending review items — seeded via the terminal script
+`scripts/seed_dlf_wix_staging_site_plan.py`. Every staging live flag stays false (no real domain,
+no public indexing, no Wix API call, no page published, no live form/webhook, no tracking);
+`ready_for_manual_staging_build` is true while `ready_for_staging_qa` and
+`ready_for_production_publish` stay false. NocoDB is read-only here — the manual Wix build and QA
+happen in Wix, recorded back through the guarded terminal scripts.
+
 ---
 
 ## 14. NocoDB is for review/inspection first

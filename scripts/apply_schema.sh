@@ -40,6 +40,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/035_wix_ux_integration_masterplan.sql"
   "$PROJECT_ROOT/schemas/036_fable_uiux_handoff_package.sql"
   "$PROJECT_ROOT/schemas/037_fable_design_output_review.sql"
+  "$PROJECT_ROOT/schemas/038_dlf_wix_staging_site_plan.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

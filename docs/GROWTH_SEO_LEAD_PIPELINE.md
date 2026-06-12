@@ -567,3 +567,15 @@ No Fable/Gemini/Wix/external call; no publishing/live forms/webhooks; no contact
 changes; `external_call_made_count` stays 0 and `ready_for_launch_push` stays false. Reversible via
 `scripts/revert_dlf_gallery_white_design_review.py`. See
 `docs/PHASE_7_18_GALLERY_WHITE_APPROVED_DESIGN_SPEC.md`.
+
+Phase 7.19 plans a safe Wix staging/preview site so the Gallery White design can be built and tested
+visually before touching the live domain (migration `schemas/038_dlf_wix_staging_site_plan.sql`:
+`wix_staging_sites`, `wix_staging_build_checklist_items`, `wix_staging_qa_checks`,
+`wix_staging_review_items` + five views incl. real gate `vw_dlf_wix_staging_readiness`).
+`scripts/seed_dlf_wix_staging_site_plan.py` seeds 1 planned staging site, a 20-item build checklist,
+13 QA checks, and 7 pending reviews — all staging live flags false (no real domain, no indexing, no
+Wix API call, no page published, no live form/webhook, no tracking). `ready_for_manual_staging_build`
+true, `ready_for_staging_qa`/`ready_for_production_publish` false. No Wix/n8n/external call, no
+publishing, no leads/contacts/messages changed. Cleanup dry-run:
+`scripts/cleanup_dlf_wix_staging_site_plan.py`. See
+`docs/PHASE_7_19_WIX_STAGING_PREVIEW_SITE_PLAN.md`.

@@ -95,3 +95,7 @@ With the direction approved, the next step is either a **refined Fable follow-up
 folds in the twelve accepted refinements, or a **Wix staging/preview-site build plan** against
 the approved spec. Verified facts, photography, live forms, tracking, and publishing remain
 separate, explicitly gated phases.
+
+> **Follow-up:** Phase 7.19 sets up the Wix staging/preview-site plan (no real domain, no
+> indexing, no publishing, no live forms/webhooks) against this approved spec. See
+> `docs/PHASE_7_19_WIX_STAGING_PREVIEW_SITE_PLAN.md`.

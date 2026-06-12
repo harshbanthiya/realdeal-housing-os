@@ -162,7 +162,11 @@ WITH expected(table_name) AS (
     ('fable_design_outputs'),
     ('design_second_opinion_reviews'),
     ('design_refinement_actions'),
-    ('fable_design_review_items')
+    ('fable_design_review_items'),
+    ('wix_staging_sites'),
+    ('wix_staging_build_checklist_items'),
+    ('wix_staging_qa_checks'),
+    ('wix_staging_review_items')
 )
 SELECT
   expected.table_name,
@@ -354,7 +358,12 @@ WITH expected(view_name) AS (
     ('vw_design_second_opinion_dashboard'),
     ('vw_design_refinement_action_dashboard'),
     ('vw_fable_design_review_queue'),
-    ('vw_dlf_design_output_readiness')
+    ('vw_dlf_design_output_readiness'),
+    ('vw_wix_staging_site_dashboard'),
+    ('vw_wix_staging_build_checklist_dashboard'),
+    ('vw_wix_staging_qa_dashboard'),
+    ('vw_wix_staging_review_queue'),
+    ('vw_dlf_wix_staging_readiness')
 )
 SELECT
   expected.view_name,

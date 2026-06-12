@@ -1319,3 +1319,21 @@ false — `ready_for_wix_design_build` is a design-readiness signal, not a launc
 in-transaction guard refuses on any contact-data/secret/external/send/publish/launch flag. Reversible
 via `scripts/revert_dlf_gallery_white_design_review.py` (dry-run by default). The approved, refined
 spec is in `docs/PHASE_7_18_GALLERY_WHITE_APPROVED_DESIGN_SPEC.md`.
+
+## Phase 7.19 Wix Staging / Preview-Site Plan
+
+Phase 7.19 plans a **safe Wix staging/preview site** so the Gallery White design can be built and
+tested visually before touching the live domain. Migration
+`schemas/038_dlf_wix_staging_site_plan.sql` adds `wix_staging_sites`,
+`wix_staging_build_checklist_items`, `wix_staging_qa_checks`, `wix_staging_review_items` plus five
+views including the real gate `vw_dlf_wix_staging_readiness`.
+
+`scripts/seed_dlf_wix_staging_site_plan.py` (dry-run by default; `--real-ok --apply`) seeds 1
+`planned` staging site, a 20-item Gallery White build checklist, 13 pre-publish QA checks, and 7
+pending review items. Every staging live flag stays false: no real domain, no public indexing, no
+Wix API call, no page created/published, no live form/webhook, no external tracking. The readiness
+view shows `ready_for_manual_staging_build = true`, `ready_for_staging_qa = false` (until the manual
+build exists), and `ready_for_production_publish = false` (always). No Wix/n8n/Meta/Google/WhatsApp/
+email call; no publishing; no leads/contacts/messages changed. Cleanup dry-run:
+`scripts/cleanup_dlf_wix_staging_site_plan.py`. See
+`docs/PHASE_7_19_WIX_STAGING_PREVIEW_SITE_PLAN.md`.
