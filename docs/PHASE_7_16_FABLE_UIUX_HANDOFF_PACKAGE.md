@@ -131,3 +131,7 @@ Review and approve the Fable handoff package (the seven pending reviews → `app
 a human pastes the concise prompt into Fable manually to generate the UI/UX design. Connecting
 tracking/messaging integrations, building live forms/webhooks, and publishing Wix pages remain
 separate explicit phases and stay blocked.
+
+> **Follow-up:** Phase 7.17 captures the resulting Fable output ("DLF Westpark — Gallery White")
+> and the Gemini second-opinion critique into review-gated rows and extracts 12 design refinement
+> actions. See `docs/PHASE_7_17_FABLE_GEMINI_OUTPUT_REVIEW.md`.

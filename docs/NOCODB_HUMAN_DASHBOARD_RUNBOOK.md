@@ -574,6 +574,17 @@ carry no contact data, secrets, or DB IDs. No Fable/external call happened: `fab
 and `external_call_made_count` stay 0 and `ready_for_fable_use` stays false until reviews are
 approved. The operator pastes the reviewed concise prompt into Fable manually.
 
+Phase 7.17 adds DLF Fable/Gemini design-output review views for read-only operator review:
+`vw_fable_design_output_dashboard`, `vw_design_second_opinion_dashboard`,
+`vw_design_refinement_action_dashboard`, `vw_fable_design_review_queue`, and
+`vw_dlf_design_output_readiness`. These show the captured Fable design output ("DLF Westpark —
+Gallery White", 1 captured), the Gemini second-opinion critique (1 captured), 12 proposed refinement
+actions, and 14 pending review items. The raw Fable/Gemini artifacts live git-ignored under
+`exports/` and are never stored in the database (only paths + business-safe summaries); a leakage
+scan found no contact data, secrets, or DB IDs. No Fable/Gemini/external call happened:
+`external_call_made_count` stays 0 and `ready_for_wix_design_build` stays false until a human
+approves the captured output and at least one refinement action.
+
 ---
 
 ## 14. NocoDB is for review/inspection first

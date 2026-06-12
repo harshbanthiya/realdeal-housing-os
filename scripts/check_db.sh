@@ -158,7 +158,11 @@ WITH expected(table_name) AS (
     ('fable_uiux_handoff_packages'),
     ('fable_uiux_handoff_sections'),
     ('fable_uiux_handoff_validation_results'),
-    ('fable_uiux_handoff_review_items')
+    ('fable_uiux_handoff_review_items'),
+    ('fable_design_outputs'),
+    ('design_second_opinion_reviews'),
+    ('design_refinement_actions'),
+    ('fable_design_review_items')
 )
 SELECT
   expected.table_name,
@@ -345,7 +349,12 @@ WITH expected(view_name) AS (
     ('vw_fable_uiux_handoff_section_dashboard'),
     ('vw_fable_uiux_handoff_validation_dashboard'),
     ('vw_fable_uiux_handoff_review_queue'),
-    ('vw_dlf_fable_handoff_readiness')
+    ('vw_dlf_fable_handoff_readiness'),
+    ('vw_fable_design_output_dashboard'),
+    ('vw_design_second_opinion_dashboard'),
+    ('vw_design_refinement_action_dashboard'),
+    ('vw_fable_design_review_queue'),
+    ('vw_dlf_design_output_readiness')
 )
 SELECT
   expected.view_name,

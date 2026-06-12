@@ -1281,3 +1281,23 @@ no contact data, secrets, or DB IDs. No Fable call and no Wix/Meta/WhatsApp/emai
 reviews are approved. The operator pastes the concise prompt into Fable manually. Cleanup dry-run:
 `scripts/cleanup_dlf_fable_uiux_handoff_package.py`. See
 `docs/PHASE_7_16_FABLE_UIUX_HANDOFF_PACKAGE.md`.
+
+## Phase 7.17 Fable "Gallery White" + Gemini Output Review
+
+Phase 7.17 captures the manually generated Fable design output (**"DLF Westpark — Gallery
+White"**) and the Gemini second-opinion critique into review-gated rows, and records the
+concrete design refinements extracted from that critique. Migration
+`schemas/037_fable_design_output_review.sql` adds `fable_design_outputs`,
+`design_second_opinion_reviews`, `design_refinement_actions`, `fable_design_review_items`
+plus five views including the real gate `vw_dlf_design_output_readiness`.
+
+`scripts/capture_dlf_fable_design_output.py` (dry-run by default; `--real-ok --apply` to
+write) scans the raw artifacts for leakage (emails, phone-like strings, DB UUIDs, secrets —
+all 0), then records 1 captured output, 1 captured Gemini review, 12 proposed refinement
+actions, and 14 pending review items. The raw Fable/Gemini files stay git-ignored under
+`exports/` — the database stores only paths plus business-safe summaries, never raw text.
+No Fable/Gemini/Wix/Meta/WhatsApp/email/n8n call happens: `external_call_made_count` stays 0,
+and `ready_for_wix_design_build` stays false until a human approves the output and at least
+one refinement action. Cleanup dry-run:
+`scripts/cleanup_dlf_fable_design_output_capture.py`. See
+`docs/PHASE_7_17_FABLE_GEMINI_OUTPUT_REVIEW.md`.

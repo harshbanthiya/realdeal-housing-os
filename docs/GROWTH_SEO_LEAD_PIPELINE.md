@@ -543,3 +543,16 @@ Public/business-safe only: no contact data, secrets, or DB IDs; placeholders pre
 approved (the operator pastes the prompt into Fable manually). Cleanup dry-run:
 `scripts/cleanup_dlf_fable_uiux_handoff_package.py`. See
 `docs/PHASE_7_16_FABLE_UIUX_HANDOFF_PACKAGE.md`.
+
+Phase 7.17 captures the manually generated Fable design output ("DLF Westpark — Gallery White") and
+the Gemini second-opinion critique into review-gated rows (migration
+`schemas/037_fable_design_output_review.sql`: `fable_design_outputs`,
+`design_second_opinion_reviews`, `design_refinement_actions`, `fable_design_review_items` + five
+views incl. `vw_dlf_design_output_readiness`). `scripts/capture_dlf_fable_design_output.py` scans the
+raw artifacts for leakage (0 found) and records 1 captured output, 1 captured Gemini review, 12
+proposed refinement actions, and 14 pending reviews. Raw Fable/Gemini files stay git-ignored under
+`exports/`; the DB stores only paths + safe summaries. No Fable/Gemini/Wix/external call;
+`external_call_made_count` stays 0 and `ready_for_wix_design_build` stays false until human reviews
+approve the output and a refinement action. Cleanup dry-run:
+`scripts/cleanup_dlf_fable_design_output_capture.py`. See
+`docs/PHASE_7_17_FABLE_GEMINI_OUTPUT_REVIEW.md`.
