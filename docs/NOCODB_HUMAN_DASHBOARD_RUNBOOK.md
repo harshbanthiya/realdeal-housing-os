@@ -502,6 +502,8 @@ of these guarded scripts from the project root — **not** through NocoDB:
 | Dry-run cleanup of DLF Fable handoff package | `scripts/cleanup_dlf_fable_uiux_handoff_package.py` |
 | Create DLF Wix AI build execution plan | `scripts/create_dlf_wix_ai_build_plan.py` |
 | Dry-run cleanup of DLF Wix AI build plan | `scripts/cleanup_dlf_wix_ai_build_plan.py` |
+| Review DLF Wix AI implementation route | `scripts/review_dlf_wix_ai_implementation_route.py` |
+| Dry-run cleanup of DLF Wix AI route review | `scripts/cleanup_dlf_wix_ai_implementation_route_review.py` |
 
 The `entity_id` / `related_table` columns in `vw_human_next_actions` tell you
 which record a given script should target.
@@ -646,6 +648,15 @@ Gallery White implementation package, the preferred Wix Git Integration + Wix CL
 Custom Element + Velo route, 13 validation results, and 9 review gates. Artifacts stay ignored under
 `exports/wix_ai_builds/`. Code review/operator setup can be ready, but Wix implementation, fake lead
 testing, publishing, live forms/webhooks/tracking, and API usage remain blocked until later phases.
+
+Phase 7.24 adds Wix AI implementation route-review views for read-only operator review:
+`vw_wix_ai_implementation_route_decision_dashboard`, `vw_wix_ai_artifact_review_dashboard`,
+`vw_wix_ai_operator_setup_task_dashboard`, `vw_wix_ai_execution_package_step_dashboard`,
+`vw_wix_ai_implementation_review_queue`, and `vw_dlf_wix_ai_implementation_readiness`. These show
+the selected `wix_git_cli` route, `wix_custom_element_velo` fallback, 11 passed artifact reviews,
+7 pending minimum operator setup tasks, 3 planned AI execution steps, and 8 pending review gates.
+`ready_for_operator_setup` may be true, but AI execution/code paste, fake lead testing, and production
+publish remain blocked until review and setup clear. This is not a manual drag/drop build.
 
 ---
 

@@ -623,3 +623,15 @@ fallback is Wix-hosted Custom Element + Velo. No Wix API/key, GitHub/Wix connect
 domain, indexing, live form/webhook/tracking, leads, contacts, or messages. Cleanup dry-run:
 `scripts/cleanup_dlf_wix_ai_build_plan.py --launch-key dlf-westpark-andheri-west --real-ok`. See
 `docs/PHASE_7_23_WIX_AI_BUILD_EXECUTION_PLAN.md`.
+
+Phase 7.24 reviews those generated artifacts and records the AI-assisted implementation route
+(migration `schemas/042_dlf_wix_ai_implementation_route_review.sql`: five route/artifact/setup/
+execution/review tables + six views incl. `vw_dlf_wix_ai_implementation_readiness`).
+`scripts/review_dlf_wix_ai_implementation_route.py` selects `wix_git_cli` with fallback
+`wix_custom_element_velo`, creates 11 passed artifact reviews, 7 pending minimum operator setup
+tasks, 3 planned AI execution steps, and 8 pending reviews. This is not a manual drag/drop build:
+the operator only performs unavoidable Wix setup before Codex/Claude syncs or pastes code. No Wix
+API/key, publish, real domain, indexing, live form/webhook/tracking, leads, contacts, or messages.
+Cleanup dry-run: `scripts/cleanup_dlf_wix_ai_implementation_route_review.py --launch-key
+dlf-westpark-andheri-west --real-ok`. See
+`docs/PHASE_7_24_WIX_AI_IMPLEMENTATION_ROUTE_REVIEW.md`.

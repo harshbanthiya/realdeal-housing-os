@@ -142,7 +142,9 @@ validations, and 9 reviews as the intended deletion set.
 
 ## Next phase
 
-Review the generated code artifacts and choose the route. The likely next step is a human-operated
-Wix implementation pass on the staging site, with the agent only assisting through local code review
-and count/status verification. Publishing, live capture, tracking, API usage, and fake lead testing
-remain separate, explicit phases.
+Phase 7.24 reviews the generated code artifacts and chooses the least-manual route for
+AI-assisted implementation. The intent is not a human drag/drop Wix build: the operator performs
+only unavoidable platform setup, then Codex/Claude syncs or pastes code as far as Wix allows. The
+selected route is Git Integration + Wix CLI if available, with Custom Element + Velo as fallback.
+Publishing, live capture, tracking, API usage, and fake lead testing remain separate, explicit
+phases.

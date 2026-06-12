@@ -1413,3 +1413,20 @@ and changes no leads/contacts/messages. `ready_for_code_review` and `ready_for_o
 be true; `ready_for_wix_implementation`, `ready_for_fake_lead_test`, and production publish remain
 blocked. Cleanup dry-run: `scripts/cleanup_dlf_wix_ai_build_plan.py --launch-key
 dlf-westpark-andheri-west --real-ok`. See `docs/PHASE_7_23_WIX_AI_BUILD_EXECUTION_PLAN.md`.
+
+## Phase 7.24 Wix AI Implementation Route Review
+
+Phase 7.24 reviews the ignored Phase 7.23 artifacts and records the least-manual implementation
+route. Migration `schemas/042_dlf_wix_ai_implementation_route_review.sql` adds five route/artifact/
+setup/execution/review tables plus six read-only views, including
+`vw_dlf_wix_ai_implementation_readiness`. `scripts/review_dlf_wix_ai_implementation_route.py`
+(dry-run default; `--real-ok --apply`) selects `wix_git_cli` with fallback
+`wix_custom_element_velo`, records 11 passed artifact reviews, 7 pending minimum operator setup
+tasks, 3 planned AI execution steps, and 8 pending review gates.
+
+This is explicitly **not** a manual drag/drop Wix build. The operator only handles unavoidable Wix
+platform setup such as Git/CLI availability, GitHub connection, Wix CLI use, Velo enablement, one
+Custom Element, preview, and status reporting. No Wix API/key, publish, real domain, indexing, live
+form/webhook/tracking, leads, contacts, or messages. Cleanup dry-run:
+`scripts/cleanup_dlf_wix_ai_implementation_route_review.py --launch-key dlf-westpark-andheri-west
+--real-ok`. See `docs/PHASE_7_24_WIX_AI_IMPLEMENTATION_ROUTE_REVIEW.md`.
