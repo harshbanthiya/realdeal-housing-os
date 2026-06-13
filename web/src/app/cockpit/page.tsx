@@ -22,11 +22,10 @@ const STREAMS: { label: string; tone: Tone; state: string }[] = [
   { label: "Legal / RERA", tone: "blocked", state: "Blocked" },
 ];
 
-export default function CockpitHome() {
-  const buildings = getBuildings();
-  const reviews = getGlobalReviewQueue();
-  const agents = getAgentActivity();
-  const blockers = getGlobalBlockers();
+export default async function CockpitHome() {
+  const [buildings, reviews, agents, blockers] = await Promise.all([
+    getBuildings(), getGlobalReviewQueue(), getAgentActivity(), getGlobalBlockers(),
+  ]);
 
   return (
     <div className="px-6 py-7">

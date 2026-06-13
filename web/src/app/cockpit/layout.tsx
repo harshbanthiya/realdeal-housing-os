@@ -1,13 +1,20 @@
+import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/cockpit/sidebar";
 import { Pill } from "@/components/ui/primitives";
 import { getBuildings } from "@/lib/cockpit/data";
 
-export const metadata = { title: "Cockpit" };
+export const metadata = { title: "Cockpit", robots: { index: false, follow: false } };
 
-export default function CockpitLayout({
+export default async function CockpitLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const buildings = getBuildings();
+  // Internal tool — never serve on a public/production deploy (e.g. Vercel).
+  // Stays available in local dev; to run it on a protected host, set COCKPIT_ENABLED=true + add auth.
+  if (process.env.NODE_ENV === "production" && process.env.COCKPIT_ENABLED !== "true") {
+    notFound();
+  }
+
+  const buildings = await getBuildings();
   const launch = buildings.find((b) => b.mode === "launch");
 
   return (

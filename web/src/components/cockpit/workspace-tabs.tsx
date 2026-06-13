@@ -5,7 +5,7 @@ import { Card, Pill, Dot, Mono, type Tone } from "@/components/ui/primitives";
 import {
   TABS, type TabKey, type Building, type Person, type Keyword, type Campaign,
   type Fact, type WebPage, type ReviewItem, type AgentTask, type KanbanTask, type CalendarItem, type Listing,
-} from "@/lib/cockpit/data";
+} from "@/lib/cockpit/types";
 
 export interface WorkspaceData {
   building: Building;
@@ -169,6 +169,7 @@ function Listings({ items }: { items: Listing[] }) {
 }
 
 function Seo({ keywords }: { keywords: Keyword[] }) {
+  if (!keywords.length) return <Empty>No keywords tracked yet — the SEO agent will populate these.</Empty>;
   return (
     <Card>
       <div className="border-b border-mist px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-ink/40">keyword · rank · volume · status</div>
@@ -187,6 +188,7 @@ function Seo({ keywords }: { keywords: Keyword[] }) {
 }
 
 function Campaigns({ items }: { items: Campaign[] }) {
+  if (!items.length) return <Empty>No campaigns yet — drafts appear here once the campaign agent runs (consent-gated).</Empty>;
   return (
     <Card>
       {items.map((c, i) => (
@@ -206,6 +208,7 @@ function Campaigns({ items }: { items: Campaign[] }) {
 }
 
 function Rera({ facts }: { facts: Fact[] }) {
+  if (!facts.length) return <Empty>No RERA facts captured yet.</Empty>;
   return (
     <Card>
       {facts.map((f, i) => (
@@ -275,7 +278,7 @@ function Agents({ items }: { items: AgentTask[] }) {
             <span className="text-sm font-medium text-teal">{a.agent}</span>
             <span className="text-sm text-ink/70">{a.task}</span>
             <Mono className="text-[11px]">{a.cadence}</Mono>
-            <Pill tone={a.status}>{a.status === "ready" ? "running" : "needs review"}</Pill>
+            <Pill tone={a.status}>{a.status === "ready" ? "running" : a.status === "review" ? "needs review" : "planned"}</Pill>
           </div>
         </Row>
       ))}

@@ -1,211 +1,189 @@
 /**
  * Cockpit data layer.
  *
- * Shaped to mirror the Postgres masked views (vw_dlf_operator_cockpit_home,
- * vw_*_review_queue, vw_ai_agent_task_dashboard, vw_owner_relationship_dashboard,
- * etc.). Today it returns seed data derived from the real portfolio so the shell
- * is clickable without DB credentials; each getter is a drop-in seam for a
- * read-only `pg` query against the corresponding view. READ-ONLY by design.
+ * When DATABASE_URL is set (web/.env.local), getters read the REAL local
+ * Postgres (read-only, via db.ts) mapped to the masked views/tables. When it's
+ * not set, they fall back to seed data so the shell still renders. READ-ONLY:
+ * every query runs in a READ ONLY transaction — mutations stay with the guarded
+ * apply/revert scripts.
  */
-import { projects as siteProjects, listings, type Listing } from "@/lib/site";
-import { facts as dlfFacts, faqs as dlfFaqs } from "@/lib/content";
+import { projects as siteProjects, listings as siteListings, type Listing } from "@/lib/site";
+import { facts as dlfFacts } from "@/lib/content";
 import type { Tone } from "@/components/ui/primitives";
+import { isDbConfigured, readQuery } from "@/lib/db";
+import type {
+  Mode, Building, ReviewItem, AgentEvent, Blocker, Person, Keyword,
+  Campaign, Fact, WebPage, AgentTask, KanbanTask, CalendarItem,
+} from "./types";
 
-export type Mode = "prospecting" | "active" | "launch" | "post_launch";
+export * from "./types";
 
-export interface Building {
-  slug: string;
-  name: string;
-  location: string;
-  mode: Mode;
-  launchInDays?: number;
-  stats: { owners: number; tenants: number; leads: number; warm: number; listings: number; openReviews: number; blockers: number };
-  seoRank: string;
+const live = isDbConfigured;
+const DLF_SLUG = "dlf-westpark-andheri-west";
+const num = (v: unknown) => Number(v ?? 0) || 0;
+
+function maskName(n: string) { const t = (n || "").trim().split(/\s+/); return t[0] ? `${t[0]} ••` : "Contact"; }
+function maskPhone(p: string) { const d = String(p || "").replace(/\D/g, ""); return d ? `•••• ••${d.slice(-2)}` : "—"; }
+function launchDays(month?: string | null, date?: string | null) {
+  const now = new Date();
+  let target: Date | null = date ? new Date(date) : null;
+  if (!target && month) { const m = ["january","february","march","april","may","june","july","august","september","october","november","december"].indexOf(month.toLowerCase()); if (m >= 0) { target = new Date(now.getFullYear(), m, 1); if (target < now) target = new Date(now.getFullYear() + 1, m, 1); } }
+  if (!target) return undefined;
+  return Math.max(0, Math.round((target.getTime() - now.getTime()) / 86_400_000));
 }
 
-const META: Record<string, Omit<Building, "slug" | "name" | "location">> = {
-  "dlf-westpark-andheri-west": { mode: "launch", launchInDays: 58, seoRank: "#12 ↑", stats: { owners: 0, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: 14, blockers: 3 } },
-  "imperial-heights": { mode: "active", seoRank: "#3 ↑", stats: { owners: 9, tenants: 4, leads: 6, warm: 2, listings: 8, openReviews: 5, blockers: 0 } },
-  "kalpataru-radiance": { mode: "active", seoRank: "#5 →", stats: { owners: 6, tenants: 2, leads: 3, warm: 1, listings: 5, openReviews: 2, blockers: 0 } },
-  "ekta-tripolis": { mode: "active", seoRank: "#7 ↑", stats: { owners: 4, tenants: 3, leads: 2, warm: 0, listings: 3, openReviews: 1, blockers: 0 } },
-  "bharat-auravistas": { mode: "prospecting", seoRank: "#21 ↑", stats: { owners: 2, tenants: 0, leads: 1, warm: 0, listings: 3, openReviews: 1, blockers: 1 } },
-};
-
-export function getBuildings(): Building[] {
-  const dlf: Building = {
-    slug: "dlf-westpark-andheri-west",
-    name: "DLF Westpark",
-    location: "Andheri West",
-    ...META["dlf-westpark-andheri-west"],
-  };
-  const rest = siteProjects.map((p) => ({
-    slug: p.slug,
-    name: p.name,
-    location: p.location,
-    ...META[p.slug],
-  }));
-  return [dlf, ...rest];
-}
-
-export function getBuilding(slug: string): Building | undefined {
-  return getBuildings().find((b) => b.slug === slug);
-}
-
-export const TAB_KEYS = [
-  "overview", "owners", "leads", "listings", "seo", "campaigns", "rera", "website", "reviews", "agents",
-] as const;
-export type TabKey = (typeof TAB_KEYS)[number];
-
-export const TABS: { key: TabKey; label: string; icon: string }[] = [
-  { key: "overview", label: "Overview", icon: "ti-layout-dashboard" },
-  { key: "owners", label: "Owners & tenants", icon: "ti-users" },
-  { key: "leads", label: "Leads", icon: "ti-inbox" },
-  { key: "listings", label: "Listings", icon: "ti-home" },
-  { key: "seo", label: "SEO & content", icon: "ti-search" },
-  { key: "campaigns", label: "Campaigns", icon: "ti-send" },
-  { key: "rera", label: "RERA facts", icon: "ti-shield-check" },
-  { key: "website", label: "Website pages", icon: "ti-world" },
-  { key: "reviews", label: "Reviews", icon: "ti-checkbox" },
-  { key: "agents", label: "Agents", icon: "ti-robot" },
+// ---------------- seed fallback ----------------
+const SEED_BUILDINGS: Building[] = [
+  { slug: DLF_SLUG, name: "DLF Westpark", location: "Andheri West", mode: "launch", launchInDays: 58, seoRank: "#12 ↑", stats: { owners: 0, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: 14, blockers: 3 } },
+  ...siteProjects.map((p) => ({ slug: p.slug, name: p.name, location: p.location, mode: "active" as Mode, seoRank: "#5", stats: { owners: 6, tenants: 3, leads: 3, warm: 1, listings: 4, openReviews: 2, blockers: 0 } })),
 ];
 
-// ---- portfolio-level ----
-export interface ReviewItem { domain: string; title: string; building: string; age: string; tone: Tone }
-export function getGlobalReviewQueue(): ReviewItem[] {
-  return [
+// ---------------- buildings ----------------
+export async function getBuildings(): Promise<Building[]> {
+  if (!live()) return SEED_BUILDINGS;
+
+  const lps = await readQuery<{ launch_key: string; project_display_name: string; area: string; expected_launch_month: string; expected_launch_date: string; seo_status: string; id: string }>(
+    `select id::text, launch_key, project_display_name, area, expected_launch_month, expected_launch_date::text, seo_status from launch_projects`);
+  const blds = await readQuery<{ name: string; locality: string }>(
+    `select name, max(locality) locality from buildings group by name`);
+  const rd = await readQuery<{ id: string; open: string; blockers: string }>(
+    `select launch_project_id::text id, count(*) filter (where check_status in ('pending','needs_review','failed')) open, count(*) filter (where severity='blocker' and check_status <> 'passed') blockers from launch_readiness_checks group by launch_project_id`);
+  const owners = num((await readQuery<{ n: string }>(`select count(*) n from contact_property_relationships where relationship_type='owner'`))[0]?.n);
+  const reraOpen = num((await readQuery<{ n: string }>(`select count(*) n from rera_project_profiles where verification_status <> 'verified'`))[0]?.n);
+  const kw = num((await readQuery<{ n: string }>(`select count(*) n from seo_keywords`))[0]?.n);
+
+  const out: Building[] = [];
+  for (const p of lps) {
+    const r = rd.find((x) => x.id === p.id);
+    out.push({
+      slug: p.launch_key, name: p.project_display_name, location: p.area, mode: "launch",
+      launchInDays: launchDays(p.expected_launch_month, p.expected_launch_date),
+      seoRank: p.seo_status || "—",
+      stats: { owners: 0, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: num(r?.open), blockers: num(r?.blockers) },
+    });
+  }
+  for (const b of blds) {
+    out.push({
+      slug: b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      name: b.name, location: b.locality || "Mumbai", mode: "active", seoRank: `${kw} kw`,
+      stats: { owners, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: reraOpen, blockers: 0 },
+    });
+  }
+  return out;
+}
+export async function getBuilding(slug: string): Promise<Building | undefined> {
+  return (await getBuildings()).find((b) => b.slug === slug);
+}
+
+// ---------------- portfolio panels ----------------
+export async function getGlobalReviewQueue(): Promise<ReviewItem[]> {
+  if (!live()) return [
     { domain: "design", title: "DLF Gallery White — 14 refinement actions", building: "DLF Westpark", age: "2d", tone: "review" },
-    { domain: "rera", title: "Verify carpet-area record vs MahaRERA", building: "DLF Westpark", age: "1d", tone: "review" },
-    { domain: "content", title: "Blog draft: Andheri West connectivity", building: "DLF Westpark", age: "4h", tone: "review" },
     { domain: "contacts", title: "3 duplicate owner candidates", building: "Imperial Heights", age: "3d", tone: "review" },
-    { domain: "seo", title: "5 new keyword targets proposed", building: "Imperial Heights", age: "6h", tone: "review" },
-    { domain: "permissions", title: "9 WhatsApp permission rows need evidence", building: "DLF Westpark", age: "2d", tone: "blocked" },
   ];
+  const out: ReviewItem[] = [];
+  const rc = await readQuery<{ title: string; severity: string }>(
+    `select coalesce(safe_summary, check_type) title, severity from launch_readiness_checks where check_status in ('needs_review','pending') and severity in ('blocker','high') order by severity limit 8`);
+  for (const r of rc) out.push({ domain: "launch", title: r.title, building: "DLF Westpark", age: "open", tone: r.severity === "blocker" ? "blocked" : "review" });
+  const rr = await readQuery<{ official_project_name: string }>(`select official_project_name from rera_project_profiles where verification_status <> 'verified'`);
+  for (const r of rr) out.push({ domain: "rera", title: `Verify RERA — ${r.official_project_name}`, building: "Imperial Heights", age: "open", tone: "review" });
+  return out;
+}
+export async function getAgentActivity(): Promise<AgentEvent[]> {
+  if (!live()) return [{ agent: "SEO monitor", action: "Captured SERP positions", building: "Imperial Heights", status: "ready" }];
+  return [{ agent: "runtime", action: "AI agent runtime not deployed yet — agents are planned, not running", building: "—", status: "neutral" }];
+}
+export async function getGlobalBlockers(): Promise<Blocker[]> {
+  if (!live()) return [{ id: "BLK-101", building: "DLF Westpark", statement: "RERA registration unverified", openFor: "2d" }];
+  const rows = await readQuery<{ check_type: string; safe_summary: string }>(
+    `select check_type, coalesce(safe_summary, check_type) safe_summary from launch_readiness_checks where severity='blocker' and check_status <> 'passed' order by created_at limit 8`);
+  return rows.map((r, i) => ({ id: `BLK-${String(i + 1).padStart(3, "0")}`, building: "DLF Westpark", statement: r.safe_summary, openFor: r.check_type }));
 }
 
-export interface AgentEvent { agent: string; action: string; building: string; status: Tone }
-export function getAgentActivity(): AgentEvent[] {
+// ---------------- workspace panels ----------------
+export async function getOwnersTenants(slug: string): Promise<Person[]> {
+  if (!live()) return slug === DLF_SLUG ? [] : [{ name: "Masked · owner A", role: "owner", unit: "Wing A-102", phone: "+91 •••• ••3889" }];
+  if (slug === DLF_SLUG) return [];
+  const rows = await readQuery<{ full_name: string; relationship_type: string; phone_primary: string; building_unit_id: string | null }>(
+    `select c.full_name, r.relationship_type, c.phone_primary, r.building_unit_id::text from contact_property_relationships r join contacts c on c.id = r.contact_id order by r.relationship_type`);
+  return rows.map((r) => ({
+    name: maskName(r.full_name),
+    role: r.relationship_type === "owner" ? "owner" : r.relationship_type === "tenant" ? "tenant" : "client",
+    unit: r.building_unit_id ? "unit linked" : "—",
+    phone: maskPhone(r.phone_primary),
+  }));
+}
+export async function getListings(slug: string): Promise<Listing[]> {
+  if (!live()) { const b = SEED_BUILDINGS.find((x) => x.slug === slug); return b ? siteListings.filter((l) => l.project === b.name) : []; }
+  return []; // no inventory imported into Postgres yet — honest empty state
+}
+export async function getKeywords(slug: string): Promise<Keyword[]> {
+  if (!live()) return [{ term: "imperial heights goregaon", rank: "#3", volume: "1.9k", status: "ready" }];
+  const rows = await readQuery<{ keyword: string; status: string; intent: string }>(
+    `select keyword, status, intent from seo_keywords order by priority nulls last limit 30`);
+  return rows.map((r) => ({ term: r.keyword, rank: "—", volume: r.intent || "—", status: r.status === "ranking" ? "ready" : "review" }));
+}
+export async function getCampaigns(slug: string): Promise<Campaign[]> {
+  if (!live()) return [{ name: "Launch teaser", channel: "WhatsApp", status: "blocked", note: "consent pending" }];
+  const rows = await readQuery<{ channel_type: string; channel_status: string }>(
+    `select channel_type, channel_status from launch_channels order by channel_type limit 20`).catch(() => []);
+  return rows.map((r) => ({ name: `${r.channel_type} channel`, channel: r.channel_type, status: "neutral", note: r.channel_status || "planned" }));
+}
+export async function getReraFacts(slug: string): Promise<Fact[]> {
+  if (slug === DLF_SLUG) {
+    return dlfFacts.map((f) => ({ label: f.label, value: f.value, status: f.status === "operator_confirmed" ? "ready" : f.status === "pending_review" ? "review" : "blocked" }));
+  }
+  if (!live()) return [{ label: "RERA Registration", value: "Verified", status: "ready" }];
+  const rows = await readQuery<{ official_project_name: string; rera_registration_number: string; registration_status: string; verification_status: string; district: string; locality: string }>(
+    `select official_project_name, rera_registration_number, registration_status, verification_status, district, locality from rera_project_profiles limit 1`);
+  if (!rows.length) return [{ label: "RERA", value: "No profile captured yet", status: "review" }];
+  const r = rows[0];
+  const vtone: Tone = r.verification_status === "verified" ? "ready" : "review";
   return [
-    { agent: "SEO monitor", action: "Captured SERP positions for 10 keywords", building: "Imperial Heights", status: "ready" },
-    { agent: "Content drafter", action: "Drafted 'DLF debut in Mumbai' (pending review)", building: "DLF Westpark", status: "review" },
-    { agent: "Data cleaner", action: "Proposed 3 owner dedupe merges", building: "Imperial Heights", status: "review" },
-    { agent: "Campaign drafter", action: "Drafted 4 WhatsApp templates (consent-gated)", building: "DLF Westpark", status: "review" },
-    { agent: "SEO monitor", action: "Rank for 'Andheri West luxury' rose to #12", building: "DLF Westpark", status: "ready" },
+    { label: "Official project name", value: r.official_project_name || "—", status: vtone },
+    { label: "RERA registration", value: r.rera_registration_number || "RERA_VERIFY", status: r.registration_status?.includes("registered") ? "ready" : "review" },
+    { label: "Verification status", value: r.verification_status || "—", status: vtone },
+    { label: "Location", value: [r.locality, r.district].filter(Boolean).join(", ") || "—", status: "review" },
   ];
 }
-
-export interface Blocker { id: string; building: string; statement: string; openFor: string }
-export function getGlobalBlockers(): Blocker[] {
-  return [
-    { id: "BLK-101", building: "DLF Westpark", statement: "RERA registration unverified — gates pricing publish", openFor: "2d 4h" },
-    { id: "BLK-102", building: "DLF Westpark", statement: "WhatsApp template approval pending (provider)", openFor: "1d 9h" },
-    { id: "BLK-103", building: "DLF Westpark", statement: "Official price not confirmed (PRICE_VERIFY)", openFor: "5d" },
+export async function getWebsitePages(slug: string): Promise<WebPage[]> {
+  if (slug === DLF_SLUG) return [
+    { path: "/dlf-westpark-andheri-west", title: "Landing page (Next.js)", status: "ready" },
+    { path: "wix:Test/cms", title: "Wix Test CMS — 7 collections", status: "ready" },
+    { path: "publish", title: "Production publish", status: "blocked" },
   ];
+  return [{ path: `/projects/${slug}`, title: "Project page (Next.js)", status: "ready" }];
 }
-
-// ---- workspace-level ----
-export interface Person { name: string; role: "owner" | "tenant" | "client"; unit: string; phone: string }
-export function getOwnersTenants(slug: string): Person[] {
-  if (META[slug]?.stats.owners === 0) return [];
-  return [
-    { name: "Masked · owner A", role: "owner", unit: "Wing A-102", phone: "+91 •••• ••3889" },
-    { name: "Masked · owner B", role: "owner", unit: "Wing A-203", phone: "+91 •••• ••1142" },
-    { name: "Masked · tenant A", role: "tenant", unit: "Wing B-1104", phone: "+91 •••• ••7720" },
-    { name: "Masked · client A", role: "client", unit: "—", phone: "+91 •••• ••3051" },
-  ];
-}
-
-export function getListings(slug: string): Listing[] {
-  const b = getBuilding(slug);
+export async function getBuildingReviews(slug: string): Promise<ReviewItem[]> {
+  const b = await getBuilding(slug);
   if (!b) return [];
-  return listings.filter((l) => l.project === b.name);
+  return (await getGlobalReviewQueue()).filter((r) => r.building === b.name);
 }
-
-export interface Keyword { term: string; rank: string; volume: string; status: Tone }
-export function getKeywords(slug: string): Keyword[] {
-  const base = slug.includes("dlf")
-    ? [["dlf westpark andheri west", "#12", "1.2k", "review"], ["dlf andheri new launch", "#9", "880", "review"], ["andheri west luxury flats", "#15", "2.4k", "ready"]]
-    : [["imperial heights goregaon", "#3", "1.9k", "ready"], ["goregaon west 3 bhk", "#5", "3.1k", "ready"], ["imperial heights for sale", "#2", "720", "ready"]];
-  return base.map(([term, rank, volume, status]) => ({ term, rank, volume, status: status as Tone }));
-}
-
-export interface Campaign { name: string; channel: string; status: Tone; note: string }
-export function getCampaigns(slug: string): Campaign[] {
-  if (slug.includes("dlf")) {
-    return [
-      { name: "Launch teaser — owners", channel: "WhatsApp", status: "blocked", note: "consent evidence pending" },
-      { name: "Andheri West awareness", channel: "Email", status: "review", note: "draft ready for review" },
-      { name: "Pre-launch interest list", channel: "Landing form", status: "ready", note: "preview-only form live" },
-    ];
-  }
-  return [
-    { name: "Resale interest — Goregaon", channel: "WhatsApp", status: "review", note: "draft, consent-gated" },
-    { name: "Newsletter — new listings", channel: "Email", status: "ready", note: "send disabled (staging)" },
+export async function getAgentTasks(slug: string): Promise<AgentTask[]> {
+  const planned: AgentTask[] = [
+    { agent: "SEO monitor", task: "Track SERP positions daily", cadence: "daily 06:00", status: "neutral" },
+    { agent: "Content drafter", task: "Draft blog/landing per gap", cadence: "on gap", status: "neutral" },
+    { agent: "Data cleaner", task: "Dedupe + classify contacts", cadence: "nightly", status: "neutral" },
+    { agent: "Campaign drafter", task: "Draft compliant outreach", cadence: "weekly", status: "neutral" },
   ];
+  return planned; // runtime not deployed yet — shown as planned
 }
 
-export interface Fact { label: string; value: string; status: Tone }
-export function getReraFacts(slug: string): Fact[] {
-  if (slug.includes("dlf")) {
-    return dlfFacts.map((f) => ({
-      label: f.label,
-      value: f.value,
-      status: f.status === "operator_confirmed" ? "ready" : f.status === "pending_review" ? "review" : "blocked",
-    }));
-  }
-  return [
-    { label: "RERA Registration", value: "Verified · P51800000000", status: "ready" },
-    { label: "Carpet area records", value: "Matched to MahaRERA", status: "ready" },
-    { label: "Possession", value: "Ready-to-move", status: "ready" },
-  ];
-}
-
-export interface WebPage { path: string; title: string; status: Tone }
-export function getWebsitePages(slug: string): WebPage[] {
-  if (slug.includes("dlf")) {
-    return [
-      { path: "/dlf-westpark-andheri-west", title: "Landing page (Next.js)", status: "ready" },
-      { path: "wix:Test/cms", title: "Wix Test CMS — 7 collections", status: "ready" },
-      { path: "publish", title: "Production publish", status: "blocked" },
-    ];
-  }
-  return [
-    { path: `/projects/${slug}`, title: "Project page (Next.js)", status: "ready" },
-    { path: "listings", title: "Listing detail pages", status: "review" },
-  ];
-}
-
-export function getBuildingReviews(slug: string): ReviewItem[] {
-  const b = getBuilding(slug);
-  return getGlobalReviewQueue().filter((r) => b && r.building === b.name);
-}
-
-export interface AgentTask { agent: string; task: string; cadence: string; status: Tone }
-export function getAgentTasks(slug: string): AgentTask[] {
-  return [
-    { agent: "SEO monitor", task: "Track SERP positions daily", cadence: "daily 06:00", status: "ready" },
-    { agent: "Content drafter", task: "Draft 1 blog/landing per gap", cadence: "on gap found", status: "review" },
-    { agent: "Data cleaner", task: "Dedupe + classify contacts", cadence: "nightly", status: "ready" },
-    { agent: "Campaign drafter", task: "Draft compliant outreach", cadence: "weekly", status: "review" },
-  ];
-}
-
-// ---- launch mode ----
-export interface KanbanTask { title: string; col: "todo" | "doing" | "blocked" | "done"; stream: string }
-export function getLaunchKanban(): KanbanTask[] {
-  return [
+// ---------------- launch mode ----------------
+export async function getLaunchKanban(slug: string): Promise<KanbanTask[]> {
+  if (!live()) return [
     { title: "Confirm official project name", col: "done", stream: "identity" },
-    { title: "Approve Gallery White design", col: "done", stream: "design" },
-    { title: "Build staging landing page", col: "doing", stream: "website" },
     { title: "Verify RERA registration", col: "blocked", stream: "legal" },
-    { title: "Confirm starting price", col: "blocked", stream: "legal" },
-    { title: "WhatsApp template approval", col: "blocked", stream: "campaign" },
-    { title: "Draft launch blog series", col: "doing", stream: "seo" },
+    { title: "Build staging landing page", col: "doing", stream: "website" },
     { title: "Segment owner/tenant audience", col: "todo", stream: "data" },
-    { title: "Set up lead intake (preview)", col: "todo", stream: "leads" },
   ];
+  const rows = await readQuery<{ task_type: string; task_status: string; safe_summary: string }>(
+    `select t.task_type, t.task_status, coalesce(t.safe_summary, t.task_type) safe_summary
+     from launch_operator_tasks t join launch_projects p on p.id = t.launch_project_id
+     where p.launch_key = $1 order by t.created_at`, [slug]);
+  const colOf = (s: string): KanbanTask["col"] => s === "done" ? "done" : s === "in_progress" ? "doing" : s === "blocked" ? "blocked" : "todo";
+  return rows.map((r) => ({ title: r.safe_summary, col: colOf(r.task_status), stream: r.task_type?.split("_")[0] || "task" }));
 }
-
-export interface CalendarItem { when: string; title: string; channel: string }
 export function getLaunchCalendar(): CalendarItem[] {
   return [
     { when: "T-45d", title: "Publish first SEO blog", channel: "Website" },

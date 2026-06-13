@@ -7,8 +7,8 @@ import {
   getLaunchKanban, getLaunchCalendar, type Mode,
 } from "@/lib/cockpit/data";
 
-export function generateStaticParams() {
-  return getBuildings().map((b) => ({ slug: b.slug }));
+export async function generateStaticParams() {
+  return (await getBuildings()).map((b) => ({ slug: b.slug }));
 }
 
 const MODE_LABEL: Record<Mode, string> = {
@@ -21,22 +21,14 @@ const MODES: Mode[] = ["prospecting", "active", "launch", "post_launch"];
 
 export default async function WorkspacePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const building = getBuilding(slug);
+  const building = await getBuilding(slug);
   if (!building) notFound();
 
-  const data = {
-    building,
-    owners: getOwnersTenants(slug),
-    listings: getListings(slug),
-    keywords: getKeywords(slug),
-    campaigns: getCampaigns(slug),
-    rera: getReraFacts(slug),
-    pages: getWebsitePages(slug),
-    reviews: getBuildingReviews(slug),
-    agents: getAgentTasks(slug),
-    kanban: getLaunchKanban(),
-    calendar: getLaunchCalendar(),
-  };
+  const [owners, listings, keywords, campaigns, rera, pages, reviews, agents, kanban] = await Promise.all([
+    getOwnersTenants(slug), getListings(slug), getKeywords(slug), getCampaigns(slug),
+    getReraFacts(slug), getWebsitePages(slug), getBuildingReviews(slug), getAgentTasks(slug), getLaunchKanban(slug),
+  ]);
+  const data = { building, owners, listings, keywords, campaigns, rera, pages, reviews, agents, kanban, calendar: getLaunchCalendar() };
 
   return (
     <div className="px-6 py-7">
