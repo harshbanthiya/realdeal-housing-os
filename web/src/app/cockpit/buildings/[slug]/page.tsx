@@ -2,14 +2,12 @@ import { notFound } from "next/navigation";
 import { Pill, type Tone } from "@/components/ui/primitives";
 import { WorkspaceTabs } from "@/components/cockpit/workspace-tabs";
 import {
-  getBuildings, getBuilding, getOwnersTenants, getListings, getKeywords,
+  getBuilding, getOwnersTenants, getListings, getKeywords,
   getCampaigns, getReraFacts, getWebsitePages, getBuildingReviews, getAgentTasks,
   getLaunchKanban, getLaunchCalendar, type Mode,
 } from "@/lib/cockpit/data";
 
-export async function generateStaticParams() {
-  return (await getBuildings()).map((b) => ({ slug: b.slug }));
-}
+export const dynamic = "force-dynamic";
 
 const MODE_LABEL: Record<Mode, string> = {
   launch: "Launch", active: "Active", prospecting: "Prospecting", post_launch: "Post-launch",

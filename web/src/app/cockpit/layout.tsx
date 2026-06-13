@@ -5,6 +5,9 @@ import { getBuildings } from "@/lib/cockpit/data";
 
 export const metadata = { title: "Cockpit", robots: { index: false, follow: false } };
 
+// Internal, live-DB tool — render per request, never prerender at build time.
+export const dynamic = "force-dynamic";
+
 export default async function CockpitLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
