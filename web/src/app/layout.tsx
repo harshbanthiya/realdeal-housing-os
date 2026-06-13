@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -34,11 +32,7 @@ export default function RootLayout({
       lang="en"
       className={`${manrope.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-ink">
-        <SiteHeader />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
-      </body>
+      <body className="min-h-full bg-white text-ink">{children}</body>
     </html>
   );
 }

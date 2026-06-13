@@ -8,6 +8,8 @@
   --color-mist: #eef1ef;
   --color-mist-deep: #e3e8e5;
   --color-warm: #c2493d;
+  --color-accent: #3e82b0;
+  --color-amber: #b6862c;
   --font-sans: var(--font-manrope);
   --font-mono: var(--font-mono-token);
 }
