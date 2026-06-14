@@ -50,6 +50,11 @@ client_files/
 contact-data/
 contact_data/
 contacts/
+# Exception: cockpit app SOURCE lives under a dir named "contacts" — it is code,
+# not contact data, so re-include it. (Data still lives in exports/ + imports/,
+# which stay ignored above. Keep this before the **/._* rule at EOF.)
+!web/src/app/cockpit/contacts/
+!web/src/app/cockpit/contacts/**
 leads/
 owners/
 private/

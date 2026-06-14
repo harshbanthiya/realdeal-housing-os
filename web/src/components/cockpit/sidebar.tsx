@@ -30,6 +30,12 @@ export function Sidebar({ buildings }: { buildings: Building[] }) {
         >
           Portfolio
         </Link>
+        <Link
+          href="/cockpit/contacts"
+          className={`mt-0.5 flex items-center gap-2 rounded-lg px-3 py-2 font-medium ${path === "/cockpit/contacts" ? "bg-white text-teal shadow-[0_0_0_1px_var(--color-mist-deep)]" : "text-ink/65 hover:bg-white/60"}`}
+        >
+          Contacts
+        </Link>
 
         <div className="mt-5 mb-2 px-3 font-mono text-[10px] uppercase tracking-[0.15em] text-ink/40">
           Buildings · {buildings.length}
