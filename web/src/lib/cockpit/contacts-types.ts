@@ -112,3 +112,72 @@ export interface QueueFilter {
   realOnly?: boolean;
   limit?: number;
 }
+
+// ---- Pipeline Kanban ----
+export type PipelineStage = "in_review" | "approved" | "canonical" | "attached";
+
+export interface PipelineCard {
+  key: string;
+  primary: string;        // masked display hint / title
+  secondary?: string;     // batch, source, or note
+  role?: string;          // lead | owner | tenant | broker (attached stage)
+  building?: string;      // building name (attached stage)
+  tone: Tone;
+}
+
+export interface PipelineColumn {
+  stage: PipelineStage;
+  label: string;
+  total: number;          // full count in this stage
+  cards: PipelineCard[];  // capped sample
+  tone: Tone;
+}
+
+export const PIPELINE_STAGE_META: Record<PipelineStage, { label: string; tone: Tone; hint: string }> = {
+  in_review: { label: "In review", tone: "review", hint: "merge candidate, awaiting decision" },
+  approved: { label: "Approved", tone: "active", hint: "ready to merge into a canonical contact" },
+  canonical: { label: "Canonical", tone: "ready", hint: "cleaned contact, not yet attached" },
+  attached: { label: "Attached", tone: "ready", hint: "linked to a building by role" },
+};
+
+/** Friendly label for a relationship role. */
+export function roleLabel(role: string): string {
+  const r = role.toLowerCase();
+  if (r === "owner") return "owner";
+  if (r === "tenant") return "tenant";
+  if (r === "broker" || r === "agent") return "broker";
+  if (r === "buyer" || r === "lead") return "lead";
+  return r;
+}
+
+// ---- All-contacts sheet ----
+export interface ContactSheetRow {
+  contactId: string;
+  displayHint: string;
+  canonicalStatus: string;
+  role: string | null;       // active relationship role, if any
+  building: string | null;
+  methodCount: number;
+  leadRequirementCount: number;
+  sourceFileCount: number;
+  mergeLabel: string | null;
+  createdAt: string;
+}
+
+/** Whitelisted sort keys → safe SQL columns (never interpolate raw input). */
+export const SHEET_SORTS = {
+  created: "c.created_at",
+  contact: "c.display_hint",
+  status: "c.canonical_status",
+  methods: "c.method_count",
+} as const;
+export type SheetSortKey = keyof typeof SHEET_SORTS;
+
+export interface ContactSheet {
+  rows: ContactSheetRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  sort: SheetSortKey;
+  dir: "asc" | "desc";
+}

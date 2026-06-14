@@ -16,8 +16,10 @@
 import { isDbConfigured, readQuery } from "@/lib/db";
 import type {
   ReviewBatch, ReviewQueueItem, DuplicateCandidate, CanonicalContactRow,
-  ContactRelationshipRow, QueueCount, QueueFilter,
+  ContactRelationshipRow, QueueCount, QueueFilter, PipelineColumn, PipelineCard,
+  ContactSheet, ContactSheetRow, SheetSortKey,
 } from "./contacts-types";
+import { PIPELINE_STAGE_META, roleLabel, SHEET_SORTS } from "./contacts-types";
 
 // Re-export types + pure helpers so existing server-side imports from
 // "@/lib/cockpit/contacts" keep working. Client components import the same
@@ -194,4 +196,135 @@ export async function getContactRelationships(): Promise<ContactRelationshipRow[
     relationshipType: String(r.relationship_type ?? ""),
     relationshipStatus: String(r.relationship_status ?? ""),
   }));
+}
+
+const PIPELINE_CARD_CAP = 12;
+
+/**
+ * The contact-stage Kanban: each contact's journey In review → Approved →
+ * Canonical → Attached(by role+building). Mutually-exclusive columns, real
+ * batches only, masked. Cards capped at PIPELINE_CARD_CAP per column; `total`
+ * carries the full count so the UI can show "+N more".
+ */
+export async function getContactPipeline(): Promise<{ columns: PipelineColumn[]; importedRows: number }> {
+  if (!live()) {
+    const empty: PipelineCard[] = [];
+    return {
+      importedRows: 80,
+      columns: (["in_review", "approved", "canonical", "attached"] as const).map((s) => ({
+        stage: s, label: PIPELINE_STAGE_META[s].label, tone: PIPELINE_STAGE_META[s].tone, total: 0, cards: empty,
+      })),
+    };
+  }
+
+  const realBatch = `q.batch_label in (${REAL_BATCH_LABELS})`;
+  const [reviewCards, reviewCounts, canonical, attached, importedRow] = await Promise.all([
+    readQuery<Record<string, unknown>>(
+      `select review_item_id::text id, status, coalesce(nullif(title,''), 'Merge candidate') title, batch_label
+       from vw_review_queue q
+       where q.review_type='merge_candidate' and q.status in ('pending','approved') and ${realBatch}
+       order by q.status, q.created_at limit ${PIPELINE_CARD_CAP * 2}`),
+    readQuery<Record<string, unknown>>(
+      `select q.status, count(*) n from vw_review_queue q
+       where q.review_type='merge_candidate' and q.status in ('pending','approved') and ${realBatch}
+       group by q.status`),
+    readQuery<Record<string, unknown>>(
+      `select c.contact_id::text id, c.display_hint, c.merge_label,
+              exists(select 1 from vw_contact_property_relationship_review r
+                     where r.contact_id = c.contact_id and r.relationship_status='active') as attached
+       from vw_canonical_contacts_review c where c.is_test = false`),
+    readQuery<Record<string, unknown>>(
+      `select relationship_id::text id, contact_display_hint, relationship_type, building_name, wing, unit_number
+       from vw_contact_property_relationship_review
+       where relationship_status='active' order by building_name limit ${PIPELINE_CARD_CAP}`),
+    readQuery<{ n: string }>(
+      `select count(*) n from contact_import_rows cir
+       where cir.import_batch_id in (select ib.id from import_batches ib
+         where coalesce((ib.metadata->>'is_real_import')::boolean, false))`),
+  ]);
+
+  const countOfStatus = (s: string) => num(reviewCounts.find((r) => r.status === s)?.n);
+  const reviewCardsFor = (s: string): PipelineCard[] =>
+    reviewCards.filter((r) => r.status === s).slice(0, PIPELINE_CARD_CAP).map((r) => ({
+      key: String(r.id), primary: String(r.title), secondary: String(r.batch_label ?? ""),
+      tone: PIPELINE_STAGE_META[s === "approved" ? "approved" : "in_review"].tone,
+    }));
+
+  const canonicalUnattached = canonical.filter((c) => !c.attached);
+  const canonicalCards: PipelineCard[] = canonicalUnattached.slice(0, PIPELINE_CARD_CAP).map((c) => ({
+    key: String(c.id), primary: String(c.display_hint ?? "Contact"),
+    secondary: c.merge_label ? String(c.merge_label) : "merged", tone: PIPELINE_STAGE_META.canonical.tone,
+  }));
+  const attachedCards: PipelineCard[] = attached.map((r) => ({
+    key: String(r.id), primary: String(r.contact_display_hint ?? "Contact"),
+    role: roleLabel(String(r.relationship_type ?? "")),
+    building: [String(r.building_name ?? ""), r.wing ? `Wing ${r.wing}` : "", r.unit_number ? `#${r.unit_number}` : ""].filter(Boolean).join(" · "),
+    tone: PIPELINE_STAGE_META.attached.tone,
+  }));
+  const attachedTotal = num((await readQuery<{ n: string }>(
+    `select count(distinct contact_id) n from vw_contact_property_relationship_review where relationship_status='active'`))[0]?.n);
+
+  return {
+    importedRows: num(importedRow[0]?.n),
+    columns: [
+      { stage: "in_review", ...meta("in_review"), total: countOfStatus("pending"), cards: reviewCardsFor("pending") },
+      { stage: "approved", ...meta("approved"), total: countOfStatus("approved"), cards: reviewCardsFor("approved") },
+      { stage: "canonical", ...meta("canonical"), total: canonicalUnattached.length, cards: canonicalCards },
+      { stage: "attached", ...meta("attached"), total: attachedTotal, cards: attachedCards },
+    ],
+  };
+}
+function meta(s: PipelineColumn["stage"]) {
+  return { label: PIPELINE_STAGE_META[s].label, tone: PIPELINE_STAGE_META[s].tone };
+}
+
+/**
+ * The all-contacts sheet: paginated, sortable, masked canonical contacts with
+ * their active role/building. Sort key is whitelisted (SHEET_SORTS) so raw
+ * input never reaches SQL; page/dir validated by caller.
+ */
+export async function getContactSheet(opts: {
+  page?: number; pageSize?: number; sort?: SheetSortKey; dir?: "asc" | "desc"; includeTest?: boolean;
+} = {}): Promise<ContactSheet> {
+  const page = Math.max(1, Math.floor(opts.page ?? 1));
+  const pageSize = Math.min(Math.max(opts.pageSize ?? 25, 5), 100);
+  const sort: SheetSortKey = opts.sort && opts.sort in SHEET_SORTS ? opts.sort : "created";
+  const dir: "asc" | "desc" = opts.dir === "asc" ? "asc" : "desc";
+  const testFilter = opts.includeTest ? "" : "where c.is_test = false";
+
+  if (!live()) return { rows: [], total: 0, page, pageSize, sort, dir };
+
+  const total = num((await readQuery<{ n: string }>(
+    `select count(*) n from vw_canonical_contacts_review c ${testFilter}`))[0]?.n);
+
+  const rows = await readQuery<Record<string, unknown>>(
+    `select c.contact_id::text id, c.display_hint, c.canonical_status,
+            c.method_count, c.lead_requirement_count, c.source_file_count,
+            c.merge_label, c.created_at::text,
+            rel.relationship_type, rel.building_name
+     from vw_canonical_contacts_review c
+     left join lateral (
+       select r.relationship_type, r.building_name
+       from vw_contact_property_relationship_review r
+       where r.contact_id = c.contact_id and r.relationship_status = 'active'
+       limit 1
+     ) rel on true
+     ${testFilter}
+     order by ${SHEET_SORTS[sort]} ${dir} nulls last
+     limit $1 offset $2`, [pageSize, (page - 1) * pageSize]);
+
+  const mapped: ContactSheetRow[] = rows.map((r) => ({
+    contactId: String(r.id),
+    displayHint: String(r.display_hint ?? "Contact"),
+    canonicalStatus: String(r.canonical_status ?? ""),
+    role: r.relationship_type ? roleLabel(String(r.relationship_type)) : null,
+    building: r.building_name ? String(r.building_name) : null,
+    methodCount: num(r.method_count),
+    leadRequirementCount: num(r.lead_requirement_count),
+    sourceFileCount: num(r.source_file_count),
+    mergeLabel: r.merge_label ? String(r.merge_label) : null,
+    createdAt: String(r.created_at ?? ""),
+  }));
+
+  return { rows: mapped, total, page, pageSize, sort, dir };
 }

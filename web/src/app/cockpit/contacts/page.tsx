@@ -1,5 +1,6 @@
 import { Card, Pill, PanelTitle, Mono, type Tone } from "@/components/ui/primitives";
 import { MergeCandidateCard } from "@/components/cockpit/merge-candidate-card";
+import { ContactsSubnav } from "@/components/cockpit/contacts-subnav";
 import {
   getReviewBatches, getQueueCounts, getReviewQueue, getCanonicalContacts,
   type QueueCount,
@@ -40,6 +41,7 @@ export default async function ContactsCleanup() {
         <p className="mt-1 text-sm text-ink/55">
           {realCanonical} cleaned canonical · {pending} awaiting review across {batches.length} real import batches
         </p>
+        <ContactsSubnav />
       </div>
 
       {/* Pipeline funnel — where the jam is */}
