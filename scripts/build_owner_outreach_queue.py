@@ -16,6 +16,7 @@ in-transaction guard rolls everything back if the day's queue would exceed the c
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 from pathlib import Path
 
@@ -81,8 +82,7 @@ cand AS (
             ORDER BY m.is_primary DESC NULLS LAST, m.created_at LIMIT 1) AS raw_number
   FROM contacts c
   WHERE c.status NOT IN ('do_not_contact','duplicate','archived')
-    AND EXISTS (SELECT 1 FROM contact_property_relationships r WHERE r.contact_id=c.id
-                  AND r.relationship_type='owner' AND r.relationship_status IN ('active','approved'))
+    AND __SOURCE_PREDICATE__
     AND NOT EXISTS (SELECT 1 FROM outreach_suppression_list s WHERE s.contact_id=c.id AND s.status='active')
     AND NOT EXISTS (SELECT 1 FROM channel_permissions p WHERE p.contact_id=c.id AND p.channel='whatsapp'
                       AND p.permission_status IN ('opted_out','do_not_contact'))
@@ -111,8 +111,27 @@ norm AS (
 """
 
 
-def probe_sql(limit: int) -> str:
-    cte = CAND_CTE.replace("__LIMIT__", str(limit))
+OWNER_PREDICATE = (
+    "EXISTS (SELECT 1 FROM contact_property_relationships r WHERE r.contact_id=c.id "
+    "AND r.relationship_type='owner' AND r.relationship_status IN ('active','approved'))"
+)
+
+
+def group_predicate(slug: str) -> str:
+    lit = "'" + slug.replace("'", "''") + "'"
+    return (f"EXISTS (SELECT 1 FROM contact_group_members m JOIN contact_groups g ON g.id=m.group_id "
+            f"WHERE m.contact_id=c.id AND g.slug={lit})")
+
+
+UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+
+
+def contact_predicate(contact_id: str) -> str:
+    return f"c.id = '{contact_id}'::uuid"
+
+
+def probe_sql(limit: int, predicate: str) -> str:
+    cte = CAND_CTE.replace("__LIMIT__", str(limit)).replace("__SOURCE_PREDICATE__", predicate)
     return f"""
 WITH {cte}
 SELECT
@@ -125,9 +144,9 @@ SELECT
 """
 
 
-def apply_sql(limit: int, created_by: str) -> str:
+def apply_sql(limit: int, created_by: str, predicate: str) -> str:
     cb = "'" + created_by.replace("'", "''") + "'"
-    cte = CAND_CTE.replace("__LIMIT__", str(limit))
+    cte = CAND_CTE.replace("__LIMIT__", str(limit)).replace("__SOURCE_PREDICATE__", predicate)
     return f"""
 BEGIN;
 WITH {cte},
@@ -183,13 +202,33 @@ FROM whatsapp_assisted_queue WHERE queued_for_date=CURRENT_DATE;
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build today's owners-only assisted WhatsApp queue. Dry-run by default.")
     parser.add_argument("--limit", type=int, default=10, help="Max rows to queue this run (still capped by remaining daily cap).")
+    parser.add_argument("--source", choices=["owners", "group", "contact"], default="owners",
+                        help="Audience source: owners (default), a contact group, or a single contact.")
+    parser.add_argument("--group-slug", default=None, help="Required when --source group.")
+    parser.add_argument("--contact-id", default=None, help="Required when --source contact.")
     parser.add_argument("--created-by", default="cockpit")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--real-ok", action="store_true")
     args = parser.parse_args()
 
-    print(f"Build owner outreach queue. requested_limit={args.limit} (also bounded by remaining daily cap).")
-    code, out = run_psql(probe_sql(args.limit))
+    if args.source == "group":
+        if not args.group_slug:
+            print("Refusing: --source group requires --group-slug.")
+            return 2
+        predicate = group_predicate(args.group_slug)
+        label = f"group '{args.group_slug}'"
+    elif args.source == "contact":
+        if not args.contact_id or not UUID_RE.match(args.contact_id):
+            print("Refusing: --source contact requires a valid --contact-id.")
+            return 2
+        predicate = contact_predicate(args.contact_id)
+        label = "single contact"
+    else:
+        predicate = OWNER_PREDICATE
+        label = "owners"
+
+    print(f"Build outreach queue. source={label} requested_limit={args.limit} (also bounded by remaining daily cap).")
+    code, out = run_psql(probe_sql(args.limit, predicate))
     if code != 0:
         print(f"Probe failed: {out}")
         return code
@@ -207,7 +246,7 @@ def main() -> int:
         print("Writing requires BOTH --real-ok and --apply.")
         return 0
 
-    code, out = run_psql(apply_sql(args.limit, args.created_by))
+    code, out = run_psql(apply_sql(args.limit, args.created_by, predicate))
     print("\nQueue built (pending only; nothing sent):" if code == 0 else "Queue build FAILED (rolled back):")
     print(out)
     return code

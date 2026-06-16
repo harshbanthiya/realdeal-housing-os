@@ -136,6 +136,84 @@ export async function getOutreachQueue(): Promise<QueueRow[]> {
   }));
 }
 
+export interface ContactGroup {
+  groupId: string;
+  slug: string;
+  name: string;
+  groupType: string;
+  description: string | null;
+  memberCount: number;
+  reachableCount: number;
+  suppressedCount: number;
+}
+
+export async function getContactGroups(): Promise<ContactGroup[]> {
+  if (!live()) return [];
+  const rows = await readQuery<{
+    group_id: string; slug: string; name: string; group_type: string;
+    description: string | null; member_count: string; reachable_count: string; suppressed_count: string;
+  }>(`select group_id, slug, name, group_type, description, member_count, reachable_count, suppressed_count
+      from vw_contact_group_summary`);
+  return rows.map((r) => ({
+    groupId: r.group_id, slug: r.slug, name: r.name, groupType: r.group_type,
+    description: r.description, memberCount: num(r.member_count),
+    reachableCount: num(r.reachable_count), suppressedCount: num(r.suppressed_count),
+  }));
+}
+
+export interface ContactActivity {
+  tier: string;
+  outbound: number;
+  opens: number;
+  replies: number;
+  optins: number;
+  optouts: number;
+  doNotSpam: boolean;
+  events: { channel: string; eventType: string; direction: string; occurredAt: string; summary: string }[];
+  queue: { queueId: string; status: string; step: number } | null;
+}
+
+export async function getContactActivity(contactId: string): Promise<ContactActivity> {
+  const empty: ContactActivity = {
+    tier: "untouched", outbound: 0, opens: 0, replies: 0, optins: 0, optouts: 0,
+    doNotSpam: false, events: [], queue: null,
+  };
+  if (!live() || !/^[0-9a-f-]{36}$/i.test(contactId)) return empty;
+
+  const score = (await readQuery<{
+    engagement_tier: string; outbound_count: string; open_count: string;
+    reply_count: string; optin_count: string; optout_count: string; do_not_spam_flag: boolean;
+  }>(`select engagement_tier, outbound_count, open_count, reply_count, optin_count, optout_count, do_not_spam_flag
+      from vw_contact_engagement_score where contact_id = $1`, [contactId]))[0];
+
+  const events = await readQuery<{ channel: string; event_type: string; direction: string; occurred_at: string; summary: string }>(
+    `select channel, event_type, direction, occurred_at::text, coalesce(safe_summary,'') summary
+       from contact_activity_events where contact_id = $1
+     union all
+     select channel, 'interaction', direction, occurred_at::text, coalesce(summary,'')
+       from interactions where contact_id = $1
+     order by occurred_at desc limit 30`, [contactId]);
+
+  const q = (await readQuery<{ id: string; status: string; sequence_step: string }>(
+    `select id::text, status, sequence_step from whatsapp_assisted_queue
+      where contact_id = $1 and queued_for_date = current_date order by created_at desc limit 1`, [contactId]))[0];
+
+  return {
+    tier: score?.engagement_tier ?? "untouched",
+    outbound: num(score?.outbound_count),
+    opens: num(score?.open_count),
+    replies: num(score?.reply_count),
+    optins: num(score?.optin_count),
+    optouts: num(score?.optout_count),
+    doNotSpam: Boolean(score?.do_not_spam_flag),
+    events: events.map((e) => ({
+      channel: e.channel, eventType: e.event_type, direction: e.direction,
+      occurredAt: e.occurred_at, summary: e.summary,
+    })),
+    queue: q ? { queueId: q.id, status: q.status, step: num(q.sequence_step) } : null,
+  };
+}
+
 export async function getActivityTimeline(limit = 12): Promise<TimelineRow[]> {
   if (!live()) return [];
   const rows = await readQuery<{

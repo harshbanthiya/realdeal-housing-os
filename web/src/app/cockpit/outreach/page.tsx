@@ -1,6 +1,7 @@
 import { Card, Pill, PanelTitle, Mono, type Tone } from "@/components/ui/primitives";
 import { OutreachQueue } from "@/components/cockpit/outreach-queue";
-import { getOutreachOverview, getOutreachQueue, getActivityTimeline } from "@/lib/cockpit/outreach";
+import { OutreachGroups } from "@/components/cockpit/outreach-groups";
+import { getOutreachOverview, getOutreachQueue, getActivityTimeline, getContactGroups } from "@/lib/cockpit/outreach";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +10,11 @@ const TIER_TONE: Record<string, Tone> = {
 };
 
 export default async function OutreachPage() {
-  const [overview, queue, timeline] = await Promise.all([
+  const [overview, queue, timeline, groups] = await Promise.all([
     getOutreachOverview(),
     getOutreachQueue(),
     getActivityTimeline(14),
+    getContactGroups(),
   ]);
 
   return (
@@ -58,8 +60,13 @@ export default async function OutreachPage() {
           />
         </div>
 
-        {/* Right rail — engagement + timeline */}
+        {/* Right rail — groups + engagement + timeline */}
         <div className="space-y-6">
+          <div>
+            <PanelTitle hint="test + custom audiences">Groups</PanelTitle>
+            <OutreachGroups groups={groups} hasActiveSequence={overview.activeSequences > 0} />
+          </div>
+
           <div>
             <PanelTitle hint="warm vs cold">Engagement</PanelTitle>
             <Card className="p-4">

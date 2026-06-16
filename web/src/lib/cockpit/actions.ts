@@ -145,12 +145,24 @@ function headline(out: string): string {
 export async function buildOutreachQueue(input: {
   limit?: number;
   apply?: boolean;
+  source?: "owners" | "group" | "contact";
+  groupSlug?: string;
+  contactId?: string;
 }): Promise<ActionResult> {
   const apply = input.apply === true;
   const limit = Math.max(1, Math.min(50, Number(input.limit) || 10));
+  const source = input.source ?? "owners";
   const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
 
-  const argv = ["--limit", String(limit)];
+  const argv = ["--limit", String(limit), "--source", source];
+  if (source === "group") {
+    if (!input.groupSlug || !/^[a-z0-9-]{1,64}$/.test(input.groupSlug)) return { ...base, message: "Invalid group slug." };
+    argv.push("--group-slug", input.groupSlug);
+  }
+  if (source === "contact") {
+    if (!input.contactId || !UUID_RE.test(input.contactId)) return { ...base, message: "Invalid contact id." };
+    argv.push("--contact-id", input.contactId);
+  }
   if (apply) argv.push("--real-ok", "--apply");
 
   const { code, out } = await runScript("build_owner_outreach_queue.py", argv);
@@ -201,4 +213,38 @@ export async function recordOutreachActivity(input: {
     fields: parseLabeledOutput(out),
     raw: out,
   };
+}
+
+/** Add a single contact to the outreach queue (any contact, owner or not). */
+export async function enqueueContact(input: { contactId: string; apply?: boolean }): Promise<ActionResult> {
+  return buildOutreachQueue({ source: "contact", contactId: input.contactId, limit: 1, apply: input.apply });
+}
+
+/** Create a custom contact group via scripts/manage_contact_group.py. */
+export async function createContactGroup(input: { name: string; apply?: boolean }): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+  const name = (input.name || "").trim();
+  if (name.length < 2 || name.length > 64) return { ...base, message: "Group name must be 2–64 characters." };
+
+  const argv = ["--create", "--name", name];
+  if (apply) argv.push("--real-ok", "--apply");
+  const { code, out } = await runScript("manage_contact_group.py", argv);
+  const ok = code === 0 && !/Refusing:/i.test(out);
+  return { ...base, ok, applied: ok && apply, message: ok ? headline(out) : out.split("\n")[0] || "Failed.", fields: parseLabeledOutput(out), raw: out };
+}
+
+/** Add picked contacts to a group via scripts/manage_contact_group.py. */
+export async function addContactsToGroup(input: { groupSlug: string; contactIds: string[]; apply?: boolean }): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+  if (!/^[a-z0-9-]{1,64}$/.test(input.groupSlug || "")) return { ...base, message: "Invalid group slug." };
+  const ids = (input.contactIds || []).filter((i) => UUID_RE.test(i));
+  if (ids.length === 0) return { ...base, message: "No valid contact ids." };
+
+  const argv = ["--add", "--group-slug", input.groupSlug, "--contact-ids", ids.join(",")];
+  if (apply) argv.push("--real-ok", "--apply");
+  const { code, out } = await runScript("manage_contact_group.py", argv);
+  const ok = code === 0 && !/Refusing:/i.test(out);
+  return { ...base, ok, applied: ok && apply, message: ok ? headline(out) : out.split("\n")[0] || "Failed.", fields: parseLabeledOutput(out), raw: out };
 }

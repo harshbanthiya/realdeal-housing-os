@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, Pill, Mono, PanelTitle, type Tone } from "@/components/ui/primitives";
 import { getContactDetail } from "@/lib/cockpit/contacts";
+import { getContactActivity, getContactGroups } from "@/lib/cockpit/outreach";
+import { ContactOutreachControls } from "@/components/cockpit/contact-outreach-controls";
 import { roleLabel, statusLabel, type ContactMethodDetail } from "@/lib/cockpit/contacts-types";
 
 export const dynamic = "force-dynamic";
@@ -9,10 +11,15 @@ export const metadata = { robots: { index: false, follow: false } };
 
 const ROLE_TONE: Record<string, Tone> = { owner: "active", tenant: "ready", broker: "review", lead: "neutral" };
 const METHOD_LABEL: Record<string, string> = { mobile: "Mobile", phone: "Landline", email: "Email", website: "Website", google_maps: "Maps" };
+const TIER_TONE: Record<string, Tone> = { hot: "ready", warm: "active", cold: "review", untouched: "neutral", opted_out: "blocked" };
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const c = await getContactDetail(id);
+  const [c, activity, groups] = await Promise.all([
+    getContactDetail(id),
+    getContactActivity(id),
+    getContactGroups(),
+  ]);
   if (!c) notFound();
 
   const phones = c.methods.filter((m) => m.methodType === "mobile" || m.methodType === "phone");
@@ -34,6 +41,29 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         </div>
         <span className="rounded-md bg-amber/10 px-2.5 py-1 text-[11px] font-medium text-amber">Full details · operator-only</span>
       </div>
+
+      {/* Outreach controls */}
+      <Card className="mb-6 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-teal">Outreach</span>
+            <Pill tone={TIER_TONE[activity.tier] ?? "neutral"}>{activity.tier.replace(/_/g, " ")}</Pill>
+            {activity.doNotSpam && <Pill tone="blocked">do not spam</Pill>}
+          </div>
+          <ContactOutreachControls
+            contactId={c.contactId}
+            groups={groups.map((g) => ({ slug: g.slug, name: g.name }))}
+            inOutreach={activity.queue ? { status: activity.queue.status, step: activity.queue.step } : null}
+          />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-4 font-mono text-[11px] text-ink/50">
+          <span>sent {activity.outbound}</span>
+          <span>opens {activity.opens}</span>
+          <span>replies {activity.replies}</span>
+          <span>opt-ins {activity.optins}</span>
+          <span>opt-outs {activity.optouts}</span>
+        </div>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Contact methods (unmasked) */}
@@ -80,6 +110,25 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           )}
         </Card>
       </div>
+
+      {/* Activity interaction dashboard */}
+      <Card className="mt-6 p-5">
+        <PanelTitle hint={`${activity.events.length} events`}>Activity timeline</PanelTitle>
+        {activity.events.length === 0 ? (
+          <p className="text-sm text-ink/45">No interactions recorded yet. Add this contact to outreach to start the timeline.</p>
+        ) : (
+          <ul className="space-y-2">
+            {activity.events.map((e, i) => (
+              <li key={i} className="flex items-center gap-3 border-b border-mist py-2 last:border-0">
+                <Mono className="w-32 shrink-0 text-[11px]">{e.occurredAt.slice(0, 16).replace("T", " ")}</Mono>
+                <Pill tone={e.direction === "inbound" ? "ready" : "neutral"}>{e.eventType.replace(/_/g, " ")}</Pill>
+                <span className="font-mono text-[11px] text-ink/40">{e.channel}</span>
+                {e.summary && <span className="flex-1 truncate text-[13px] text-ink/65">{e.summary}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   );
 }

@@ -48,6 +48,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/043_dlf_wix_setup_availability_check.sql"
   "$PROJECT_ROOT/schemas/044_import_jobs.sql"
   "$PROJECT_ROOT/schemas/045_whatsapp_assisted_outreach_activity.sql"
+  "$PROJECT_ROOT/schemas/046_contact_groups_outreach.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then
