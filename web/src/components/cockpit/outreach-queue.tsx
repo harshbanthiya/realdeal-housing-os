@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pill, Mono, type Tone } from "@/components/ui/primitives";
-import { buildOutreachQueue, recordOutreachActivity } from "@/lib/cockpit/actions";
+import { buildOutreachQueue, recordOutreachActivity, clearQueueRow, clearOutreachQueue } from "@/lib/cockpit/actions";
 import type { QueueRow } from "@/lib/cockpit/outreach";
 
 const STATUS_TONE: Record<string, Tone> = {
@@ -53,6 +53,25 @@ export function OutreachQueue({
     });
   }
 
+  function removeRow(queueId: string) {
+    startTransition(async () => {
+      const res = await clearQueueRow({ queueId, apply: true });
+      setRowMsg((m) => ({ ...m, [queueId]: res.message }));
+      if (res.applied) router.refresh();
+    });
+  }
+
+  function clearAll() {
+    if (rows.length === 0) return;
+    if (!window.confirm(`Clear all ${rows.length} queued name(s)? Sent history and consent are kept; this just empties today's send list.`)) return;
+    setBanner(null);
+    startTransition(async () => {
+      const res = await clearOutreachQueue({ apply: true });
+      setBanner(res.message);
+      if (res.applied) router.refresh();
+    });
+  }
+
   return (
     <div>
       {/* Build controls */}
@@ -83,6 +102,14 @@ export function OutreachQueue({
         </span>
         {!hasActiveSequence && (
           <span className="font-mono text-[11px] text-warm">no active sequence — seed it first</span>
+        )}
+        {rows.length > 0 && (
+          <button
+            onClick={clearAll} disabled={pending}
+            className="ml-auto rounded-lg border border-warm/40 px-3 py-1.5 text-sm font-medium text-warm hover:bg-warm/10 disabled:opacity-40"
+          >
+            Clear queue
+          </button>
         )}
       </div>
 
@@ -127,12 +154,19 @@ export function OutreachQueue({
                     {a.label}
                   </button>
                 ))}
-                {r.trackedUrl && (
-                  <Mono className="ml-auto truncate text-[10px] text-ink/35" title={r.trackedUrl}>
-                    {r.trackedUrl}
-                  </Mono>
-                )}
+                <button
+                  onClick={() => removeRow(r.queueId)} disabled={pending}
+                  title="Remove from queue"
+                  className="ml-auto rounded-lg border border-mist-deep px-2.5 py-1.5 text-[13px] font-medium text-warm hover:bg-warm/10 disabled:opacity-40"
+                >
+                  Remove
+                </button>
               </div>
+              {r.trackedUrl && (
+                <Mono className="mt-2 block truncate text-[10px] text-ink/35" title={r.trackedUrl}>
+                  {r.trackedUrl}
+                </Mono>
+              )}
 
               {rowMsg[r.queueId] && (
                 <div className="mt-2 font-mono text-[11px] text-ink/55">{rowMsg[r.queueId]}</div>

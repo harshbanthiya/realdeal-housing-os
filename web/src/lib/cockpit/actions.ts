@@ -220,6 +220,32 @@ export async function enqueueContact(input: { contactId: string; apply?: boolean
   return buildOutreachQueue({ source: "contact", contactId: input.contactId, limit: 1, apply: input.apply });
 }
 
+/** Remove one queue row via scripts/clear_outreach_queue.py (activity/consent preserved). */
+export async function clearQueueRow(input: { queueId: string; apply?: boolean }): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+  if (!UUID_RE.test(input.queueId)) return { ...base, message: "Invalid queue id." };
+
+  const argv = ["--queue-id", input.queueId];
+  if (apply) argv.push("--real-ok", "--apply");
+  const { code, out } = await runScript("clear_outreach_queue.py", argv);
+  const ok = code === 0 && !/Refusing:/i.test(out);
+  return { ...base, ok, applied: ok && apply, message: ok ? headline(out) : out.split("\n")[0] || "Failed.", fields: parseLabeledOutput(out), raw: out };
+}
+
+/** Clear today's queue via scripts/clear_outreach_queue.py (activity/consent preserved). */
+export async function clearOutreachQueue(input: { pendingOnly?: boolean; apply?: boolean }): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+
+  const argv = ["--today"];
+  if (input.pendingOnly) argv.push("--pending-only");
+  if (apply) argv.push("--real-ok", "--apply");
+  const { code, out } = await runScript("clear_outreach_queue.py", argv);
+  const ok = code === 0 && !/Refusing:/i.test(out);
+  return { ...base, ok, applied: ok && apply, message: ok ? headline(out) : out.split("\n")[0] || "Failed.", fields: parseLabeledOutput(out), raw: out };
+}
+
 /** Create a custom contact group via scripts/manage_contact_group.py. */
 export async function createContactGroup(input: { name: string; apply?: boolean }): Promise<ActionResult> {
   const apply = input.apply === true;
