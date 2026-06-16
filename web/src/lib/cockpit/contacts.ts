@@ -17,7 +17,7 @@ import { isDbConfigured, readQuery } from "@/lib/db";
 import type {
   ReviewBatch, ReviewQueueItem, DuplicateCandidate, CanonicalContactRow,
   ContactRelationshipRow, QueueCount, QueueFilter, PipelineColumn, PipelineCard,
-  ContactSheet, ContactSheetRow, SheetSortKey,
+  ContactSheet, ContactSheetRow, SheetSortKey, ContactDetail, ContactMethodDetail, ContactRelDetail,
 } from "./contacts-types";
 import { PIPELINE_STAGE_META, roleLabel, SHEET_SORTS, reviewTypeLabel, batchLabelHuman } from "./contacts-types";
 
@@ -328,4 +328,55 @@ export async function getContactSheet(opts: {
   }));
 
   return { rows: mapped, total, page, pageSize, sort, dir };
+}
+
+/**
+ * Full UNMASKED detail for one canonical contact — operator-only, on-demand.
+ * The list views stay masked; this returns real phone/email so the operator can
+ * verify the data before export/campaigns. Returns null if not found.
+ */
+export async function getContactDetail(contactId: string): Promise<ContactDetail | null> {
+  if (!live()) return null;
+  if (!/^[0-9a-f-]{36}$/i.test(contactId)) return null;
+  const rows = await readQuery<Record<string, unknown>>(
+    `select id::text, full_name, contact_type, status, source, tags, notes, created_at::text
+     from contacts where id = $1 and coalesce(is_test,false) = false`, [contactId]);
+  if (!rows.length) return null;
+  const c = rows[0];
+
+  const methods = await readQuery<Record<string, unknown>>(
+    `select method_type, coalesce(nullif(normalized_value,''), raw_value) as value, label, is_primary, validation_status
+     from contact_methods where contact_id = $1
+     order by is_primary desc, method_type`, [contactId]);
+  const rels = await readQuery<Record<string, unknown>>(
+    `select r.relationship_type, r.relationship_status, b.name as building, bu.wing, bu.unit_number
+     from contact_property_relationships r
+     left join buildings b on b.id = r.building_id
+     left join building_units bu on bu.id = r.building_unit_id
+     where r.contact_id = $1 order by r.relationship_status`, [contactId]);
+
+  return {
+    contactId: String(c.id),
+    fullName: String(c.full_name ?? "—"),
+    contactType: String(c.contact_type ?? ""),
+    status: String(c.status ?? ""),
+    source: c.source ? String(c.source) : null,
+    tags: Array.isArray(c.tags) ? (c.tags as string[]) : [],
+    notes: c.notes ? String(c.notes) : null,
+    createdAt: String(c.created_at ?? ""),
+    methods: methods.map((m): ContactMethodDetail => ({
+      methodType: String(m.method_type ?? ""),
+      value: String(m.value ?? ""),
+      label: m.label ? String(m.label) : null,
+      isPrimary: Boolean(m.is_primary),
+      validationStatus: m.validation_status ? String(m.validation_status) : null,
+    })),
+    relationships: rels.map((r): ContactRelDetail => ({
+      relationshipType: String(r.relationship_type ?? ""),
+      relationshipStatus: String(r.relationship_status ?? ""),
+      building: r.building ? String(r.building) : null,
+      wing: r.wing ? String(r.wing) : null,
+      unitNumber: r.unit_number ? String(r.unit_number) : null,
+    })),
+  };
 }

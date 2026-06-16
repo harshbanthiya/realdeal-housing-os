@@ -10,7 +10,7 @@
  * Server-only: importing this into a Client Component will fail the build
  * (the `pg` driver is Node-only), which is the intended guard.
  */
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 
 let pool: Pool | null = null;
 
@@ -39,16 +39,19 @@ export async function readQuery<T = Record<string, unknown>>(
 ): Promise<T[]> {
   const p = getPool();
   if (!p) return [];
-  const client = await p.connect();
+  let client: PoolClient | null = null;
   try {
+    client = await p.connect();
     await client.query("BEGIN TRANSACTION READ ONLY");
     const res = await client.query(sql, params);
     await client.query("COMMIT");
     return res.rows as T[];
   } catch {
-    try { await client.query("ROLLBACK"); } catch {}
+    if (client) {
+      try { await client.query("ROLLBACK"); } catch {}
+    }
     return [];
   } finally {
-    client.release();
+    client?.release();
   }
 }

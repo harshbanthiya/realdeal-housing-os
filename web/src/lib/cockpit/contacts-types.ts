@@ -226,3 +226,31 @@ export interface ContactSheet {
   sort: SheetSortKey;
   dir: "asc" | "desc";
 }
+
+// ---- Contact detail (UNMASKED, on-demand operator view) ----
+export interface ContactMethodDetail {
+  methodType: string;       // mobile | email | phone | website | google_maps
+  value: string;            // normalized real value (operator-only view)
+  label: string | null;
+  isPrimary: boolean;
+  validationStatus: string | null;
+}
+export interface ContactRelDetail {
+  relationshipType: string;
+  relationshipStatus: string;
+  building: string | null;
+  wing: string | null;
+  unitNumber: string | null;
+}
+export interface ContactDetail {
+  contactId: string;
+  fullName: string;
+  contactType: string;
+  status: string;
+  source: string | null;
+  tags: string[];
+  notes: string | null;
+  createdAt: string;
+  methods: ContactMethodDetail[];
+  relationships: ContactRelDetail[];
+}

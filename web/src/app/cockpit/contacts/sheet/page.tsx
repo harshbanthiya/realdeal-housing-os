@@ -102,7 +102,9 @@ function SortLink({ href, label }: { href: string; label: string }) {
 function Row({ r }: { r: ContactSheetRow }) {
   return (
     <tr className="border-b border-mist last:border-0 hover:bg-mist/20">
-      <td className="px-4 py-3 text-ink/85">{r.displayHint}</td>
+      <td className="px-4 py-3">
+        <Link href={`/cockpit/contacts/c/${r.contactId}`} className="text-ink/85 hover:text-teal hover:underline">{r.displayHint}</Link>
+      </td>
       <td className="px-4 py-3"><Pill tone={r.canonicalStatus === "active" ? "ready" : "neutral"}>{r.canonicalStatus || "—"}</Pill></td>
       <td className="px-4 py-3">{r.role ? <Pill tone={ROLE_TONE[r.role] ?? "neutral"}>{r.role}</Pill> : <span className="text-ink/30">—</span>}</td>
       <td className="px-4 py-3 text-ink/70">{r.building ?? <span className="text-ink/30">—</span>}</td>
