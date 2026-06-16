@@ -4,7 +4,7 @@
  * When DATABASE_URL is set (web/.env.local), getters read the REAL local
  * Postgres (read-only, via db.ts) mapped to the masked views/tables. When it's
  * not set, they fall back to seed data so the shell still renders. READ-ONLY:
- * every query runs in a READ ONLY transaction — mutations stay with the guarded
+ * every query runs in a READ ONLY transaction - mutations stay with the guarded
  * apply/revert scripts.
  */
 import { projects as siteProjects, listings as siteListings, type Listing } from "@/lib/site";
@@ -23,7 +23,7 @@ const DLF_SLUG = "dlf-westpark-andheri-west";
 const num = (v: unknown) => Number(v ?? 0) || 0;
 
 function maskName(n: string) { const t = (n || "").trim().split(/\s+/); return t[0] ? `${t[0]} ••` : "Contact"; }
-function maskPhone(p: string) { const d = String(p || "").replace(/\D/g, ""); return d ? `•••• ••${d.slice(-2)}` : "—"; }
+function maskPhone(p: string) { const d = String(p || "").replace(/\D/g, ""); return d ? `•••• ••${d.slice(-2)}` : " - "; }
 function launchDays(month?: string | null, date?: string | null) {
   const now = new Date();
   let target: Date | null = date ? new Date(date) : null;
@@ -58,7 +58,7 @@ export async function getBuildings(): Promise<Building[]> {
     out.push({
       slug: p.launch_key, name: p.project_display_name, location: p.area, mode: "launch",
       launchInDays: launchDays(p.expected_launch_month, p.expected_launch_date),
-      seoRank: p.seo_status || "—",
+      seoRank: p.seo_status || " - ",
       stats: { owners: 0, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: num(r?.open), blockers: num(r?.blockers) },
     });
   }
@@ -78,7 +78,7 @@ export async function getBuilding(slug: string): Promise<Building | undefined> {
 // ---------------- portfolio panels ----------------
 export async function getGlobalReviewQueue(): Promise<ReviewItem[]> {
   if (!live()) return [
-    { domain: "design", title: "DLF Gallery White — 14 refinement actions", building: "DLF Westpark", age: "2d", tone: "review" },
+    { domain: "design", title: "DLF Gallery White - 14 refinement actions", building: "DLF Westpark", age: "2d", tone: "review" },
     { domain: "contacts", title: "3 duplicate owner candidates", building: "Imperial Heights", age: "3d", tone: "review" },
   ];
   const out: ReviewItem[] = [];
@@ -86,12 +86,12 @@ export async function getGlobalReviewQueue(): Promise<ReviewItem[]> {
     `select coalesce(safe_summary, check_type) title, severity from launch_readiness_checks where check_status in ('needs_review','pending') and severity in ('blocker','high') order by severity limit 8`);
   for (const r of rc) out.push({ domain: "launch", title: r.title, building: "DLF Westpark", age: "open", tone: r.severity === "blocker" ? "blocked" : "review" });
   const rr = await readQuery<{ official_project_name: string }>(`select official_project_name from rera_project_profiles where verification_status <> 'verified'`);
-  for (const r of rr) out.push({ domain: "rera", title: `Verify RERA — ${r.official_project_name}`, building: "Imperial Heights", age: "open", tone: "review" });
+  for (const r of rr) out.push({ domain: "rera", title: `Verify RERA - ${r.official_project_name}`, building: "Imperial Heights", age: "open", tone: "review" });
   return out;
 }
 export async function getAgentActivity(): Promise<AgentEvent[]> {
   if (!live()) return [{ agent: "SEO monitor", action: "Captured SERP positions", building: "Imperial Heights", status: "ready" }];
-  return [{ agent: "runtime", action: "AI agent runtime not deployed yet — agents are planned, not running", building: "—", status: "neutral" }];
+  return [{ agent: "runtime", action: "AI agent runtime not deployed yet - agents are planned, not running", building: " - ", status: "neutral" }];
 }
 export async function getGlobalBlockers(): Promise<Blocker[]> {
   if (!live()) return [{ id: "BLK-101", building: "DLF Westpark", statement: "RERA registration unverified", openFor: "2d" }];
@@ -109,19 +109,19 @@ export async function getOwnersTenants(slug: string): Promise<Person[]> {
   return rows.map((r) => ({
     name: maskName(r.full_name),
     role: r.relationship_type === "owner" ? "owner" : r.relationship_type === "tenant" ? "tenant" : "client",
-    unit: r.building_unit_id ? "unit linked" : "—",
+    unit: r.building_unit_id ? "unit linked" : " - ",
     phone: maskPhone(r.phone_primary),
   }));
 }
 export async function getListings(slug: string): Promise<Listing[]> {
   if (!live()) { const b = SEED_BUILDINGS.find((x) => x.slug === slug); return b ? siteListings.filter((l) => l.project === b.name) : []; }
-  return []; // no inventory imported into Postgres yet — honest empty state
+  return []; // no inventory imported into Postgres yet - honest empty state
 }
 export async function getKeywords(slug: string): Promise<Keyword[]> {
   if (!live()) return [{ term: "imperial heights goregaon", rank: "#3", volume: "1.9k", status: "ready" }];
   const rows = await readQuery<{ keyword: string; status: string; intent: string }>(
     `select keyword, status, intent from seo_keywords order by priority nulls last limit 30`);
-  return rows.map((r) => ({ term: r.keyword, rank: "—", volume: r.intent || "—", status: r.status === "ranking" ? "ready" : "review" }));
+  return rows.map((r) => ({ term: r.keyword, rank: " - ", volume: r.intent || " - ", status: r.status === "ranking" ? "ready" : "review" }));
 }
 export async function getCampaigns(slug: string): Promise<Campaign[]> {
   if (!live()) return [{ name: "Launch teaser", channel: "WhatsApp", status: "blocked", note: "consent pending" }];
@@ -140,16 +140,16 @@ export async function getReraFacts(slug: string): Promise<Fact[]> {
   const r = rows[0];
   const vtone: Tone = r.verification_status === "verified" ? "ready" : "review";
   return [
-    { label: "Official project name", value: r.official_project_name || "—", status: vtone },
+    { label: "Official project name", value: r.official_project_name || " - ", status: vtone },
     { label: "RERA registration", value: r.rera_registration_number || "RERA_VERIFY", status: r.registration_status?.includes("registered") ? "ready" : "review" },
-    { label: "Verification status", value: r.verification_status || "—", status: vtone },
-    { label: "Location", value: [r.locality, r.district].filter(Boolean).join(", ") || "—", status: "review" },
+    { label: "Verification status", value: r.verification_status || " - ", status: vtone },
+    { label: "Location", value: [r.locality, r.district].filter(Boolean).join(", ") || " - ", status: "review" },
   ];
 }
 export async function getWebsitePages(slug: string): Promise<WebPage[]> {
   if (slug === DLF_SLUG) return [
     { path: "/dlf-westpark-andheri-west", title: "Landing page (Next.js)", status: "ready" },
-    { path: "wix:Test/cms", title: "Wix Test CMS — 7 collections", status: "ready" },
+    { path: "wix:Test/cms", title: "Wix Test CMS - 7 collections", status: "ready" },
     { path: "publish", title: "Production publish", status: "blocked" },
   ];
   return [{ path: `/projects/${slug}`, title: "Project page (Next.js)", status: "ready" }];
@@ -166,7 +166,7 @@ export async function getAgentTasks(slug: string): Promise<AgentTask[]> {
     { agent: "Data cleaner", task: "Dedupe + classify contacts", cadence: "nightly", status: "neutral" },
     { agent: "Campaign drafter", task: "Draft compliant outreach", cadence: "weekly", status: "neutral" },
   ];
-  return planned; // runtime not deployed yet — shown as planned
+  return planned; // runtime not deployed yet - shown as planned
 }
 
 // ---------------- launch mode ----------------
@@ -190,6 +190,6 @@ export function getLaunchCalendar(): CalendarItem[] {
     { when: "T-30d", title: "Owner teaser (after consent)", channel: "WhatsApp" },
     { when: "T-14d", title: "Andheri West awareness email", channel: "Email" },
     { when: "T-7d", title: "Open pre-launch interest list", channel: "Landing form" },
-    { when: "T-0", title: "Launch — go-live gate", channel: "All" },
+    { when: "T-0", title: "Launch - go-live gate", channel: "All" },
   ];
 }

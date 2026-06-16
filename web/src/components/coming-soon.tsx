@@ -10,9 +10,9 @@ export function ComingSoon({
   return (
     <section className="mx-auto max-w-3xl px-6 py-28 text-center">
       <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-warm">
-        Staging — section pending
+        Staging - section pending
       </p>
-      <h1 className="text-4xl font-extrabold tracking-tight text-teal md:text-5xl">
+      <h1 className="display text-balance text-[clamp(2.1rem,4.8vw,3.6rem)] font-extrabold leading-[1.05] text-teal">
         {title}
       </h1>
       <p className="mx-auto mt-5 max-w-md text-ink/60">{blurb}</p>

@@ -14,7 +14,7 @@ export default function Page() {
       <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-warm">
         Journal
       </p>
-      <h1 className="text-4xl font-extrabold tracking-tight text-teal md:text-5xl">
+      <h1 className="display text-balance text-[clamp(2.1rem,4.8vw,3.6rem)] font-extrabold leading-[1.05] text-teal">
         Blog
       </h1>
       <div className="mt-10 divide-y divide-mist-deep border-y border-mist-deep">

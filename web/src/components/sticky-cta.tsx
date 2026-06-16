@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 /**
- * Mobile sticky CTA — two segments (Request details | WhatsApp). Hides once the
+ * Mobile sticky CTA - two segments (Request details | WhatsApp). Hides once the
  * enquiry section is in view (intersection), matching the approved Gallery
  * White spec. WhatsApp is a placeholder href (no live contact wired).
  */
@@ -35,7 +35,7 @@ export function StickyCta() {
       </a>
       <span
         aria-disabled
-        title="Preview only — no live contact wired"
+        title="Preview only - no live contact wired"
         className="flex-1 cursor-default bg-warm py-4 text-center text-sm font-semibold text-white/95"
       >
         WhatsApp

@@ -14,11 +14,11 @@ export default function Page() {
     <section className="mx-auto max-w-6xl px-6 py-20">
       <Reveal>
         <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-warm">Buy</p>
-        <h1 className="text-4xl font-extrabold tracking-tight text-teal md:text-5xl">
+        <h1 className="display text-balance text-[clamp(2.1rem,4.8vw,3.6rem)] font-extrabold leading-[1.05] text-teal">
           Buy your next property
         </h1>
         <p className="mt-5 max-w-2xl text-ink/65">
-          Premium homes for sale in Mumbai&rsquo;s top buildings — handpicked for
+          Premium homes for sale in Mumbai&rsquo;s top buildings - handpicked for
           builder reputation, layout and location. Every offer in the building,
           maximum negotiation room.
         </p>

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Reveal } from "@/components/reveal";
 import { ListingGrid } from "@/components/listing-grid";
+import { Media, Frame } from "@/components/media";
+import { ButtonLink } from "@/components/ui/kit";
 import { projects, listings } from "@/lib/site";
 
 export function generateStaticParams() {
@@ -17,7 +19,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const p = projects.find((x) => x.slug === slug);
   if (!p) return { title: "Project" };
-  return { title: `${p.name} — ${p.location}`, description: p.blurb.slice(0, 160) };
+  return { title: `${p.name} - ${p.location}`, description: p.blurb.slice(0, 160) };
 }
 
 export default async function Page({
@@ -38,19 +40,22 @@ export default async function Page({
           <Link href="/projects" className="text-sm font-medium text-ink/50 hover:text-teal">
             ← All projects
           </Link>
-          <p className="mt-6 flex items-center gap-2 text-sm font-medium text-ink/55">
-            <span className="inline-block h-2 w-2 rounded-full bg-warm" />
+          <p className="mt-6 font-mono text-xs uppercase tracking-[0.2em] text-warm">
             {p.location}
           </p>
-          <h1 className="mt-3 text-[clamp(2.4rem,5.5vw,4.5rem)] font-extrabold leading-[1.04] tracking-tight text-teal">
+          <h1 className="display mt-3 text-balance text-[clamp(2.2rem,5vw,4rem)] font-extrabold leading-[1.05] text-teal">
             {p.name}
           </h1>
           <p className="mt-3 font-mono text-sm text-ink/55">{p.meta}</p>
-          <div className="mt-10 aspect-[21/9] w-full rounded-2xl border border-dashed border-mist-deep bg-mist/50">
-            <div className="flex h-full items-center justify-center font-mono text-sm text-ink/40">
-              Project imagery — VISUAL_DIRECTION_PENDING
-            </div>
-          </div>
+          <Frame ratio="aspect-[21/9]" className="mt-10 shadow-[0_30px_80px_-50px_rgba(31,61,77,0.5)]">
+            <Media
+              seed={`rdh-${p.slug}-hero`}
+              w={1400}
+              h={600}
+              alt={`${p.name} in ${p.location}`}
+              priority
+            />
+          </Frame>
         </Reveal>
       </section>
 
@@ -99,9 +104,9 @@ export default async function Page({
           <p className="mx-auto mt-4 max-w-md text-ink/65">
             Our team will line up the best layouts and floors and handle the rest.
           </p>
-          <Link href="/contact" className="mt-8 inline-block rounded-full bg-teal px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90">
-            Enquire about this property →
-          </Link>
+          <div className="mt-8 flex justify-center">
+            <ButtonLink href="/contact">Enquire about this property →</ButtonLink>
+          </div>
         </Reveal>
       </section>
     </article>

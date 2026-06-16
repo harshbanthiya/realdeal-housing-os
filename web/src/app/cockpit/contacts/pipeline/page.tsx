@@ -37,7 +37,7 @@ function Column({ col }: { col: PipelineColumn }) {
   const hint = PIPELINE_STAGE_META[col.stage].hint;
   const hidden = col.total - col.cards.length;
   return (
-    <section aria-label={`${col.label} — ${col.total}`} className="flex flex-col">
+    <section aria-label={`${col.label} - ${col.total}`} className="flex flex-col">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-semibold text-teal">{col.label}</h2>

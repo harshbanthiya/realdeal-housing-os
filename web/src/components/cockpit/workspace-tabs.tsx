@@ -113,7 +113,7 @@ function Overview({ data, launch }: { data: WorkspaceData; launch: boolean }) {
         </>
       ) : (
         <Card className="p-5 text-sm text-ink/65">
-          Steady-state building. Agents monitor SEO, keep contact data clean, and draft campaigns — all landing in this building&rsquo;s review queue. Switch to <span className="text-teal">Launch</span> mode when a sale push begins.
+          Steady-state building. Agents monitor SEO, keep contact data clean, and draft campaigns - all landing in this building&rsquo;s review queue. Switch to <span className="text-teal">Launch</span> mode when a sale push begins.
         </Card>
       )}
     </div>
@@ -121,7 +121,7 @@ function Overview({ data, launch }: { data: WorkspaceData; launch: boolean }) {
 }
 
 function Owners({ owners }: { owners: Person[] }) {
-  if (!owners.length) return <Empty>No owners or tenants linked yet — import contact data to populate.</Empty>;
+  if (!owners.length) return <Empty>No owners or tenants linked yet - import contact data to populate.</Empty>;
   return (
     <Card>
       {owners.map((p, i) => (
@@ -139,7 +139,7 @@ function Owners({ owners }: { owners: Person[] }) {
 }
 
 function Leads({ launch, count, warm }: { launch: boolean; count: number; warm: number }) {
-  if (count === 0) return <Empty>{launch ? "Pre-launch interest list is preview-only — lead intake opens after consent + go-live review." : "0 leads captured. Run a campaign to convert contacts into warm leads."}</Empty>;
+  if (count === 0) return <Empty>{launch ? "Pre-launch interest list is preview-only - lead intake opens after consent + go-live review." : "0 leads captured. Run a campaign to convert contacts into warm leads."}</Empty>;
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       <Tile n={count} label="Total leads" />
@@ -169,7 +169,7 @@ function Listings({ items }: { items: Listing[] }) {
 }
 
 function Seo({ keywords }: { keywords: Keyword[] }) {
-  if (!keywords.length) return <Empty>No keywords tracked yet — the SEO agent will populate these.</Empty>;
+  if (!keywords.length) return <Empty>No keywords tracked yet - the SEO agent will populate these.</Empty>;
   return (
     <Card>
       <div className="border-b border-mist px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-ink/40">keyword · rank · volume · status</div>
@@ -188,7 +188,7 @@ function Seo({ keywords }: { keywords: Keyword[] }) {
 }
 
 function Campaigns({ items }: { items: Campaign[] }) {
-  if (!items.length) return <Empty>No campaigns yet — drafts appear here once the campaign agent runs (consent-gated).</Empty>;
+  if (!items.length) return <Empty>No campaigns yet - drafts appear here once the campaign agent runs (consent-gated).</Empty>;
   return (
     <Card>
       {items.map((c, i) => (
@@ -264,7 +264,7 @@ function Reviews({ items }: { items: ReviewItem[] }) {
           </Card>
         ))}
       </div>
-      <p className="mt-4 font-mono text-[11px] text-ink/40">Actions are preview-only in the shell — they will call the guarded apply / revert scripts next.</p>
+      <p className="mt-4 font-mono text-[11px] text-ink/40">Actions are preview-only in the shell - they will call the guarded apply / revert scripts next.</p>
     </div>
   );
 }

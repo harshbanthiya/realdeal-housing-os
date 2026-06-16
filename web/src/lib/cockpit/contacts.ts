@@ -9,7 +9,7 @@
  *   - vw_contact_property_relationship_review → contact→building/unit links
  *
  * Every query runs through db.ts in a READ ONLY transaction. Mutations are NOT
- * here — they go through guarded server actions that shell out to the audited
+ * here - they go through guarded server actions that shell out to the audited
  * Python scripts. When DATABASE_URL is unset, getters return seed samples so the
  * shell still renders.
  */
@@ -45,7 +45,7 @@ const SEED_BATCHES: ReviewBatch[] = [
   { importBatchId: "seed-2", batchLabel: "REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001", isRealImport: true, canonicalMergeDone: false, sourceFiles: 1, importRows: 58, contactMethods: 116, duplicateCandidates: 14, pending: 186, approved: 2, rejected: 0, createdAt: "" },
 ];
 const SEED_QUEUE: ReviewQueueItem[] = [
-  { reviewItemId: "seed-q1", batchLabel: "REAL_PHASE_3_5_TEST_001", reviewType: "merge_candidate", priority: "normal", status: "pending", title: "Merge candidate — masked contact", summary: "Has phone + lead requirement; no existing canonical link.", recommendedAction: "approve_merge", reviewedBy: null, createdAt: "" },
+  { reviewItemId: "seed-q1", batchLabel: "REAL_PHASE_3_5_TEST_001", reviewType: "merge_candidate", priority: "normal", status: "pending", title: "Merge candidate - masked contact", summary: "Has phone + lead requirement; no existing canonical link.", recommendedAction: "approve_merge", reviewedBy: null, createdAt: "" },
 ];
 
 // ---------------- getters ----------------

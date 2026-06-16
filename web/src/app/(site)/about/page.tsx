@@ -4,7 +4,7 @@ import { company, testimonial } from "@/lib/site";
 export const metadata = {
   title: "About",
   description:
-    "15 years in Mumbai's real estate market — specialists in Imperial Heights, Ekta Tripolis & Kalpataru Radiance across the Western Suburbs.",
+    "15 years in Mumbai's real estate market - specialists in Imperial Heights, Ekta Tripolis & Kalpataru Radiance across the Western Suburbs.",
 };
 
 export default function Page() {
@@ -13,7 +13,7 @@ export default function Page() {
       <section className="mx-auto max-w-4xl px-6 py-24">
         <Reveal>
           <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-warm">About us</p>
-          <h1 className="text-4xl font-extrabold tracking-tight text-teal md:text-5xl">
+          <h1 className="display text-balance text-[clamp(2.1rem,4.8vw,3.6rem)] font-extrabold leading-[1.05] text-teal">
             {company.legalName}
           </h1>
           <p className="mt-7 text-xl leading-relaxed text-ink/70">{company.about}</p>

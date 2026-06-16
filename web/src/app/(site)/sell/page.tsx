@@ -4,7 +4,7 @@ import { company } from "@/lib/site";
 export const metadata = {
   title: "Sell",
   description:
-    "Sell your apartment in the Western Suburbs of Mumbai with trusted agents — 15 years selling premium homes in Imperial Heights, Ekta Tripolis & Kalpataru Radiance.",
+    "Sell your apartment in the Western Suburbs of Mumbai with trusted agents - 15 years selling premium homes in Imperial Heights, Ekta Tripolis & Kalpataru Radiance.",
 };
 
 const fields = ["First name", "Last name", "Email", "Neighbourhood", "Full address", "Floor", "Total bedrooms"];
@@ -15,13 +15,13 @@ export default function Page() {
     <section className="mx-auto max-w-5xl px-6 py-20">
       <Reveal>
         <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-warm">Sell</p>
-        <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight text-teal md:text-5xl">
+        <h1 className="max-w-3xl display text-balance text-[clamp(2.1rem,4.8vw,3.6rem)] font-extrabold leading-[1.05] text-teal">
           The fastest &amp; easiest way to sell your property
         </h1>
         <p className="mt-5 max-w-2xl text-ink/65">
           {company.years} years of trusted experience selling premium homes
           across Mumbai&rsquo;s Western Suburbs. Tell us about your property and
-          our team handles the rest — pricing, marketing and documentation.
+          our team handles the rest - pricing, marketing and documentation.
         </p>
         <p className="mt-4 inline-flex rounded-md bg-mist px-3 py-2 font-mono text-xs text-ink/60">
           Staging preview · form does not submit · no data captured
@@ -34,7 +34,7 @@ export default function Page() {
             {fields.map((f) => (
               <div key={f}>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/50">{f}</label>
-                <input disabled placeholder={f} className="w-full rounded-lg border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35" />
+                <input disabled placeholder={f} className="w-full rounded-xl border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/45" />
               </div>
             ))}
           </div>
@@ -47,7 +47,7 @@ export default function Page() {
             </div>
           </div>
           <button type="button" disabled className="mt-6 cursor-not-allowed rounded-full bg-mist-deep px-6 py-3.5 text-sm font-semibold text-ink/50">
-            Preview only — no live submission
+            Preview only - no live submission
           </button>
         </form>
       </Reveal>

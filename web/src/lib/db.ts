@@ -2,8 +2,8 @@
  * Read-only Postgres access for the cockpit.
  *
  * Connects to the local Real Deal OS database using DATABASE_URL (set in
- * web/.env.local — never committed). Every query runs inside a READ ONLY
- * transaction, so the cockpit can never mutate Postgres — mutations stay with
+ * web/.env.local - never committed). Every query runs inside a READ ONLY
+ * transaction, so the cockpit can never mutate Postgres - mutations stay with
  * the guarded apply/revert scripts. If DATABASE_URL is unset, callers fall back
  * to seed data so the shell still renders.
  *

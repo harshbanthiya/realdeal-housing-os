@@ -8,7 +8,7 @@ import { statusTone, type ReviewQueueItem } from "@/lib/cockpit/contacts-types";
 /**
  * One merge-candidate row with a DRY-RUN preview of approval.
  * Clicking "Preview approve" runs the guarded script with NO --apply, so it
- * never writes — it shows what the real apply would do. The actual apply path
+ * never writes - it shows what the real apply would do. The actual apply path
  * stays intentionally unwired until explicitly enabled.
  */
 export function MergeCandidateCard({ item }: { item: ReviewQueueItem }) {
@@ -24,7 +24,7 @@ export function MergeCandidateCard({ item }: { item: ReviewQueueItem }) {
         status: "approved",
         reviewedBy: "cockpit operator",
         decisionNotes: "Preview from cockpit (dry-run).",
-        apply: false, // dry-run only — never writes
+        apply: false, // dry-run only - never writes
       });
       setResult(r);
     });
@@ -78,7 +78,7 @@ export function MergeCandidateCard({ item }: { item: ReviewQueueItem }) {
           <div>
             <span>{result.message}</span>
             {result.ok && result.dryRun && (
-              <span className="ml-1 font-mono text-ink/40">— apply stays disabled until enabled</span>
+              <span className="ml-1 font-mono text-ink/40"> - apply stays disabled until enabled</span>
             )}
           </div>
         </div>

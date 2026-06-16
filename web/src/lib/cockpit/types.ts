@@ -1,5 +1,5 @@
 /**
- * Cockpit types + tab constants — client-safe (NO db/pg import).
+ * Cockpit types + tab constants - client-safe (NO db/pg import).
  * Client components import from here; server data getters live in data.ts.
  */
 import type { Tone } from "@/components/ui/primitives";

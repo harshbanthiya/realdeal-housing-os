@@ -16,11 +16,11 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Real Deal Housing — Premium Mumbai Residences",
-    template: "%s — Real Deal Housing",
+    default: "Real Deal Housing - Premium Mumbai Residences",
+    template: "%s - Real Deal Housing",
   },
   description:
-    "Real Deal Housing — a calmer, verification-first way to evaluate premium Mumbai residences.",
+    "Real Deal Housing - a calmer, verification-first way to evaluate premium Mumbai residences.",
   robots: { index: false, follow: false }, // staging: indexing OFF
 };
 

@@ -5,7 +5,7 @@ export function PendingChip({ token }: { token: string }) {
   return (
     <span
       className="inline-flex items-center gap-1 rounded-[4px] bg-mist px-1.5 py-0.5 font-mono text-[0.78em] font-medium tracking-tight text-teal/80 align-baseline"
-      title="Pending verification — not yet confirmed"
+      title="Pending verification - not yet confirmed"
     >
       <span
         aria-hidden

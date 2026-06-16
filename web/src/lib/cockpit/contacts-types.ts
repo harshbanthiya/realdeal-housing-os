@@ -1,5 +1,5 @@
 /**
- * Contact-cleanup types + pure helpers — client-safe (NO db/pg import).
+ * Contact-cleanup types + pure helpers - client-safe (NO db/pg import).
  * Client components import from here; server-side getters live in contacts.ts
  * (which re-exports everything in this file).
  */

@@ -44,7 +44,7 @@ export default async function ContactsCleanup() {
         <ContactsSubnav />
       </div>
 
-      {/* Pipeline funnel — where the jam is */}
+      {/* Pipeline funnel - where the jam is */}
       <Card className="mb-7 p-5">
         <PanelTitle hint="programmatic pipeline · review-gated">Cleanup funnel</PanelTitle>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -62,7 +62,7 @@ export default async function ContactsCleanup() {
             Merge candidates
           </PanelTitle>
           {mergeQueue.length === 0 ? (
-            <Empty>No pending merge candidates — the queue is clear.</Empty>
+            <Empty>No pending merge candidates - the queue is clear.</Empty>
           ) : (
             <div className="space-y-3">
               {mergeQueue.map((item) => (

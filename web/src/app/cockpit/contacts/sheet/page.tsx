@@ -81,7 +81,7 @@ export default async function ContactsSheet({
       {/* Pagination */}
       {sheet.total > 0 && (
         <div className="mt-4 flex items-center justify-between text-[12px] text-ink/55">
-          <span>Showing {from}–{to} of {sheet.total}</span>
+          <span>Showing {from}-{to} of {sheet.total}</span>
           <div className="flex items-center gap-2">
             <PageLink href={pageHref(sheet.page - 1)} disabled={sheet.page <= 1} label="← Prev" />
             <Mono className="text-[11px]">page {sheet.page} / {pageCount}</Mono>
@@ -103,13 +103,13 @@ function Row({ r }: { r: ContactSheetRow }) {
   return (
     <tr className="border-b border-mist last:border-0 hover:bg-mist/20">
       <td className="px-4 py-3 text-ink/85">{r.displayHint}</td>
-      <td className="px-4 py-3"><Pill tone={r.canonicalStatus === "active" ? "ready" : "neutral"}>{r.canonicalStatus || "—"}</Pill></td>
-      <td className="px-4 py-3">{r.role ? <Pill tone={ROLE_TONE[r.role] ?? "neutral"}>{r.role}</Pill> : <span className="text-ink/30">—</span>}</td>
-      <td className="px-4 py-3 text-ink/70">{r.building ?? <span className="text-ink/30">—</span>}</td>
+      <td className="px-4 py-3"><Pill tone={r.canonicalStatus === "active" ? "ready" : "neutral"}>{r.canonicalStatus || " - "}</Pill></td>
+      <td className="px-4 py-3">{r.role ? <Pill tone={ROLE_TONE[r.role] ?? "neutral"}>{r.role}</Pill> : <span className="text-ink/30"> - </span>}</td>
+      <td className="px-4 py-3 text-ink/70">{r.building ?? <span className="text-ink/30"> - </span>}</td>
       <td className="px-4 py-3 text-right tabular-nums text-ink/70">{r.methodCount}</td>
       <td className="px-4 py-3 text-right tabular-nums text-ink/70">{r.leadRequirementCount}</td>
       <td className="px-4 py-3 text-right tabular-nums text-ink/70">{r.sourceFileCount}</td>
-      <td className="px-4 py-3"><Mono className="text-[11px]">{r.createdAt.slice(0, 10) || "—"}</Mono></td>
+      <td className="px-4 py-3"><Mono className="text-[11px]">{r.createdAt.slice(0, 10) || " - "}</Mono></td>
     </tr>
   );
 }

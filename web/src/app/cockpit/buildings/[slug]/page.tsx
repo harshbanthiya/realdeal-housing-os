@@ -41,7 +41,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ slug
             {building.launchInDays ? ` · launch in ${building.launchInDays} days` : ""} · SEO {building.seoRank}
           </p>
         </div>
-        {/* Lifecycle mode switch (visual — same tabs, changes emphasis) */}
+        {/* Lifecycle mode switch (visual - same tabs, changes emphasis) */}
         <div className="flex items-center gap-1 rounded-full border border-mist-deep p-1">
           {MODES.map((m) => (
             <span

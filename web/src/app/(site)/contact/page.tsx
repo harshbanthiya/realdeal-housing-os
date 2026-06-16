@@ -3,7 +3,7 @@ import { company } from "@/lib/site";
 
 export const metadata = {
   title: "Contact",
-  description: "Get in touch with Real Deal Housing — Goregaon West, Mumbai.",
+  description: "Get in touch with Real Deal Housing - Goregaon West, Mumbai.",
 };
 
 export default function Page() {
@@ -11,7 +11,7 @@ export default function Page() {
     <section className="mx-auto max-w-5xl px-6 py-24">
       <Reveal>
         <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-warm">Contact</p>
-        <h1 className="text-4xl font-extrabold tracking-tight text-teal md:text-5xl">
+        <h1 className="display text-balance text-[clamp(2.1rem,4.8vw,3.6rem)] font-extrabold leading-[1.05] text-teal">
           Leave us a message
         </h1>
       </Reveal>
@@ -29,12 +29,12 @@ export default function Page() {
               {["First name", "Last name", "Email", "Phone"].map((f) => (
                 <div key={f}>
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/50">{f}</label>
-                  <input disabled placeholder={f} className="w-full rounded-lg border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35" />
+                  <input disabled placeholder={f} className="w-full rounded-xl border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/45" />
                 </div>
               ))}
-              <textarea disabled rows={3} placeholder="Type your message here" className="w-full resize-none rounded-lg border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35" />
+              <textarea disabled rows={3} placeholder="Type your message here" className="w-full resize-none rounded-xl border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/45" />
               <button type="button" disabled className="mt-1 cursor-not-allowed rounded-full bg-mist-deep px-6 py-3.5 text-sm font-semibold text-ink/50">
-                Preview only — no live submission
+                Preview only - no live submission
               </button>
             </div>
           </form>

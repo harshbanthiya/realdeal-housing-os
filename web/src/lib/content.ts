@@ -3,7 +3,7 @@
  *
  * Mirrors the Wix Test CMS collections (Projects, ProjectFacts, Residences,
  * Amenities, ProjectFAQs) so this can be swapped for live `@wix/data` reads
- * once the Headless OAuth Client ID is provided — the page components stay
+ * once the Headless OAuth Client ID is provided - the page components stay
  * unchanged. Placeholders (PRICE_VERIFY / RERA_VERIFY / BROCHURE_LINK_PENDING /
  * VERIFY) are intentionally preserved; nothing is fabricated.
  */
@@ -48,7 +48,7 @@ export const project = {
   microMarket: "D.N. Nagar / Link Road",
   heroTagline: "A calmer way to evaluate a premium city residence.",
   overview:
-    "DLF Westpark in Andheri West is presented here as a structured, verifiable preview. Pricing, RERA registration, configurations and the official brochure remain placeholders until each is individually verified — we publish facts, not promises.",
+    "DLF Westpark in Andheri West is presented here as a structured, verifiable preview. Pricing, RERA registration, configurations and the official brochure remain placeholders until each is individually verified - we publish facts, not promises.",
   seoTitle: "DLF Westpark Andheri West - Premium Residences Preview",
   seoDescription:
     "Review DLF Westpark in Andheri West with verified placeholders, location context, residence notes, and a preview-only enquiry form.",

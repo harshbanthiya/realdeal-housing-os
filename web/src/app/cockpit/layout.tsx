@@ -5,13 +5,13 @@ import { getBuildings } from "@/lib/cockpit/data";
 
 export const metadata = { title: "Cockpit", robots: { index: false, follow: false } };
 
-// Internal, live-DB tool — render per request, never prerender at build time.
+// Internal, live-DB tool - render per request, never prerender at build time.
 export const dynamic = "force-dynamic";
 
 export default async function CockpitLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Internal tool — never serve on a public/production deploy (e.g. Vercel).
+  // Internal tool - never serve on a public/production deploy (e.g. Vercel).
   // Stays available in local dev; to run it on a protected host, set COCKPIT_ENABLED=true + add auth.
   if (process.env.NODE_ENV === "production" && process.env.COCKPIT_ENABLED !== "true") {
     notFound();

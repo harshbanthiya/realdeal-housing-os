@@ -1,13 +1,13 @@
 "use server";
 
 /**
- * Cockpit write path — server actions that shell out to the EXISTING guarded
+ * Cockpit write path - server actions that shell out to the EXISTING guarded
  * Python scripts (the only audited writers). The cockpit DB layer stays
  * read-only; all mutations go through these scripts, which are dry-run by
  * default and require --apply to write.
  *
  * Safety:
- *  - execFile with an argv array (NEVER a shell string) — no injection.
+ *  - execFile with an argv array (NEVER a shell string) - no injection.
  *  - Inputs validated (UUID, allow-listed status) before spawning.
  *  - Only an allow-listed set of scripts can be invoked.
  *  - `apply` defaults to false; callers must opt in explicitly per run.

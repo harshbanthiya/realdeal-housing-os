@@ -1,22 +1,40 @@
 @import "tailwindcss";
 
-/* Gallery White — luxury editorial theme tokens */
+/* ============================================================
+   Gallery White - luxury editorial theme tokens
+   Palette is derived from the Real Deal Housing logo:
+   navy house body, steel-blue wordmark/door, warm faceted roof.
+   Brand-critical values (teal / warm / accent) are kept EXACT.
+   ============================================================ */
 @theme {
-  --color-teal: #1f3d4d;
-  --color-teal-soft: #2c5364;
-  --color-ink: #1a1a1a;
-  --color-mist: #eef1ef;
-  --color-mist-deep: #e3e8e5;
-  --color-warm: #c2493d;
-  --color-accent: #3e82b0;
+  /* Brand spine - navy house body + wordmark */
+  --color-teal: #1f3d4d;        /* primary brand (headings, primary CTA) */
+  --color-teal-soft: #2c5364;   /* raised teal */
+  --color-teal-deep: #16303c;   /* footer / pressed */
+
+  /* Single highlight accent - the warm roof */
+  --color-warm: #c2493d;        /* accent (badges, markers, energy) */
+
+  /* Logo art hues - used inside the mark + facet motif only */
+  --color-accent: #3e82b0;      /* steel-blue (logo door/wordmark) */
   --color-amber: #b6862c;
+
+  /* Neutrals - warm-tinted, no pure black/white */
+  --color-ink: #171b1b;
+  --color-paper: #fbfbf9;       /* off-white page base */
+  --color-mist: #eef1ef;
+  --color-mist-deep: #dde4df;
+
   --font-sans: var(--font-manrope);
   --font-mono: var(--font-mono-token);
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #1a1a1a;
+  /* One locked theme: warm-white "Gallery White". color-scheme prevents
+     UA dark-inversion of form controls; the brand identity is editorial-light. */
+  color-scheme: light;
+  --background: #fbfbf9;
+  --foreground: #171b1b;
 }
 
 html {
@@ -24,7 +42,7 @@ html {
 }
 
 body {
-  background: #ffffff;
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -34,4 +52,26 @@ body {
 ::selection {
   background: #1f3d4d;
   color: #fff;
+}
+
+/* Headlines read tighter and balanced - luxury display rhythm. */
+.text-balance {
+  text-wrap: balance;
+}
+.display {
+  letter-spacing: -0.022em;
+}
+
+/* Subtle perpetual float for the decorative facet motif.
+   Collapses to static under reduced-motion (Section 6.B). */
+@keyframes facet-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(-1.5deg); }
+}
+.facet-float {
+  animation: facet-float 9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .facet-float { animation: none; }
 }
