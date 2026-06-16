@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, Pill, Dot, Mono, type Tone } from "@/components/ui/primitives";
 import {
   TABS, type TabKey, type Building, type Person, type Keyword, type Campaign,
@@ -121,19 +122,40 @@ function Overview({ data, launch }: { data: WorkspaceData; launch: boolean }) {
 }
 
 function Owners({ owners }: { owners: Person[] }) {
+  const router = useRouter();
   if (!owners.length) return <Empty>No owners or tenants linked yet — import contact data to populate.</Empty>;
   return (
     <Card>
-      {owners.map((p, i) => (
-        <Row key={i}>
+      {owners.map((p, i) => {
+        const href = p.contactId ? `/cockpit/contacts/c/${p.contactId}` : "";
+        const open = () => href && router.push(href);
+        return (
+        <div
+          key={`${p.contactId ?? "person"}-${i}`}
+          role={href ? "link" : undefined}
+          tabIndex={href ? 0 : undefined}
+          aria-label={href ? `Open contact ${p.name}` : undefined}
+          onClick={open}
+          onKeyDown={(event) => {
+            if (href && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              open();
+            }
+          }}
+          className={`group grid items-center gap-3 border-b border-mist px-4 py-3 last:border-0 ${
+            href ? "cursor-pointer hover:bg-mist/20 focus-visible:bg-mist/30 focus-visible:outline-none" : ""
+          }`}
+        >
           <div className="grid grid-cols-[1.4fr_0.8fr_1fr_1fr] items-center gap-3">
-            <span className="text-sm text-ink/80">{p.name}</span>
+            <span className={`text-sm text-ink/80 underline-offset-2 ${href ? "group-hover:text-teal group-hover:underline" : ""}`}>
+              {p.name}
+            </span>
             <Pill tone={ROLE_TONE[p.role]}>{p.role}</Pill>
             <Mono className="text-[12px]">{p.unit}</Mono>
             <Mono className="text-[12px]">{p.phone}</Mono>
           </div>
-        </Row>
-      ))}
+        </div>
+      );})}
     </Card>
   );
 }

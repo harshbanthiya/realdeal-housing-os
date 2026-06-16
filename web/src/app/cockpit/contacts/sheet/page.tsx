@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { Card, Pill, Mono, type Tone } from "@/components/ui/primitives";
+import { Card, Mono } from "@/components/ui/primitives";
 import { ContactsSubnav } from "@/components/cockpit/contacts-subnav";
+import { ContactSheetRowView } from "@/components/cockpit/contact-sheet-row";
 import { getContactSheet } from "@/lib/cockpit/contacts";
-import { SHEET_SORTS, type SheetSortKey, type ContactSheetRow } from "@/lib/cockpit/contacts-types";
+import { SHEET_SORTS, type SheetSortKey } from "@/lib/cockpit/contacts-types";
 
 export const dynamic = "force-dynamic";
-
-const ROLE_TONE: Record<string, Tone> = { owner: "active", tenant: "ready", broker: "review", lead: "neutral" };
 
 function parseSort(v: string | undefined): SheetSortKey {
   return v && v in SHEET_SORTS ? (v as SheetSortKey) : "created";
@@ -71,7 +70,7 @@ export default async function ContactsSheet({
                 </tr>
               </thead>
               <tbody>
-                {sheet.rows.map((r) => <Row key={r.contactId} r={r} />)}
+                {sheet.rows.map((r) => <ContactSheetRowView key={r.contactId} r={r} />)}
               </tbody>
             </table>
           </div>
@@ -98,22 +97,6 @@ function Th({ children, className = "" }: { children: React.ReactNode; className
 }
 function SortLink({ href, label }: { href: string; label: string }) {
   return <Link href={href} className="hover:text-teal">{label}</Link>;
-}
-function Row({ r }: { r: ContactSheetRow }) {
-  return (
-    <tr className="border-b border-mist last:border-0 hover:bg-mist/20">
-      <td className="px-4 py-3">
-        <Link href={`/cockpit/contacts/c/${r.contactId}`} className="text-ink/85 hover:text-teal hover:underline">{r.displayHint}</Link>
-      </td>
-      <td className="px-4 py-3"><Pill tone={r.canonicalStatus === "active" ? "ready" : "neutral"}>{r.canonicalStatus || "—"}</Pill></td>
-      <td className="px-4 py-3">{r.role ? <Pill tone={ROLE_TONE[r.role] ?? "neutral"}>{r.role}</Pill> : <span className="text-ink/30">—</span>}</td>
-      <td className="px-4 py-3 text-ink/70">{r.building ?? <span className="text-ink/30">—</span>}</td>
-      <td className="px-4 py-3 text-right tabular-nums text-ink/70">{r.methodCount}</td>
-      <td className="px-4 py-3 text-right tabular-nums text-ink/70">{r.leadRequirementCount}</td>
-      <td className="px-4 py-3 text-right tabular-nums text-ink/70">{r.sourceFileCount}</td>
-      <td className="px-4 py-3"><Mono className="text-[11px]">{r.createdAt.slice(0, 10) || "—"}</Mono></td>
-    </tr>
-  );
 }
 function PageLink({ href, disabled, label }: { href: string; disabled: boolean; label: string }) {
   if (disabled) return <span className="cursor-not-allowed rounded-full border border-mist px-3 py-1 text-ink/30">{label}</span>;

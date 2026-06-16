@@ -24,6 +24,7 @@ const num = (v: unknown) => Number(v ?? 0) || 0;
 
 function maskName(n: string) { const t = (n || "").trim().split(/\s+/); return t[0] ? `${t[0]} ••` : "Contact"; }
 function maskPhone(p: string) { const d = String(p || "").replace(/\D/g, ""); return d ? `•••• ••${d.slice(-2)}` : "—"; }
+function slugify(v: string) { return v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 function launchDays(month?: string | null, date?: string | null) {
   const now = new Date();
   let target: Date | null = date ? new Date(date) : null;
@@ -64,7 +65,7 @@ export async function getBuildings(): Promise<Building[]> {
   }
   for (const b of blds) {
     out.push({
-      slug: b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      slug: slugify(b.name),
       name: b.name, location: b.locality || "Mumbai", mode: "active", seoRank: `${kw} kw`,
       stats: { owners, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: reraOpen, blockers: 0 },
     });
@@ -104,12 +105,30 @@ export async function getGlobalBlockers(): Promise<Blocker[]> {
 export async function getOwnersTenants(slug: string): Promise<Person[]> {
   if (!live()) return slug === DLF_SLUG ? [] : [{ name: "Masked · owner A", role: "owner", unit: "Wing A-102", phone: "+91 •••• ••3889" }];
   if (slug === DLF_SLUG) return [];
-  const rows = await readQuery<{ full_name: string; relationship_type: string; phone_primary: string; building_unit_id: string | null }>(
-    `select c.full_name, r.relationship_type, c.phone_primary, r.building_unit_id::text from contact_property_relationships r join contacts c on c.id = r.contact_id order by r.relationship_type`);
-  return rows.map((r) => ({
+  const rows = await readQuery<{
+    contact_id: string;
+    full_name: string;
+    relationship_type: string;
+    phone_primary: string;
+    building_unit_id: string | null;
+    building_name: string | null;
+    wing: string | null;
+    unit_number: string | null;
+  }>(
+    `select c.id::text contact_id, c.full_name, r.relationship_type, c.phone_primary,
+            r.building_unit_id::text, coalesce(b.name, bu.building_name) building_name,
+            bu.wing, bu.unit_number
+     from contact_property_relationships r
+     join contacts c on c.id = r.contact_id
+     left join buildings b on b.id = r.building_id
+     left join building_units bu on bu.id = r.building_unit_id
+     where r.relationship_status in ('active', 'approved', 'pending_review')
+     order by r.relationship_type`);
+  return rows.filter((r) => slugify(String(r.building_name ?? "")) === slug).map((r) => ({
+    contactId: r.contact_id,
     name: maskName(r.full_name),
     role: r.relationship_type === "owner" ? "owner" : r.relationship_type === "tenant" ? "tenant" : "client",
-    unit: r.building_unit_id ? "unit linked" : "—",
+    unit: [r.wing ? `Wing ${r.wing}` : "", r.unit_number ? `Unit ${r.unit_number}` : ""].filter(Boolean).join(" · ") || (r.building_unit_id ? "unit linked" : "—"),
     phone: maskPhone(r.phone_primary),
   }));
 }

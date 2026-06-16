@@ -15,7 +15,7 @@ export interface Building {
 export interface ReviewItem { domain: string; title: string; building: string; age: string; tone: Tone }
 export interface AgentEvent { agent: string; action: string; building: string; status: Tone }
 export interface Blocker { id: string; building: string; statement: string; openFor: string }
-export interface Person { name: string; role: "owner" | "tenant" | "client"; unit: string; phone: string }
+export interface Person { contactId?: string; name: string; role: "owner" | "tenant" | "client"; unit: string; phone: string }
 export interface Keyword { term: string; rank: string; volume: string; status: Tone }
 export interface Campaign { name: string; channel: string; status: Tone; note: string }
 export interface Fact { label: string; value: string; status: Tone }
