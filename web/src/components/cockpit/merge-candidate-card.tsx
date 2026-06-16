@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Card, Pill, Dot } from "@/components/ui/primitives";
 import { updateReviewItem, type ActionResult } from "@/lib/cockpit/actions";
-import { statusTone, type ReviewQueueItem } from "@/lib/cockpit/contacts-types";
+import { statusTone, reviewTypeLabel, batchLabelHuman, type ReviewQueueItem } from "@/lib/cockpit/contacts-types";
 
 /**
  * One merge-candidate row with a DRY-RUN preview of approval.
@@ -36,13 +36,13 @@ export function MergeCandidateCard({ item }: { item: ReviewQueueItem }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <Dot tone={statusTone(item.status)} />
-            <span className="truncate text-sm font-medium text-ink/85">{item.title || "Merge candidate"}</span>
+            <span className="truncate text-sm font-medium text-ink/85">{reviewTypeLabel(item.reviewType)}</span>
             {item.priority === "high" && <Pill tone="blocked">high</Pill>}
           </div>
-          <p className="mt-1 line-clamp-2 text-[13px] text-ink/55">{item.summary}</p>
-          <div className="mt-1.5 flex items-center gap-2 font-mono text-[11px] text-ink/40">
-            <span>{item.batchLabel}</span>
-            {item.recommendedAction && <span>· suggests {item.recommendedAction.replace(/_/g, " ")}</span>}
+          {item.summary && <p className="mt-1 line-clamp-2 text-[13px] text-ink/55">{item.summary}</p>}
+          <div className="mt-1.5 flex items-center gap-2 text-[11px] text-ink/45">
+            <span>from {batchLabelHuman(item.batchLabel)}</span>
+            {item.recommendedAction && <span className="text-ink/35">· suggests {item.recommendedAction.replace(/_/g, " ")}</span>}
           </div>
         </div>
         <div className="flex shrink-0 gap-2">

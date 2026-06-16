@@ -19,7 +19,7 @@ import type {
   ContactRelationshipRow, QueueCount, QueueFilter, PipelineColumn, PipelineCard,
   ContactSheet, ContactSheetRow, SheetSortKey,
 } from "./contacts-types";
-import { PIPELINE_STAGE_META, roleLabel, SHEET_SORTS } from "./contacts-types";
+import { PIPELINE_STAGE_META, roleLabel, SHEET_SORTS, reviewTypeLabel, batchLabelHuman } from "./contacts-types";
 
 // Re-export types + pure helpers so existing server-side imports from
 // "@/lib/cockpit/contacts" keep working. Client components import the same
@@ -246,14 +246,15 @@ export async function getContactPipeline(): Promise<{ columns: PipelineColumn[];
   const countOfStatus = (s: string) => num(reviewCounts.find((r) => r.status === s)?.n);
   const reviewCardsFor = (s: string): PipelineCard[] =>
     reviewCards.filter((r) => r.status === s).slice(0, PIPELINE_CARD_CAP).map((r) => ({
-      key: String(r.id), primary: String(r.title), secondary: String(r.batch_label ?? ""),
+      key: String(r.id), primary: reviewTypeLabel("merge_candidate"),
+      secondary: `from ${batchLabelHuman(String(r.batch_label ?? ""))}`,
       tone: PIPELINE_STAGE_META[s === "approved" ? "approved" : "in_review"].tone,
     }));
 
   const canonicalUnattached = canonical.filter((c) => !c.attached);
   const canonicalCards: PipelineCard[] = canonicalUnattached.slice(0, PIPELINE_CARD_CAP).map((c) => ({
     key: String(c.id), primary: String(c.display_hint ?? "Contact"),
-    secondary: c.merge_label ? String(c.merge_label) : "merged", tone: PIPELINE_STAGE_META.canonical.tone,
+    secondary: "merged · not yet attached", tone: PIPELINE_STAGE_META.canonical.tone,
   }));
   const attachedCards: PipelineCard[] = attached.map((r) => ({
     key: String(r.id), primary: String(r.contact_display_hint ?? "Contact"),

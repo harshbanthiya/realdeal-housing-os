@@ -140,6 +140,51 @@ export const PIPELINE_STAGE_META: Record<PipelineStage, { label: string; tone: T
   attached: { label: "Attached", tone: "ready", hint: "linked to a building by role" },
 };
 
+// ---- Human-friendly labels (presentation only; DB stays raw) ----
+const REVIEW_TYPE_LABEL: Record<string, string> = {
+  merge_candidate: "Possible contact to merge",
+  duplicate_contact: "Duplicate to resolve",
+  property_hint_review: "Property / unit link to confirm",
+  inventory_match_review: "Inventory match to confirm",
+  lead_requirement_review: "Lead detail to confirm",
+};
+/** Friendly name for a review_type (falls back to de-snaked text). */
+export function reviewTypeLabel(t: string): string {
+  return REVIEW_TYPE_LABEL[t] ?? t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+  needs_more_info: "Needs info",
+  merged: "Merged",
+  merged_later: "Merged",
+  skipped: "Skipped",
+};
+/** Friendly name for a review/candidate status. */
+export function statusLabel(s: string): string {
+  return STATUS_LABEL[s] ?? s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Friendly name for an internal batch label, e.g.
+ * "REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001" -> "Imperial Unit Audit".
+ * Strips REAL_/FAKE_/PHASE_n_n prefixes and trailing run numbers.
+ */
+export function batchLabelHuman(label: string): string {
+  if (!label) return "Import";
+  const words = label
+    .replace(/^(REAL|FAKE)_/i, "")
+    .replace(/^PHASE_\d+(_\d+)?_/i, "")
+    .replace(/_\d+$/i, "")
+    .replace(/_(TEST|AUDIT)$/i, "")
+    .replace(/_/g, " ")
+    .trim();
+  const titled = words.replace(/\b\w/g, (c) => c.toUpperCase());
+  return titled || "Import";
+}
+
 /** Friendly label for a relationship role. */
 export function roleLabel(role: string): string {
   const r = role.toLowerCase();

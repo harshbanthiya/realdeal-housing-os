@@ -1,10 +1,11 @@
-import { Card, Pill, PanelTitle, Mono, type Tone } from "@/components/ui/primitives";
+import { Card, Pill, PanelTitle, type Tone } from "@/components/ui/primitives";
 import { MergeCandidateCard } from "@/components/cockpit/merge-candidate-card";
 import { ContactsSubnav } from "@/components/cockpit/contacts-subnav";
 import {
   getReviewBatches, getQueueCounts, getReviewQueue, getCanonicalContacts,
   type QueueCount,
 } from "@/lib/cockpit/contacts";
+import { batchLabelHuman } from "@/lib/cockpit/contacts-types";
 
 export const dynamic = "force-dynamic";
 
@@ -98,7 +99,7 @@ export default async function ContactsCleanup() {
               {batches.map((b) => (
                 <li key={b.importBatchId} className="rounded-lg border border-mist-deep p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <Mono className="truncate text-[11px] text-teal">{b.batchLabel}</Mono>
+                    <span className="truncate text-[13px] font-medium text-teal">{batchLabelHuman(b.batchLabel)}</span>
                     {b.isRealImport ? <Pill tone="active">real</Pill> : <Pill tone="neutral">test</Pill>}
                   </div>
                   <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">
