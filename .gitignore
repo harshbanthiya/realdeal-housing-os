@@ -127,6 +127,9 @@ workflows/n8n/*secret*.json
 #  Playwright traces/videos/cache that could land outside exports/.)
 exports/rera_snapshots/
 **/rera_snapshots/
+# Phase 6.18 IGR eSearch Index II snapshots (raw, untrusted, contain party PII — never committed).
+exports/igr_snapshots/
+**/igr_snapshots/
 playwright-report/
 test-results/
 *.webm
