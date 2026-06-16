@@ -119,3 +119,86 @@ export async function updateReviewItem(input: {
     raw: out,
   };
 }
+
+const OUTREACH_ACTIONS: Record<string, string> = {
+  sent: "--mark-sent",
+  replied: "--mark-replied",
+  enquired: "--mark-enquired",
+  "opted-in": "--mark-opted-in",
+  "opted-out": "--mark-opted-out",
+};
+
+/** First non-empty, non-boilerplate line of the script output. */
+function headline(out: string): string {
+  const skip = /^(BEGIN|COMMIT|INSERT|UPDATE|DELETE|DO|ROLLBACK)\b/;
+  for (const line of out.split("\n").map((l) => l.trim())) {
+    if (line && !skip.test(line)) return line;
+  }
+  return out.split("\n")[0] || "";
+}
+
+/**
+ * Build today's owners-only assisted WhatsApp queue via
+ * scripts/build_owner_outreach_queue.py. Dry-run by default; apply requires
+ * BOTH --real-ok and --apply (passed together). Never sends.
+ */
+export async function buildOutreachQueue(input: {
+  limit?: number;
+  apply?: boolean;
+}): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const limit = Math.max(1, Math.min(50, Number(input.limit) || 10));
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+
+  const argv = ["--limit", String(limit)];
+  if (apply) argv.push("--real-ok", "--apply");
+
+  const { code, out } = await runScript("build_owner_outreach_queue.py", argv);
+  const ok = code === 0;
+  return {
+    ...base,
+    ok,
+    applied: ok && apply,
+    message: ok ? headline(out) : out.split("\n")[0] || "Queue build failed.",
+    fields: parseLabeledOutput(out),
+    raw: out,
+  };
+}
+
+/**
+ * Record a human-in-loop outreach activity (sent / replied / enquired /
+ * opted-in / opted-out) via scripts/record_outreach_activity.py. Dry-run by
+ * default; apply requires BOTH --real-ok and --apply. Never sends a message.
+ */
+export async function recordOutreachActivity(input: {
+  queueId: string;
+  action: string;
+  by: string;
+  note?: string;
+  apply?: boolean;
+}): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+
+  if (!UUID_RE.test(input.queueId)) return { ...base, message: "Invalid queue id." };
+  const flag = OUTREACH_ACTIONS[input.action];
+  if (!flag) return { ...base, message: `Invalid action: ${input.action}` };
+  const by = (input.by || "").trim() || "director";
+
+  const argv = ["--queue-id", input.queueId, flag, "--by", by];
+  if (input.note) argv.push("--note", input.note);
+  if (apply) argv.push("--real-ok", "--apply");
+
+  const { code, out } = await runScript("record_outreach_activity.py", argv);
+  const ok = code === 0 && !/Refusing:/i.test(out);
+  return {
+    ...base,
+    ok,
+    applied: ok && apply,
+    message: ok
+      ? apply ? headline(out) : `Dry run: would record ${input.action} (no write)`
+      : out.split("\n").find((l) => /Refusing|FAILED|not found/i.test(l)) || out.split("\n")[0] || "Failed.",
+    fields: parseLabeledOutput(out),
+    raw: out,
+  };
+}
