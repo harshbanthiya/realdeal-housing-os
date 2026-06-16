@@ -49,6 +49,8 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/044_import_jobs.sql"
   "$PROJECT_ROOT/schemas/045_whatsapp_assisted_outreach_activity.sql"
   "$PROJECT_ROOT/schemas/046_contact_groups_outreach.sql"
+  "$PROJECT_ROOT/schemas/047_unit_registration_foundation.sql"
+  "$PROJECT_ROOT/schemas/048_unit_ownership_tenancy_timeline.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then
