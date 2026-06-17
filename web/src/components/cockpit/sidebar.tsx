@@ -77,6 +77,9 @@ export function Sidebar({ buildings }: { buildings: Building[] }) {
         <Link href="/" className="flex items-center gap-2 rounded-lg px-3 py-2 text-ink/55 hover:bg-white/60">
           ↗ Marketing site
         </Link>
+        <a href="/cockpit/logout" className="flex items-center gap-2 rounded-lg px-3 py-2 text-ink/55 hover:bg-white/60">
+          ⏻ Sign out
+        </a>
       </div>
     </aside>
   );
