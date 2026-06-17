@@ -340,10 +340,13 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     cur.perFloor = Math.max(cur.perFloor, fp.pos);
     cur.count += 1; towersMap.set(t, cur);
   }
+  // Authoritative apartments/floor per the brochure/operator: Wing A = 5, B/C/D/E = 6.
+  // (Deriving from max unit-position overshoots: a few odd flats end in 7-9, e.g. shops/podium.)
+  const TOWER_PER_FLOOR: Record<string, number> = { A: 5, B: 6, C: 6, D: 6, E: 6 };
   const towers = [...towersMap.values()].sort((a, z) => a.letter.localeCompare(z.letter))
     .map((t) => ({ letter: t.letter, label: `Tower ${t.letter}`, floors: Math.min(Math.max(t.floors, 1), MAX_FLOOR),
-                   unitsPerFloor: Math.min(Math.max(t.perFloor, 4), 12), unitCount: t.count }));
-  const overallPerFloor = towers.reduce((m, t) => Math.max(m, t.unitsPerFloor), 4);
+                   unitsPerFloor: TOWER_PER_FLOOR[t.letter] ?? Math.min(Math.max(t.perFloor, 4), 12), unitCount: t.count }));
+  const overallPerFloor = towers.reduce((m, t) => Math.max(m, t.unitsPerFloor), 6);
 
   const withReg = units.filter((u) => u.registrationCount > 0);
   const tenanted = units.filter((u) => u.status === "tenanted");
