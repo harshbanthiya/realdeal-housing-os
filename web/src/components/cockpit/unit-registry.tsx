@@ -42,6 +42,7 @@ export function UnitRegistry({ data }: { data: UnitRegistryData }) {
   }
 
   const s = data.stats;
+  const perFloor = Math.max(tMeta.unitsPerFloor ?? data.unitsPerFloor, 1);
   const floors = Array.from({ length: Math.max(tMeta.floors, 1) }, (_, i) => Math.max(tMeta.floors, 1) - i);
 
   return (
@@ -75,13 +76,13 @@ export function UnitRegistry({ data }: { data: UnitRegistryData }) {
       <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
         {/* building stack */}
         <Card className="overflow-hidden p-0">
-          <div className="border-b border-mist px-4 py-2 text-[12px] text-ink/45">{tMeta.label} · {tMeta.floors} floors × {data.unitsPerFloor}/floor (inferred grid)</div>
+          <div className="border-b border-mist px-4 py-2 text-[12px] text-ink/45">{tMeta.label} · {tMeta.floors} floors × {perFloor}/floor (inferred grid)</div>
           <div className="max-h-[620px] overflow-y-auto p-3">
             {floors.map((fl) => (
               <div key={fl} className="flex items-center gap-2 border-b border-mist/60 py-1.5 last:border-0">
                 <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-ink/40">{fl}</span>
-                <div className="grid flex-1 gap-1.5" style={{ gridTemplateColumns: `repeat(${data.unitsPerFloor}, minmax(0, 1fr))` }}>
-                  {Array.from({ length: data.unitsPerFloor }, (_, i) => i + 1).map((pos) => {
+                <div className="grid flex-1 gap-1.5" style={{ gridTemplateColumns: `repeat(${perFloor}, minmax(0, 1fr))` }}>
+                  {Array.from({ length: perFloor }, (_, i) => i + 1).map((pos) => {
                     const u = byPos.get(`${fl}-${pos}`);
                     const meta = STATUS_META[u?.status ?? "unknown"];
                     const key = u ? `${u.tower}-${u.flat}` : "";

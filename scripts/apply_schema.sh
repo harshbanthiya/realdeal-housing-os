@@ -53,6 +53,7 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/048_unit_ownership_tenancy_timeline.sql"
   "$PROJECT_ROOT/schemas/049_building_registration_readiness.sql"
   "$PROJECT_ROOT/schemas/050_registration_party_detail.sql"
+  "$PROJECT_ROOT/schemas/051_registration_qa_dashboard.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

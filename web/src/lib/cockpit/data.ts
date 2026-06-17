@@ -228,8 +228,17 @@ function towerLetter(wing: string | null): string {
   const m = String(wing ?? "").toUpperCase().match(/([A-Z])\s*$/);
   return m ? m[1] : "";
 }
-function flatFloor(u: string): number { const n = Number(String(u).replace(/\D/g, "")) || 0; return n >= 10 ? Math.floor(n / 10) : Math.max(1, n); }
-function flatPos(u: string): number { const n = Number(String(u).replace(/\D/g, "")) || 0; return n % 10 === 0 ? 6 : n % 10; }
+const MAX_FLOOR = 40; // Kalpataru Radiance ~31 habitable / 38 sanctioned; cap guards bad parses
+// Flat-number scheme (per brochure): trailing 1-2 digits = unit on floor, rest = floor.
+//   2706 -> floor 27, unit 6 ; 291 -> floor 29, unit 1 ; 134 -> floor 13, unit 4 ; 14 -> floor 1, unit 4.
+function deriveFloorPos(u: string): { floor: number; pos: number } {
+  const n = Number(String(u).replace(/\D/g, "")) || 0;
+  const fa = Math.floor(n / 100), pa = n % 100;       // last two digits = unit (e.g. 2706 -> 27/06)
+  if (fa >= 1 && fa <= MAX_FLOOR && pa >= 1 && pa <= 12) return { floor: fa, pos: pa };
+  const fb = Math.floor(n / 10), pb = n % 10;          // last digit = unit (e.g. 291 -> 29/1)
+  if (fb >= 1 && fb <= MAX_FLOOR) return { floor: fb, pos: pb || 10 };
+  return { floor: Math.min(Math.max(1, n), MAX_FLOOR), pos: 1 };
+}
 
 export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
   const b = (await getBuildings()).find((x) => x.slug === slug);
@@ -311,8 +320,9 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     const status: UCell["status"] = activeLease ? "tenanted"
       : currentOwner ? "owned"
       : events.length ? "registered" : "unknown";
+    const fp = deriveFloorPos(flat);
     units.push({
-      flat, floor: flatFloor(flat), position: flatPos(flat), tower,
+      flat, floor: fp.floor, position: fp.pos, tower,
       status, currentOwner, ownerContact: !lastOwn && Boolean(relOwner),
       ownerSince: lastOwn?.date, lastPrice: lastOwn?.consideration,
       currentTenant: activeLease ? partyNames(activeLease, ["lessee", "tenant"]) || undefined : undefined,
@@ -321,15 +331,19 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     });
   }
 
-  const towersMap = new Map<string, { letter: string; label: string; floors: number; count: number }>();
+  const towersMap = new Map<string, { letter: string; floors: number; perFloor: number; count: number }>();
   for (const u of myUnits) {
     const t = towerLetter(u.wing); if (!t) continue;
-    const cur = towersMap.get(t) ?? { letter: t, label: String(u.wing ?? `Tower ${t}`).replace(/\s+/g, " ").trim(), floors: 0, count: 0 };
-    cur.floors = Math.max(cur.floors, flatFloor(String(u.unit_number)));
+    const fp = deriveFloorPos(String(u.unit_number));
+    const cur = towersMap.get(t) ?? { letter: t, floors: 0, perFloor: 0, count: 0 };
+    cur.floors = Math.max(cur.floors, fp.floor);
+    cur.perFloor = Math.max(cur.perFloor, fp.pos);
     cur.count += 1; towersMap.set(t, cur);
   }
   const towers = [...towersMap.values()].sort((a, z) => a.letter.localeCompare(z.letter))
-    .map((t) => ({ letter: t.letter, label: `Tower ${t.letter}`, floors: Math.max(t.floors, 1), unitsPerFloor: 6, unitCount: t.count }));
+    .map((t) => ({ letter: t.letter, label: `Tower ${t.letter}`, floors: Math.min(Math.max(t.floors, 1), MAX_FLOOR),
+                   unitsPerFloor: Math.min(Math.max(t.perFloor, 4), 12), unitCount: t.count }));
+  const overallPerFloor = towers.reduce((m, t) => Math.max(m, t.unitsPerFloor), 4);
 
   const withReg = units.filter((u) => u.registrationCount > 0);
   const tenanted = units.filter((u) => u.status === "tenanted");
@@ -342,7 +356,7 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
   const panCount = myRecs.reduce((s, r) => s + (r.parties ?? []).filter((p) => p.pan).length, 0);
 
   return {
-    buildingName: b.name, towers, unitsPerFloor: 6, units,
+    buildingName: b.name, towers, unitsPerFloor: overallPerFloor, units,
     stats: {
       expected, mappedUnits: units.filter((u) => u.status !== "unknown").length, withRegistration: withReg.length,
       owned: units.filter((u) => u.status === "owned").length, tenanted: tenanted.length,
