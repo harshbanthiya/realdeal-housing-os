@@ -158,13 +158,14 @@ function EventCard({ e }: { e: UnitTimelineEvent }) {
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-1.5">
         <Pill tone={CAT_TONE[e.category] ?? "neutral"}>{e.category}</Pill>
-        {e.active && <Pill tone={expiringTone(e.tenancyEnd)}>active{e.tenancyEnd ? ` · to ${ymd(e.tenancyEnd)}` : ""}</Pill>}
+        {e.active && <Pill tone={expiringTone(e.tenancyEnd)}>active{e.tenancyEnd ? ` · to ${ymd(e.tenancyEnd)}` : " · end unknown"}</Pill>}
         <Mono className="text-[11px] text-ink/40">doc {e.docNumber}{e.sro ? ` · ${e.sro}` : ""}{e.date ? ` · ${ymd(e.date)}` : ""}</Mono>
       </div>
 
       {/* money + area row */}
-      {(e.marketValue || e.stampDuty || e.regFee || e.area || e.deposit) && (
+      {(e.marketValue || e.stampDuty || e.regFee || e.area || e.deposit || e.category === "tenancy") && (
         <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-ink/55 sm:grid-cols-3">
+          {e.category === "tenancy" ? <Mini label="Lease period" v={`${ymd(e.tenancyStart)} to ${ymd(e.tenancyEnd)}`} /> : null}
           {e.marketValue ? <Mini label="Market value" v={inr(e.marketValue)} /> : null}
           {e.stampDuty ? <Mini label="Stamp duty" v={inr(e.stampDuty)} /> : null}
           {e.regFee ? <Mini label="Reg fee" v={inr(e.regFee)} /> : null}

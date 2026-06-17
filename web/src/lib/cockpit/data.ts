@@ -229,10 +229,16 @@ function towerLetter(wing: string | null): string {
   return m ? m[1] : "";
 }
 const MAX_FLOOR = 40; // Kalpataru Radiance ~31 habitable / 38 sanctioned; cap guards bad parses
-// Flat-number scheme (per brochure): trailing 1-2 digits = unit on floor, rest = floor.
-//   2706 -> floor 27, unit 6 ; 291 -> floor 29, unit 1 ; 134 -> floor 13, unit 4 ; 14 -> floor 1, unit 4.
+// Flat-number scheme (per brochure / IGR variants): compact parser rows use
+// floor+stack for 1-31 (`291` -> floor 29, unit 1), while older raw imports can
+// use zero-padded unit suffixes (`2706` -> floor 27, unit 6; `803` -> floor 8, unit 3).
 function deriveFloorPos(u: string): { floor: number; pos: number } {
   const n = Number(String(u).replace(/\D/g, "")) || 0;
+  const raw = String(u).replace(/\D/g, "");
+  if (raw.length === 3) {
+    const fc = Math.floor(n / 10), pc = n % 10;      // compact: 291 -> 29/1, 106 -> 10/6
+    if (fc >= 10 && fc <= MAX_FLOOR && pc >= 1 && pc <= 9) return { floor: fc, pos: pc };
+  }
   const fa = Math.floor(n / 100), pa = n % 100;       // last two digits = unit (e.g. 2706 -> 27/06)
   if (fa >= 1 && fa <= MAX_FLOOR && pa >= 1 && pa <= 12) return { floor: fa, pos: pa };
   const fb = Math.floor(n / 10), pb = n % 10;          // last digit = unit (e.g. 291 -> 29/1)
@@ -264,7 +270,9 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
 
   const bunits = await readQuery<{ id: string; wing: string | null; unit_number: string | null; bn: string }>(
     `select bu.id::text, bu.wing, bu.unit_number, b.name bn
-       from building_units bu join buildings b on b.id = bu.building_id where bu.canonical_status = 'active'`);
+       from building_units bu join buildings b on b.id = bu.building_id
+      where bu.canonical_status = 'active'
+        and (bu.metadata->>'offgrid') is distinct from 'true'`);
   const myUnits = bunits.filter((u) => slugify(u.bn) === slug && u.unit_number);
 
   const orel = await readQuery<{ building_unit_id: string | null; full_name: string }>(
