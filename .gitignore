@@ -165,3 +165,6 @@ ms-playwright/
 # Re-exclude python cache even though scripts/ is allowlisted
 !scripts/__pycache__/
 scripts/__pycache__/
+
+# Per-machine Claude Code settings (local only)
+.claude/settings.local.json
