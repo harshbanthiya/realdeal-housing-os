@@ -182,9 +182,14 @@ def parse_parties(block: str) -> list[dict]:
             name = m2.group(1).strip() if m2 else None
         if not name:
             continue
-        age = (re.search(r"वय\s*:\-?\s*(\d+)", ch) or [None, None])[1] if re.search(r"वय\s*:\-?\s*(\d+)", ch) else None
+        agem = re.search(r"वय\s*:\-?\s*(\d+)", ch)
+        age = agem.group(1) if agem else None
         pan = PAN_RE.search(ch)
-        out.append({"name": name[:200], "age": age, "pan": pan.group(1) if pan else None})
+        addr = re.search(r"पत्ता\s*:\-?\s*(.+?)(?:\s*पॅन|\s*$)", ch)
+        out.append({
+            "name": name[:200], "age": age, "pan": pan.group(1) if pan else None,
+            "address": (addr.group(1).strip()[:400] if addr else None),
+        })
     return out
 
 

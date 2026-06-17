@@ -212,3 +212,148 @@ export function getLaunchCalendar(): CalendarItem[] {
     { when: "T-0", title: "Launch — go-live gate", channel: "All" },
   ];
 }
+
+// ---------------- unit registry (per-building, per-tower apartment stack) ----------------
+type URegistry = import("./types").UnitRegistry;
+type UCell = import("./types").UnitCell;
+type UEvent = import("./types").UnitTimelineEvent;
+type RParty = import("./types").RegParty;
+
+const ZERO_STATS: URegistry["stats"] = {
+  expected: 0, mappedUnits: 0, withRegistration: 0, owned: 0, tenanted: 0, registered: 0,
+  occupancyPct: 0, avgRent: 0, expiring6mo: 0, expiring12mo: 0, avgOwnershipYears: 0,
+  minPrice: 0, maxPrice: 0, panCount: 0, registrations: 0,
+};
+function towerLetter(wing: string | null): string {
+  const m = String(wing ?? "").toUpperCase().match(/([A-Z])\s*$/);
+  return m ? m[1] : "";
+}
+function flatFloor(u: string): number { const n = Number(String(u).replace(/\D/g, "")) || 0; return n >= 10 ? Math.floor(n / 10) : Math.max(1, n); }
+function flatPos(u: string): number { const n = Number(String(u).replace(/\D/g, "")) || 0; return n % 10 === 0 ? 6 : n % 10; }
+
+export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
+  const b = (await getBuildings()).find((x) => x.slug === slug);
+  const empty = (name: string): URegistry => ({ buildingName: name, towers: [], unitsPerFloor: 6, units: [], stats: ZERO_STATS });
+  if (!b) return null;
+  if (!live()) return empty(b.name);
+
+  const recs = await readQuery<{
+    building_name: string; building_unit_id: string | null; wing: string | null; unit_number: string | null;
+    registration_date: string | null; registration_year: number | null; document_type: string | null;
+    category: string | null; doc_number: string | null; sro_office: string | null;
+    consideration_amount: string | null; market_value: string | null; stamp_duty: string | null;
+    registration_fee: string | null; area_text: string | null; tenancy_start_date: string | null;
+    tenancy_end_date: string | null; tenancy_monthly_rent: string | null; tenancy_deposit: string | null;
+    parties: RParty[] | null;
+  }>(
+    `select building_name, building_unit_id::text, wing, unit_number, registration_date::text, registration_year,
+            document_type, category, doc_number, sro_office, consideration_amount::text, market_value::text,
+            stamp_duty::text, registration_fee::text, area_text, tenancy_start_date::text, tenancy_end_date::text,
+            tenancy_monthly_rent::text, tenancy_deposit::text, parties
+       from vw_unit_registration_full_operator order by registration_date`);
+  const myRecs = recs.filter((r) => slugify(String(r.building_name ?? "")) === slug);
+
+  const bunits = await readQuery<{ id: string; wing: string | null; unit_number: string | null; bn: string }>(
+    `select bu.id::text, bu.wing, bu.unit_number, b.name bn
+       from building_units bu join buildings b on b.id = bu.building_id where bu.canonical_status = 'active'`);
+  const myUnits = bunits.filter((u) => slugify(u.bn) === slug && u.unit_number);
+
+  const orel = await readQuery<{ building_unit_id: string | null; full_name: string }>(
+    `select r.building_unit_id::text, c.full_name from contact_property_relationships r
+       join contacts c on c.id = r.contact_id
+      where r.relationship_type = 'owner' and r.building_unit_id is not null
+        and r.relationship_status in ('active','approved','pending_review')`);
+  const ownerByUnit = new Map<string, string>();
+  for (const r of orel) if (r.building_unit_id) ownerByUnit.set(r.building_unit_id, r.full_name);
+
+  // group registration events by unit key (tower + flat) — handles linked and unlinked records.
+  const toEvent = (r: typeof myRecs[number]): UEvent => ({
+    date: r.registration_date ?? "", year: r.registration_year ?? (r.registration_date ? Number(r.registration_date.slice(0, 4)) : 0),
+    category: (r.category as UEvent["category"]) ?? "other", docType: r.document_type ?? "—", docNumber: r.doc_number ?? "—",
+    sro: r.sro_office ?? undefined,
+    consideration: r.consideration_amount ? num(r.consideration_amount) : undefined,
+    marketValue: r.market_value ? num(r.market_value) : undefined,
+    stampDuty: r.stamp_duty ? num(r.stamp_duty) : undefined,
+    regFee: r.registration_fee ? num(r.registration_fee) : undefined,
+    area: r.area_text ?? undefined,
+    rent: r.tenancy_monthly_rent ? num(r.tenancy_monthly_rent) : undefined,
+    deposit: r.tenancy_deposit ? num(r.tenancy_deposit) : undefined,
+    tenancyStart: r.tenancy_start_date ?? undefined, tenancyEnd: r.tenancy_end_date ?? undefined,
+    active: r.category === "tenancy" ? !r.tenancy_end_date || new Date(r.tenancy_end_date).getTime() >= Date.now() : undefined,
+    parties: (r.parties ?? []).map((p) => ({
+      role: p.role, english: p.english || p.devanagari || "—", devanagari: p.devanagari ?? undefined,
+      pan: p.pan ?? undefined, age: p.age ?? undefined, address: p.address ?? undefined, type: p.type ?? undefined,
+    })),
+  });
+  const evByKey = new Map<string, UEvent[]>();
+  for (const r of myRecs) {
+    const key = `${towerLetter(r.wing)}|${String(r.unit_number ?? "").replace(/\D/g, "")}`;
+    (evByKey.get(key) ?? evByKey.set(key, []).get(key)!).push(toEvent(r));
+  }
+
+  const now = Date.now();
+  const yrs = (d?: string) => (d ? Math.max(0, (now - new Date(d).getTime()) / 31_557_600_000) : 0);
+  const partyNames = (ev: UEvent, roles: string[]) =>
+    ev.parties.filter((p) => roles.includes(p.role)).map((p) => p.english).join(", ");
+
+  const units: UCell[] = [];
+  for (const u of myUnits) {
+    const tower = towerLetter(u.wing);
+    const flat = String(u.unit_number);
+    const key = `${tower}|${flat.replace(/\D/g, "")}`;
+    const events = (evByKey.get(key) ?? []).slice().sort((a, z) => a.date.localeCompare(z.date));
+    const ownership = events.filter((e) => e.category === "ownership");
+    const tenancy = events.filter((e) => e.category === "tenancy");
+    const activeLease = tenancy.filter((e) => e.active).slice(-1)[0];
+    const lastOwn = ownership.slice(-1)[0];
+    const relOwner = ownerByUnit.get(u.id);
+    const currentOwner = lastOwn ? partyNames(lastOwn, ["purchaser", "buyer"]) || undefined : relOwner ?? undefined;
+    const status: UCell["status"] = activeLease ? "tenanted"
+      : currentOwner ? "owned"
+      : events.length ? "registered" : "unknown";
+    units.push({
+      flat, floor: flatFloor(flat), position: flatPos(flat), tower,
+      status, currentOwner, ownerContact: !lastOwn && Boolean(relOwner),
+      ownerSince: lastOwn?.date, lastPrice: lastOwn?.consideration,
+      currentTenant: activeLease ? partyNames(activeLease, ["lessee", "tenant"]) || undefined : undefined,
+      rent: activeLease?.rent, tenancyEnd: activeLease?.tenancyEnd,
+      registrationCount: events.length, events,
+    });
+  }
+
+  const towersMap = new Map<string, { letter: string; label: string; floors: number; count: number }>();
+  for (const u of myUnits) {
+    const t = towerLetter(u.wing); if (!t) continue;
+    const cur = towersMap.get(t) ?? { letter: t, label: String(u.wing ?? `Tower ${t}`).replace(/\s+/g, " ").trim(), floors: 0, count: 0 };
+    cur.floors = Math.max(cur.floors, flatFloor(String(u.unit_number)));
+    cur.count += 1; towersMap.set(t, cur);
+  }
+  const towers = [...towersMap.values()].sort((a, z) => a.letter.localeCompare(z.letter))
+    .map((t) => ({ letter: t.letter, label: `Tower ${t.letter}`, floors: Math.max(t.floors, 1), unitsPerFloor: 6, unitCount: t.count }));
+
+  const withReg = units.filter((u) => u.registrationCount > 0);
+  const tenanted = units.filter((u) => u.status === "tenanted");
+  const rents = tenanted.map((u) => u.rent ?? 0).filter((r) => r > 0);
+  const within = (d: string | undefined, mo: number) => d ? new Date(d).getTime() <= now + mo * 2_629_800_000 && new Date(d).getTime() >= now : false;
+  const prices = units.map((u) => u.lastPrice ?? 0).filter((p) => p > 0);
+  const tenures = units.filter((u) => u.ownerSince && !u.ownerContact).map((u) => yrs(u.ownerSince));
+  const expected = num((await readQuery<{ n: string }>(
+    `select rera_expected_units::text n from vw_building_unit_accounting where building_name = $1`, [b.name]))[0]?.n);
+  const panCount = myRecs.reduce((s, r) => s + (r.parties ?? []).filter((p) => p.pan).length, 0);
+
+  return {
+    buildingName: b.name, towers, unitsPerFloor: 6, units,
+    stats: {
+      expected, mappedUnits: units.filter((u) => u.status !== "unknown").length, withRegistration: withReg.length,
+      owned: units.filter((u) => u.status === "owned").length, tenanted: tenanted.length,
+      registered: units.filter((u) => u.status === "registered").length,
+      occupancyPct: withReg.length ? Math.round((tenanted.length / withReg.length) * 100) : 0,
+      avgRent: rents.length ? Math.round(rents.reduce((s, r) => s + r, 0) / rents.length) : 0,
+      expiring6mo: units.filter((u) => within(u.tenancyEnd, 6)).length,
+      expiring12mo: units.filter((u) => within(u.tenancyEnd, 12)).length,
+      avgOwnershipYears: tenures.length ? Math.round((tenures.reduce((s, y) => s + y, 0) / tenures.length) * 10) / 10 : 0,
+      minPrice: prices.length ? Math.min(...prices) : 0, maxPrice: prices.length ? Math.max(...prices) : 0,
+      panCount, registrations: myRecs.length,
+    },
+  };
+}

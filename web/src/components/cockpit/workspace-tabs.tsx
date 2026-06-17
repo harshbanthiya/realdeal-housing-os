@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Pill, Dot, Mono, type Tone } from "@/components/ui/primitives";
+import { UnitRegistry } from "@/components/cockpit/unit-registry";
 import {
   TABS, type TabKey, type Building, type Person, type Keyword, type Campaign,
   type Fact, type WebPage, type ReviewItem, type AgentTask, type KanbanTask, type CalendarItem, type Listing,
+  type UnitRegistry as UnitRegistryData,
 } from "@/lib/cockpit/types";
 
 export interface WorkspaceData {
   building: Building;
   owners: Person[];
+  units: UnitRegistryData | null;
   listings: Listing[];
   keywords: Keyword[];
   campaigns: Campaign[];
@@ -46,6 +49,7 @@ export function WorkspaceTabs({ data }: { data: WorkspaceData }) {
 
       {tab === "overview" && <Overview data={data} launch={launch} />}
       {tab === "owners" && <Owners owners={data.owners} />}
+      {tab === "units" && (data.units ? <UnitRegistry data={data.units} /> : <Empty>No unit registry for this building yet.</Empty>)}
       {tab === "leads" && <Leads launch={launch} count={data.building.stats.leads} warm={data.building.stats.warm} />}
       {tab === "listings" && <Listings items={data.listings} />}
       {tab === "seo" && <Seo keywords={data.keywords} />}

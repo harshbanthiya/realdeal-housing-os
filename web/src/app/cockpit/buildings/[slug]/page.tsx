@@ -4,7 +4,7 @@ import { WorkspaceTabs } from "@/components/cockpit/workspace-tabs";
 import {
   getBuilding, getOwnersTenants, getListings, getKeywords,
   getCampaigns, getReraFacts, getWebsitePages, getBuildingReviews, getAgentTasks,
-  getLaunchKanban, getLaunchCalendar, type Mode,
+  getLaunchKanban, getLaunchCalendar, getUnitRegistry, type Mode,
 } from "@/lib/cockpit/data";
 
 export const dynamic = "force-dynamic";
@@ -22,11 +22,11 @@ export default async function WorkspacePage({ params }: { params: Promise<{ slug
   const building = await getBuilding(slug);
   if (!building) notFound();
 
-  const [owners, listings, keywords, campaigns, rera, pages, reviews, agents, kanban] = await Promise.all([
-    getOwnersTenants(slug), getListings(slug), getKeywords(slug), getCampaigns(slug),
+  const [owners, units, listings, keywords, campaigns, rera, pages, reviews, agents, kanban] = await Promise.all([
+    getOwnersTenants(slug), getUnitRegistry(slug), getListings(slug), getKeywords(slug), getCampaigns(slug),
     getReraFacts(slug), getWebsitePages(slug), getBuildingReviews(slug), getAgentTasks(slug), getLaunchKanban(slug),
   ]);
-  const data = { building, owners, listings, keywords, campaigns, rera, pages, reviews, agents, kanban, calendar: getLaunchCalendar() };
+  const data = { building, owners, units, listings, keywords, campaigns, rera, pages, reviews, agents, kanban, calendar: getLaunchCalendar() };
 
   return (
     <div className="px-6 py-7">
