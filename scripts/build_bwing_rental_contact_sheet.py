@@ -180,6 +180,7 @@ def main() -> int:
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     csv_rows = []
+    call_rows = []
     md = ["# B-Wing (Brilliance) — Rental Outreach Sheet", "",
           "Kalpataru Radiance, Goregaon West. Cross-references IGR tenancy registrations (who rents/owns each "
           "flat, last rent + lease expiry) with RDH owner/tenant contact files (name + phone, keyed by flat).",
@@ -200,10 +201,18 @@ def main() -> int:
         rent = ("₹" + format(int(t["inline_monthly_rent"]), ",")) if t.get("inline_monthly_rent") else "—"
         expiry = t.get("lease_expiry_est") or "—"
         floor = t.get("floor") or ""
-        row = {"flat": key, "floor": floor, "landlord_reg": landlord, "phones": ", ".join(phones),
-               "contact_names": "; ".join(cnames), "last_rent": rent, "lease_expiry": expiry,
-               "tenant_reg": tenant, "has_phone": bool(phones), "has_tenancy": bool(t)}
+        is_priority = bool(phones and t)
+        row = {"priority": "yes" if is_priority else "", "flat": key, "floor": floor,
+               "landlord_owner_reg": landlord, "phones": ", ".join(phones),
+               "contact_name_on_file": "; ".join(cnames), "last_rent": rent, "lease_expiry_est": expiry,
+               "current_tenant_reg": tenant, "has_phone": "yes" if phones else "",
+               "has_tenancy_reg": "yes" if t else ""}
         csv_rows.append(row)
+        for c in cs:                                  # long-format call list (one row per phone)
+            call_rows.append({"priority": "yes" if is_priority else "", "flat": key, "floor": floor,
+                              "phone": c["phone"], "name_on_file": c["name"], "role_hint": c["role"],
+                              "landlord_owner_reg": landlord, "last_rent": rent, "lease_expiry_est": expiry,
+                              "source_file": c["source"]})
         line = (f"| {key} | {floor} | {landlord} | {', '.join(phones) or '—'} | {'; '.join(cnames) or '—'} | "
                 f"{rent} | {expiry} | {tenant} |")
         if phones and t:
@@ -216,15 +225,27 @@ def main() -> int:
                     "|---|---|---|---|---|---|---|---|"] + (priority or ["| _none_ |"]) + ["", "## All B-Wing flats", ""] + md[8:]
 
     (OUT_DIR / "BWING_RENTAL_CONTACT_SHEET.md").write_text("\n".join(doc) + "\n", encoding="utf-8")
-    with (OUT_DIR / "bwing_rental_contacts.csv").open("w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(csv_rows[0].keys()))
-        w.writeheader(); w.writerows(csv_rows)
+
+    # per-flat CSV (mirrors the doc), priority flats first
+    pri_first = sorted(csv_rows, key=lambda r: (r["priority"] != "yes", int(re.sub(r"\D", "", r["flat"]) or 0)))
+    flat_csv = OUT_DIR / "bwing_rental_contacts.csv"
+    with flat_csv.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(pri_first[0].keys()))
+        w.writeheader(); w.writerows(pri_first)
+
+    # per-phone call list (one row per number — ready to dial / CRM import), priority first
+    call_first = sorted(call_rows, key=lambda r: (r["priority"] != "yes", int(re.sub(r"\D", "", r["flat"]) or 0), r["phone"]))
+    call_csv = OUT_DIR / "bwing_rental_call_list.csv"
+    with call_csv.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(call_first[0].keys()))
+        w.writeheader(); w.writerows(call_first)
 
     withphone = sum(1 for r in csv_rows if r["has_phone"])
     print(f"Scanned {len(files)} contact files. B-Wing flats: {len(flats)}  with phone on file: {withphone}  "
-          f"with tenancy reg: {sum(1 for r in csv_rows if r['has_tenancy'])}  priority (both): {len(priority)}")
-    print("Doc: " + str(OUT_DIR / "BWING_RENTAL_CONTACT_SHEET.md"))
-    print("CSV: " + str(OUT_DIR / "bwing_rental_contacts.csv"))
+          f"with tenancy reg: {sum(1 for r in csv_rows if r['has_tenancy_reg'])}  priority (both): {len(priority)}")
+    print(f"Doc:           {OUT_DIR / 'BWING_RENTAL_CONTACT_SHEET.md'}")
+    print(f"Per-flat CSV:  {flat_csv}  ({len(csv_rows)} flats)")
+    print(f"Call-list CSV: {call_csv}  ({len(call_rows)} phone rows)")
     return 0
 
 
