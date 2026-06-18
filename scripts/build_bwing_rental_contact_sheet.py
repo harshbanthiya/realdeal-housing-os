@@ -122,9 +122,10 @@ def extract(files: list[Path]) -> dict[str, list[dict]]:
                 if not m:
                     continue
                 wing, flat, name = m.group(1).upper(), m.group(2), clean_name(m.group(3))
-                # phone: scan other cells, prefer the immediate neighbours
-                order = [ci - 1, ci + 1] + [j for j in range(len(cells)) if j not in (ci, ci - 1, ci + 1)]
-                phone = next((norm_phone(cells[j]) for j in order if 0 <= j < len(cells) and norm_phone(cells[j])), None)
+                # phone is the name cell's immediate neighbour (next, then prev); guard indices so a
+                # col-0 OKR cell doesn't wrap (ci-1 == -1) to the row's LAST cell (a different record).
+                order = [j for j in (ci + 1, ci - 1) if 0 <= j < len(cells)]
+                phone = next((norm_phone(cells[j]) for j in order if norm_phone(cells[j])), None)
                 key = f"{wing}-{flat}"
                 dedup = (key, name.lower(), phone)
                 if phone and dedup not in seen:
