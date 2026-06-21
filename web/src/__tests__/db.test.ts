@@ -645,3 +645,28 @@ describe("taskTone", () => {
   it("pending → neutral", () => expect(taskTone("pending")).toBe("neutral"));
   it("unknown string → neutral", () => expect(taskTone("something_else")).toBe("neutral"));
 });
+
+// ---------------------------------------------------------------------------
+// stagingTone helper (pure-logic, mirrored from data.ts)
+// ---------------------------------------------------------------------------
+
+describe("stagingTone", () => {
+  type Tone = "ready" | "review" | "blocked" | "neutral";
+  function stagingTone(status: string): Tone {
+    if (status === "created_manually" || status === "live") return "ready";
+    if (status === "under_review" || status === "qa_in_progress") return "review";
+    if (status === "blocked" || status === "failed") return "blocked";
+    return "neutral";
+  }
+
+  it("created_manually → ready (Wix staging was built by hand)", () => {
+    expect(stagingTone("created_manually")).toBe("ready");
+  });
+  it("live → ready", () => expect(stagingTone("live")).toBe("ready"));
+  it("under_review → review", () => expect(stagingTone("under_review")).toBe("review"));
+  it("qa_in_progress → review", () => expect(stagingTone("qa_in_progress")).toBe("review"));
+  it("blocked → blocked", () => expect(stagingTone("blocked")).toBe("blocked"));
+  it("failed → blocked", () => expect(stagingTone("failed")).toBe("blocked"));
+  it("planned → neutral", () => expect(stagingTone("planned")).toBe("neutral"));
+  it("unknown → neutral", () => expect(stagingTone("something_new")).toBe("neutral"));
+});

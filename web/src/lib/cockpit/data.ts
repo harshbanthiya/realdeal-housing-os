@@ -251,13 +251,53 @@ export async function getReraFacts(slug: string): Promise<Fact[]> {
     { label: "Location", value: [r.locality, r.district].filter(Boolean).join(", ") || "—", status: "review" },
   ];
 }
+function stagingTone(status: string): Tone {
+  if (status === "created_manually" || status === "live") return "ready";
+  if (status === "under_review" || status === "qa_in_progress") return "review";
+  if (status === "blocked" || status === "failed") return "blocked";
+  return "neutral"; // planned, pending
+}
 export async function getWebsitePages(slug: string): Promise<WebPage[]> {
-  if (slug === DLF_SLUG) return [
-    { path: "/dlf-westpark-andheri-west", title: "Landing page (Next.js)", status: "ready" },
-    { path: "wix:Test/cms", title: "Wix Test CMS — 7 collections", status: "ready" },
-    { path: "publish", title: "Production publish", status: "blocked" },
+  const landingPath = slug === DLF_SLUG ? `/dlf-westpark-andheri-west` : `/projects/${slug}`;
+  const pages: WebPage[] = [
+    { path: landingPath, title: "Landing page (Next.js)", status: "ready" },
   ];
-  return [{ path: `/projects/${slug}`, title: "Project page (Next.js)", status: "ready" }];
+  if (!live()) {
+    if (slug === DLF_SLUG) {
+      pages.push({ path: "wix:Test/cms", title: "Wix Test CMS — 7 collections", status: "ready" });
+      pages.push({ path: "publish", title: "Production publish", status: "blocked" });
+    }
+    return pages;
+  }
+  const sites = await readQuery<{ staging_site_name: string; staging_site_url: string; staging_status: string; page_published: boolean }>(
+    `select ws.staging_site_name, ws.staging_site_url, ws.staging_status, ws.page_published
+       from wix_staging_sites ws
+       join launch_projects lp on lp.id = ws.launch_project_id
+      where lp.launch_key = $1
+      order by ws.created_at desc
+      limit 5`,
+    [slug]
+  );
+  for (const s of sites) {
+    pages.push({
+      path: s.staging_site_url || "wix:staging",
+      title: s.staging_site_name ? `Wix staging — ${s.staging_site_name}` : "Wix staging site",
+      status: stagingTone(s.staging_status),
+    });
+  }
+  const cms = await readQuery<{ collection_key: string; collection_name: string; status: string }>(
+    `select collection_key, coalesce(collection_name, collection_key) collection_name, status
+       from wix_cms_collections order by created_at limit 10`
+  );
+  for (const c of cms) {
+    pages.push({
+      path: `cms:${c.collection_key}`,
+      title: `CMS: ${c.collection_name}`,
+      status: c.status === "live" ? "ready" : c.status === "planned" ? "neutral" : "review",
+    });
+  }
+  pages.push({ path: "publish", title: "Production publish", status: "blocked" });
+  return pages;
 }
 function formatAge(ts: string | null | undefined): string {
   if (!ts) return "open";

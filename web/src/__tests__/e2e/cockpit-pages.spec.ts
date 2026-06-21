@@ -1011,3 +1011,38 @@ test.describe("Buildings workspace — Agents tab", () => {
     expect(text?.trim().length).toBeGreaterThan(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Buildings workspace — Website tab (reads wix_staging_sites + wix_cms_collections)
+// ---------------------------------------------------------------------------
+
+test.describe("Buildings workspace — Website tab", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("Website tab button exists in workspace tab bar", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await expect(page.getByRole("button", { name: "Website" })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("Website tab shows landing page row", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Website" }).click();
+    await expect(page.getByText("Landing page (Next.js)")).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Website tab shows real Wix staging site row when DB connected", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Website" }).click();
+    // With real DB: wix_staging_sites has 'Test' row → "Wix staging — Test"
+    // Without DB: falls back to "Wix Test CMS" hardcoded row
+    const stagingRow = page.getByText(/Wix staging|Wix Test CMS/);
+    await expect(stagingRow.first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Website tab shows Production publish row", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Website" }).click();
+    await expect(page.getByText("Production publish")).toBeVisible({ timeout: 5000 });
+  });
+});
