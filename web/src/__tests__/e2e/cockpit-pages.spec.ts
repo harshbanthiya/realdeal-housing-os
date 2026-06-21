@@ -82,6 +82,100 @@ test.describe("Contacts sheet", () => {
     await page.waitForURL("**/cockpit/contacts/c/**");
     expect(page.url()).toContain("/cockpit/contacts/c/");
   });
+
+  // ---- Search bar tests ----
+
+  test("search input is visible", async ({ page }) => {
+    await page.goto("/cockpit/contacts/sheet");
+    await expect(page.getByRole("searchbox", { name: /search contacts/i })).toBeVisible();
+  });
+
+  test("search input has correct placeholder", async ({ page }) => {
+    await page.goto("/cockpit/contacts/sheet");
+    const input = page.getByRole("searchbox", { name: /search contacts/i });
+    await expect(input).toHaveAttribute("placeholder", /name or phone/i);
+  });
+
+  test("typing in search navigates to ?q= URL", async ({ page }) => {
+    await page.goto("/cockpit/contacts/sheet");
+    const input = page.getByRole("searchbox", { name: /search contacts/i });
+    await input.fill("test");
+    // Debounce 350ms + navigation settle
+    await page.waitForURL("**/sheet?**q=test**", { timeout: 5000 });
+    expect(page.url()).toContain("q=test");
+  });
+
+  test("search preserves sort param in URL", async ({ page }) => {
+    await page.goto("/cockpit/contacts/sheet?sort=contact&dir=asc");
+    const input = page.getByRole("searchbox", { name: /search contacts/i });
+    await input.fill("x");
+    // Debounce is 350ms; give it a full second then wait for navigation to settle
+    await page.waitForTimeout(500);
+    await page.waitForLoadState("networkidle", { timeout: 15000 });
+    expect(page.url()).toContain("q=x");
+    expect(page.url()).toContain("sort=contact");
+    expect(page.url()).toContain("dir=asc");
+  });
+
+  test("search with ?q= in URL pre-fills the input", async ({ page }) => {
+    await page.goto("/cockpit/contacts/sheet?q=padmini");
+    const input = page.getByRole("searchbox", { name: /search contacts/i });
+    await expect(input).toHaveValue("padmini");
+  });
+
+  test("search result count label shows 'result(s) for' when q set", async ({ page }) => {
+    await page.goto("/cockpit/contacts/sheet?q=padmini");
+    await page.waitForLoadState("networkidle");
+    // Text is split across React text nodes and <span>/<Link>; check full main textContent.
+    // Singular: "1 result for …" / plural: "N results for …" / zero: "No contacts match…"
+    const mainText = (await page.locator("main").textContent()) ?? "";
+    expect(mainText).toMatch(/\bresults? for\b|no contacts match/i);
+  });
+
+  test("clear search link removes q param", async ({ page }) => {
+    // Test the "clear" link rendered next to the result count in the header
+    await page.goto("/cockpit/contacts/sheet?q=padmini");
+    await page.waitForLoadState("networkidle");
+    const clearLink = page.locator("main").getByRole("link", { name: /^clear$/i });
+    if (await clearLink.count() > 0) {
+      await clearLink.click();
+      // Use a predicate — don't use waitForLoadState (may resolve before navigation)
+      await page.waitForURL((url) => !url.toString().includes("q="), { timeout: 8000 });
+      expect(page.url()).not.toContain("q=");
+    }
+    // Test the × button in the search bar
+    await page.goto("/cockpit/contacts/sheet?q=padmini");
+    await page.waitForLoadState("networkidle");
+    const clearBtn = page.getByRole("button", { name: /clear search/i });
+    if (await clearBtn.count() > 0) {
+      await clearBtn.click();
+      await page.waitForURL((url) => !url.toString().includes("q=padmini"), { timeout: 8000 });
+      expect(page.url()).not.toContain("q=padmini");
+    }
+  });
+
+  test("sort links carry q param through", async ({ page }) => {
+    await page.goto("/cockpit/contacts/sheet?q=test");
+    const sortLink = page.locator("a[href*='sort=contact']").first();
+    if (await sortLink.count() === 0) return;
+    const href = await sortLink.getAttribute("href");
+    expect(href).toContain("q=test");
+  });
+
+  test("empty search term shows all contacts", async ({ page }) => {
+    const total1 = async () => {
+      await page.goto("/cockpit/contacts/sheet");
+      const txt = await page.locator("p").filter({ hasText: /canonical contact/ }).first().textContent();
+      return parseInt(txt ?? "0");
+    };
+    const total2 = async () => {
+      await page.goto("/cockpit/contacts/sheet?q=");
+      const txt = await page.locator("p").filter({ hasText: /canonical contact/ }).first().textContent();
+      return parseInt(txt ?? "0");
+    };
+    // Both should return the same row count (empty q = no filter)
+    expect(await total1()).toBe(await total2());
+  });
 });
 
 // ---------------------------------------------------------------------------

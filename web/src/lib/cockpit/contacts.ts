@@ -280,23 +280,47 @@ function meta(s: PipelineColumn["stage"]) {
 }
 
 /**
- * The all-contacts sheet: paginated, sortable, masked canonical contacts with
- * their active role/building. Sort key is whitelisted (SHEET_SORTS) so raw
- * input never reaches SQL; page/dir validated by caller.
+ * The all-contacts sheet: paginated, sortable, searchable canonical contacts
+ * with their active role/building. Sort key is whitelisted (SHEET_SORTS) so
+ * raw input never reaches SQL. The `q` search term is ILIKE-matched against
+ * contacts.full_name and contacts.phone_primary via parameterised query only
+ * — never string-interpolated.
  */
 export async function getContactSheet(opts: {
-  page?: number; pageSize?: number; sort?: SheetSortKey; dir?: "asc" | "desc"; includeTest?: boolean;
+  page?: number; pageSize?: number; sort?: SheetSortKey; dir?: "asc" | "desc";
+  includeTest?: boolean; q?: string;
 } = {}): Promise<ContactSheet> {
   const page = Math.max(1, Math.floor(opts.page ?? 1));
   const pageSize = Math.min(Math.max(opts.pageSize ?? 25, 5), 100);
   const sort: SheetSortKey = opts.sort && opts.sort in SHEET_SORTS ? opts.sort : "created";
   const dir: "asc" | "desc" = opts.dir === "asc" ? "asc" : "desc";
-  const testFilter = opts.includeTest ? "" : "where c.is_test = false";
+  // Sanitise q: max 100 chars, no NUL bytes
+  const q = opts.q ? opts.q.slice(0, 100).replace(/\0/g, "").trim() : "";
 
   if (!live()) return { rows: [], total: 0, page, pageSize, sort, dir };
 
+  // Build filter params shared by both total and rows queries.
+  const filterParams: unknown[] = [];
+  const conditions: string[] = [];
+  if (!opts.includeTest) conditions.push("c.is_test = false");
+  if (q) {
+    // Escape LIKE meta-chars in q before wrapping with %
+    const pattern = `%${q.replace(/[%_\\]/g, "\\$&")}%`;
+    filterParams.push(pattern);
+    conditions.push(`(ct.full_name ilike $${filterParams.length} or ct.phone_primary ilike $${filterParams.length})`);
+  }
+  const whereClause = conditions.length ? `where ${conditions.join(" and ")}` : "";
+  // Only join contacts when searching — avoids the extra join on every sheet load
+  const contactsJoin = q ? "join contacts ct on ct.id = c.contact_id" : "";
+
   const total = num((await readQuery<{ n: string }>(
-    `select count(*) n from vw_canonical_contacts_review c ${testFilter}`))[0]?.n);
+    `select count(*) n from vw_canonical_contacts_review c ${contactsJoin} ${whereClause}`,
+    filterParams))[0]?.n);
+
+  // Append limit/offset after any search params so numbering stays correct
+  const rowParams = [...filterParams, pageSize, (page - 1) * pageSize];
+  const limitIdx = rowParams.length - 1;
+  const offsetIdx = rowParams.length;
 
   const rows = await readQuery<Record<string, unknown>>(
     `select c.contact_id::text id, c.display_hint, c.canonical_status,
@@ -304,15 +328,16 @@ export async function getContactSheet(opts: {
             c.merge_label, c.created_at::text,
             rel.relationship_type, rel.building_name
      from vw_canonical_contacts_review c
+     ${contactsJoin}
      left join lateral (
        select r.relationship_type, r.building_name
        from vw_contact_property_relationship_review r
        where r.contact_id = c.contact_id and r.relationship_status = 'active'
        limit 1
      ) rel on true
-     ${testFilter}
+     ${whereClause}
      order by ${SHEET_SORTS[sort]} ${dir} nulls last
-     limit $1 offset $2`, [pageSize, (page - 1) * pageSize]);
+     limit $${limitIdx} offset $${offsetIdx}`, rowParams);
 
   const mapped: ContactSheetRow[] = rows.map((r) => ({
     contactId: String(r.id),
