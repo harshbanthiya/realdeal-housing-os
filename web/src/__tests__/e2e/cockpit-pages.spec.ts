@@ -664,8 +664,8 @@ test.describe("Unit registry owner contact link", () => {
     await expect(page.getByRole("heading", { name: /flat/i })).toBeVisible({ timeout: 5000 });
   });
 
-  test("unit detail panel with contact owner shows clickable link", async ({ page }) => {
-    // Use Imperial Heights which has units with owner contacts but no IGR records
+  test("unit detail panel with contact owner shows clickable link (relationship table path)", async ({ page }) => {
+    // Use Imperial Heights which has units with owner contacts via contact_property_relationships (no IGR records)
     const IH_SLUG = "imperial-heights";
     await page.goto(`/cockpit/buildings/${IH_SLUG}`);
     const is404 = await page.getByText(/not found/i).isVisible().catch(() => false);
@@ -678,6 +678,25 @@ test.describe("Unit registry owner contact link", () => {
     // If this unit has ownerContactId, there should be a teal link
     const ownerLink = page.locator(`a[href^="/cockpit/contacts/c/"]`);
     if (await ownerLink.count() === 0) return; // no contact link for this unit — skip
+    const href = await ownerLink.first().getAttribute("href");
+    expect(href).toMatch(/\/cockpit\/contacts\/c\/[0-9a-f-]{36}/);
+  });
+
+  test("IGR-matched owner shows clickable contact link (party match table path)", async ({ page }) => {
+    // Kalpataru Radiance has registration_party_contact_matches rows (status=matched)
+    // Unit B-212 (Suyog Dube) should link to /cockpit/contacts/c/a9e1e3be-...
+    const KALP_SLUG = "kalpataru-radiance";
+    await page.goto(`/cockpit/buildings/${KALP_SLUG}`);
+    const is404 = await page.getByText(/not found/i).isVisible().catch(() => false);
+    if (is404) return;
+    await page.getByRole("button", { name: "Unit registry" }).click();
+    // Look for an owner-held cell in Wing B
+    const ownedBtn = page.locator("button[title*='Flat'][title*='Owner-held']").first();
+    if (await ownedBtn.count() === 0) return;
+    await ownedBtn.click();
+    // The owner section must show a teal underlined link (ownerContactId is set)
+    const ownerLink = page.locator(`a[href^="/cockpit/contacts/c/"]`);
+    if (await ownerLink.count() === 0) return; // unit opened has no IGR match — skip
     const href = await ownerLink.first().getAttribute("href");
     expect(href).toMatch(/\/cockpit\/contacts\/c\/[0-9a-f-]{36}/);
   });

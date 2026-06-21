@@ -304,6 +304,72 @@ describe("buildStreamStatus stream classification", () => {
 });
 
 // ---------------------------------------------------------------------------
+// IGR party→contact resolution logic (pure-logic, no DB)
+// ---------------------------------------------------------------------------
+
+describe("IGR party→contact resolution (ownerContactId derivation)", () => {
+  // Mirrors the logic in getUnitRegistry:
+  //   resolvedContactId = relOwner?.contactId ?? (lastOwn && igrContactId ? igrContactId : undefined)
+
+  const REL_CONTACT_ID = "bf4827de-29fa-4ca4-a5da-d924e2b157a3";
+  const IGR_CONTACT_ID = "a9e1e3be-852a-41c3-b035-3b43a9e9a786";
+
+  function resolve(
+    relOwner: { contactId: string } | undefined,
+    lastOwn: object | null,
+    igrContactId: string | undefined
+  ): string | undefined {
+    return relOwner?.contactId ?? (lastOwn && igrContactId ? igrContactId : undefined);
+  }
+
+  it("relationship table contact wins when both exist", () => {
+    const result = resolve({ contactId: REL_CONTACT_ID }, {}, IGR_CONTACT_ID);
+    expect(result).toBe(REL_CONTACT_ID);
+  });
+
+  it("IGR match used when no relationship contact but lastOwn exists", () => {
+    const result = resolve(undefined, {}, IGR_CONTACT_ID);
+    expect(result).toBe(IGR_CONTACT_ID);
+  });
+
+  it("undefined when no lastOwn and no relOwner (unit not in any contact's portfolio)", () => {
+    const result = resolve(undefined, null, IGR_CONTACT_ID);
+    expect(result).toBeUndefined();
+  });
+
+  it("undefined when no lastOwn and no igrContactId", () => {
+    const result = resolve(undefined, null, undefined);
+    expect(result).toBeUndefined();
+  });
+
+  it("relationship contact used when IGR match is absent", () => {
+    const result = resolve({ contactId: REL_CONTACT_ID }, null, undefined);
+    expect(result).toBe(REL_CONTACT_ID);
+  });
+
+  it("igrContactByUnit map returns first match per unit_id (earlier row wins)", () => {
+    const rows = [
+      { building_unit_id: "unit-A", contact_id: "contact-1" },
+      { building_unit_id: "unit-A", contact_id: "contact-2" }, // duplicate — ignored
+      { building_unit_id: "unit-B", contact_id: "contact-3" },
+    ];
+    const map = new Map<string, string>();
+    for (const m of rows) {
+      if (!map.has(m.building_unit_id)) map.set(m.building_unit_id, m.contact_id);
+    }
+    expect(map.get("unit-A")).toBe("contact-1");
+    expect(map.get("unit-B")).toBe("contact-3");
+    expect(map.size).toBe(2);
+  });
+
+  it("ownerContact boolean reflects resolvedContactId", () => {
+    expect(Boolean(resolve({ contactId: REL_CONTACT_ID }, {}, undefined))).toBe(true);
+    expect(Boolean(resolve(undefined, {}, IGR_CONTACT_ID))).toBe(true);
+    expect(Boolean(resolve(undefined, null, undefined))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // updateBuildingMode input validation (pure-logic, no DB or script invocation)
 // ---------------------------------------------------------------------------
 

@@ -369,6 +369,17 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
   const ownerByUnit = new Map<string, { name: string; contactId: string }>();
   for (const r of orel) if (r.building_unit_id) ownerByUnit.set(r.building_unit_id, { name: r.full_name, contactId: r.contact_id });
 
+  // IGR-parsed owner→canonical contact matches (first match per unit wins).
+  const igrPartyMatches = await readQuery<{ building_unit_id: string; contact_id: string }>(
+    `select building_unit_id::text, contact_id::text
+       from registration_party_contact_matches
+      where match_status = 'matched' and building_unit_id is not null
+      order by created_at`);
+  const igrContactByUnit = new Map<string, string>();
+  for (const m of igrPartyMatches) {
+    if (!igrContactByUnit.has(m.building_unit_id)) igrContactByUnit.set(m.building_unit_id, m.contact_id);
+  }
+
   // group registration events by unit key (tower + flat) — handles linked and unlinked records.
   const toEvent = (r: typeof myRecs[number]): UEvent => ({
     date: r.registration_date ?? "", year: r.registration_year ?? (r.registration_date ? Number(r.registration_date.slice(0, 4)) : 0),
@@ -410,15 +421,17 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     const activeLease = tenancy.filter((e) => e.active).slice(-1)[0];
     const lastOwn = ownership.slice(-1)[0];
     const relOwner = ownerByUnit.get(u.id);
+    const igrContactId = igrContactByUnit.get(u.id);
     const currentOwner = lastOwn ? partyNames(lastOwn, ["purchaser", "buyer"]) || undefined : relOwner?.name ?? undefined;
     const status: UCell["status"] = activeLease ? "tenanted"
       : currentOwner ? "owned"
       : events.length ? "registered" : "unknown";
+    const resolvedContactId = relOwner?.contactId ?? (lastOwn && igrContactId ? igrContactId : undefined);
     const fp = deriveFloorPos(flat);
     units.push({
       flat, floor: fp.floor, position: fp.pos, tower,
-      status, currentOwner, ownerContact: !lastOwn && Boolean(relOwner),
-      ownerContactId: !lastOwn ? relOwner?.contactId : undefined,
+      status, currentOwner, ownerContact: Boolean(resolvedContactId),
+      ownerContactId: resolvedContactId,
       ownerSince: lastOwn?.date, lastPrice: lastOwn?.consideration,
       currentTenant: activeLease ? partyNames(activeLease, ["lessee", "tenant"]) || undefined : undefined,
       rent: activeLease?.rent, tenancyEnd: activeLease?.tenancyEnd,
