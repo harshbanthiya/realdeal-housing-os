@@ -12,7 +12,11 @@ export interface Building {
   launchInDays?: number; seoRank: string;
   stats: { owners: number; tenants: number; leads: number; warm: number; listings: number; openReviews: number; blockers: number };
 }
-export interface ReviewItem { domain: string; title: string; building: string; age: string; tone: Tone }
+export interface ReviewItem {
+  domain: string; title: string; building: string; age: string; tone: Tone;
+  /** UUID of the import_review_items row — present only for actionable items. */
+  reviewItemId?: string;
+}
 export interface AgentEvent { agent: string; action: string; building: string; status: Tone }
 export interface Blocker { id: string; building: string; statement: string; openFor: string }
 export interface Person { contactId?: string; name: string; role: "owner" | "tenant" | "client"; unit: string; phone: string }
@@ -40,6 +44,8 @@ export interface UnitCell {
   flat: string; floor: number; position: number; tower: string;
   status: "owned" | "tenanted" | "registered" | "unknown";
   currentOwner?: string; ownerSince?: string; lastPrice?: number; ownerContact?: boolean;
+  /** Contact UUID when owner is a known canonical contact (no IGR reg yet). */
+  ownerContactId?: string;
   currentTenant?: string; rent?: number; tenancyEnd?: string;
   registrationCount: number;
   events: UnitTimelineEvent[];

@@ -234,7 +234,7 @@ export async function getContactPipeline(): Promise<{ columns: PipelineColumn[];
                      where r.contact_id = c.contact_id and r.relationship_status='active') as attached
        from vw_canonical_contacts_review c where c.is_test = false`),
     readQuery<Record<string, unknown>>(
-      `select relationship_id::text id, contact_display_hint, relationship_type, building_name, wing, unit_number
+      `select relationship_id::text id, contact_id::text contact_id, contact_display_hint, relationship_type, building_name, wing, unit_number
        from vw_contact_property_relationship_review
        where relationship_status='active' order by building_name limit ${PIPELINE_CARD_CAP}`),
     readQuery<{ n: string }>(
@@ -255,12 +255,14 @@ export async function getContactPipeline(): Promise<{ columns: PipelineColumn[];
   const canonicalCards: PipelineCard[] = canonicalUnattached.slice(0, PIPELINE_CARD_CAP).map((c) => ({
     key: String(c.id), primary: String(c.display_hint ?? "Contact"),
     secondary: "merged · not yet attached", tone: PIPELINE_STAGE_META.canonical.tone,
+    contactId: String(c.id),
   }));
   const attachedCards: PipelineCard[] = attached.map((r) => ({
     key: String(r.id), primary: String(r.contact_display_hint ?? "Contact"),
     role: roleLabel(String(r.relationship_type ?? "")),
     building: [String(r.building_name ?? ""), r.wing ? `Wing ${r.wing}` : "", r.unit_number ? `#${r.unit_number}` : ""].filter(Boolean).join(" · "),
     tone: PIPELINE_STAGE_META.attached.tone,
+    contactId: r.contact_id ? String(r.contact_id) : undefined,
   }));
   const attachedTotal = num((await readQuery<{ n: string }>(
     `select count(distinct contact_id) n from vw_contact_property_relationship_review where relationship_status='active'`))[0]?.n);

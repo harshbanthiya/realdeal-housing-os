@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Card, Pill, Mono, type Tone } from "@/components/ui/primitives";
 import type { UnitRegistry as UnitRegistryData, UnitCell, UnitTimelineEvent, RegParty } from "@/lib/cockpit/types";
@@ -120,7 +121,22 @@ function UnitDetail({ unit }: { unit: UnitCell }) {
       <p className="mt-0.5 text-[12px] text-ink/45">Tower {unit.tower} · floor {unit.floor} · {unit.registrationCount} registration{unit.registrationCount === 1 ? "" : "s"}</p>
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-[13px]">
-        <Field label={unit.ownerContact ? "Owner (from contacts)" : "Current owner"} value={unit.currentOwner ?? "—"} />
+        <div>
+          <div className="text-[11px] uppercase tracking-wide text-ink/40">
+            {unit.ownerContact ? "Owner (from contacts)" : "Current owner"}
+          </div>
+          {unit.ownerContactId ? (
+            <Link
+              href={`/cockpit/contacts/c/${unit.ownerContactId}`}
+              aria-label={`Open contact for ${unit.currentOwner ?? "owner"}`}
+              className="text-teal underline underline-offset-2 hover:opacity-75"
+            >
+              {unit.currentOwner ?? "—"}
+            </Link>
+          ) : (
+            <div className="text-ink/85">{unit.currentOwner ?? "—"}</div>
+          )}
+        </div>
         <Field label="Owned since" value={ymd(unit.ownerSince)} />
         <Field label="Last sale price" value={inr(unit.lastPrice)} />
         <Field label="Active tenant" value={unit.currentTenant ?? "—"} />

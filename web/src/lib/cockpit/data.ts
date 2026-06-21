@@ -173,10 +173,31 @@ export async function getWebsitePages(slug: string): Promise<WebPage[]> {
   ];
   return [{ path: `/projects/${slug}`, title: "Project page (Next.js)", status: "ready" }];
 }
+function formatAge(ts: string | null | undefined): string {
+  if (!ts) return "open";
+  const ms = Date.now() - new Date(ts).getTime();
+  const d = Math.floor(ms / 86_400_000);
+  return d === 0 ? "today" : `${d}d`;
+}
+
 export async function getBuildingReviews(slug: string): Promise<ReviewItem[]> {
   const b = await getBuilding(slug);
   if (!b) return [];
-  return (await getGlobalReviewQueue()).filter((r) => r.building === b.name);
+  const derived = (await getGlobalReviewQueue()).filter((r) => r.building === b.name);
+  if (!live()) return derived;
+  const ir = await readQuery<{ id: string; title: string; review_type: string; created_at: string }>(
+    `select id::text, coalesce(title, review_type) title, review_type, created_at::text
+       from import_review_items where status = 'pending'
+      order by created_at desc limit 10`).catch(() => []);
+  const imported: ReviewItem[] = ir.map((r) => ({
+    domain: r.review_type || "import",
+    title: r.title || r.review_type,
+    building: b.name,
+    age: formatAge(r.created_at),
+    tone: "review" as Tone,
+    reviewItemId: r.id,
+  }));
+  return [...derived, ...imported];
 }
 export async function getAgentTasks(slug: string): Promise<AgentTask[]> {
   const planned: AgentTask[] = [
@@ -203,14 +224,27 @@ export async function getLaunchKanban(slug: string): Promise<KanbanTask[]> {
   const colOf = (s: string): KanbanTask["col"] => s === "done" ? "done" : s === "in_progress" ? "doing" : s === "blocked" ? "blocked" : "todo";
   return rows.map((r) => ({ title: r.safe_summary, col: colOf(r.task_status), stream: r.task_type?.split("_")[0] || "task" }));
 }
-export function getLaunchCalendar(): CalendarItem[] {
-  return [
+export async function getLaunchCalendar(slug?: string): Promise<CalendarItem[]> {
+  const staticCalendar: CalendarItem[] = [
     { when: "T-45d", title: "Publish first SEO blog", channel: "Website" },
     { when: "T-30d", title: "Owner teaser (after consent)", channel: "WhatsApp" },
     { when: "T-14d", title: "Andheri West awareness email", channel: "Email" },
     { when: "T-7d", title: "Open pre-launch interest list", channel: "Landing form" },
     { when: "T-0", title: "Launch — go-live gate", channel: "All" },
   ];
+  if (!live()) return staticCalendar;
+  const rows = await readQuery<{ planned_date: string; channel: string; title: string; status: string }>(
+    `select planned_date::text, channel, title, status
+       from launch_campaign_calendar
+      order by planned_date limit 30`).catch(() => [] as { planned_date: string; channel: string; title: string; status: string }[]);
+  if (!rows.length) return staticCalendar;
+  const now = Date.now();
+  return rows.map((r) => {
+    const dt = r.planned_date ? new Date(r.planned_date).getTime() : now;
+    const diffDays = Math.round((dt - now) / 86_400_000);
+    const when = diffDays === 0 ? "T-0" : diffDays > 0 ? `T-${diffDays}d` : `T+${Math.abs(diffDays)}d`;
+    return { when, title: r.title || r.channel, channel: r.channel || "—" };
+  });
 }
 
 // ---------------- unit registry (per-building, per-tower apartment stack) ----------------
@@ -275,13 +309,14 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
         and (bu.metadata->>'offgrid') is distinct from 'true'`);
   const myUnits = bunits.filter((u) => slugify(u.bn) === slug && u.unit_number);
 
-  const orel = await readQuery<{ building_unit_id: string | null; full_name: string }>(
-    `select r.building_unit_id::text, c.full_name from contact_property_relationships r
+  const orel = await readQuery<{ building_unit_id: string | null; full_name: string; contact_id: string }>(
+    `select r.building_unit_id::text, c.full_name, c.id::text contact_id
+       from contact_property_relationships r
        join contacts c on c.id = r.contact_id
       where r.relationship_type = 'owner' and r.building_unit_id is not null
         and r.relationship_status in ('active','approved','pending_review')`);
-  const ownerByUnit = new Map<string, string>();
-  for (const r of orel) if (r.building_unit_id) ownerByUnit.set(r.building_unit_id, r.full_name);
+  const ownerByUnit = new Map<string, { name: string; contactId: string }>();
+  for (const r of orel) if (r.building_unit_id) ownerByUnit.set(r.building_unit_id, { name: r.full_name, contactId: r.contact_id });
 
   // group registration events by unit key (tower + flat) — handles linked and unlinked records.
   const toEvent = (r: typeof myRecs[number]): UEvent => ({
@@ -324,7 +359,7 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     const activeLease = tenancy.filter((e) => e.active).slice(-1)[0];
     const lastOwn = ownership.slice(-1)[0];
     const relOwner = ownerByUnit.get(u.id);
-    const currentOwner = lastOwn ? partyNames(lastOwn, ["purchaser", "buyer"]) || undefined : relOwner ?? undefined;
+    const currentOwner = lastOwn ? partyNames(lastOwn, ["purchaser", "buyer"]) || undefined : relOwner?.name ?? undefined;
     const status: UCell["status"] = activeLease ? "tenanted"
       : currentOwner ? "owned"
       : events.length ? "registered" : "unknown";
@@ -332,6 +367,7 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     units.push({
       flat, floor: fp.floor, position: fp.pos, tower,
       status, currentOwner, ownerContact: !lastOwn && Boolean(relOwner),
+      ownerContactId: !lastOwn ? relOwner?.contactId : undefined,
       ownerSince: lastOwn?.date, lastPrice: lastOwn?.consideration,
       currentTenant: activeLease ? partyNames(activeLease, ["lessee", "tenant"]) || undefined : undefined,
       rent: activeLease?.rent, tenancyEnd: activeLease?.tenancyEnd,
