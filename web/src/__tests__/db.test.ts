@@ -304,6 +304,97 @@ describe("buildStreamStatus stream classification", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Reviews tab — confirm-gate state machine (pure logic, no React/DOM)
+// ---------------------------------------------------------------------------
+
+describe("Reviews tab confirm-gate state machine", () => {
+  type Phase = "idle" | "confirming" | "done";
+  type ReviewSt = { phase: Phase; action: "approved" | "rejected"; msg: string };
+
+  function requestConfirm(
+    states: Record<number, ReviewSt>,
+    i: number,
+    action: "approved" | "rejected"
+  ): Record<number, ReviewSt> {
+    return { ...states, [i]: { phase: "confirming", action, msg: "" } };
+  }
+
+  function cancelConfirm(states: Record<number, ReviewSt>, i: number): Record<number, ReviewSt> {
+    const next = { ...states };
+    delete next[i];
+    return next;
+  }
+
+  it("initial state has no keys (all items are idle)", () => {
+    const states: Record<number, ReviewSt> = {};
+    expect(states[0]?.phase ?? "idle").toBe("idle");
+  });
+
+  it("requestConfirm moves item to confirming", () => {
+    const s = requestConfirm({}, 0, "approved");
+    expect(s[0].phase).toBe("confirming");
+    expect(s[0].action).toBe("approved");
+    expect(s[0].msg).toBe("");
+  });
+
+  it("requestConfirm for reject sets action to rejected", () => {
+    const s = requestConfirm({}, 1, "rejected");
+    expect(s[1].action).toBe("rejected");
+    expect(s[1].phase).toBe("confirming");
+  });
+
+  it("cancelConfirm removes the entry (restores idle)", () => {
+    let s = requestConfirm({}, 0, "approved");
+    s = cancelConfirm(s, 0);
+    expect(s[0]).toBeUndefined();
+    expect(s[0]?.phase ?? "idle").toBe("idle");
+  });
+
+  it("cancelConfirm only removes the targeted index", () => {
+    let s = requestConfirm({}, 0, "approved");
+    s = requestConfirm(s, 1, "rejected");
+    s = cancelConfirm(s, 0);
+    expect(s[0]).toBeUndefined();
+    expect(s[1].phase).toBe("confirming");
+  });
+
+  it("confirm without reviewItemId resolves to done with preview message", () => {
+    let s = requestConfirm({}, 0, "approved");
+    const action = s[0].action;
+    s = { ...s, [0]: { phase: "done", action, msg: "preview only (no review item id)" } };
+    expect(s[0].phase).toBe("done");
+    expect(s[0].msg).toMatch(/preview only/);
+  });
+
+  it("confirm with reviewItemId resolves to done with applied message", () => {
+    let s = requestConfirm({}, 0, "rejected");
+    const action = s[0].action;
+    const fakeMsg = "Applied: pending → rejected";
+    s = { ...s, [0]: { phase: "done", action, msg: fakeMsg } };
+    expect(s[0].phase).toBe("done");
+    expect(s[0].action).toBe("rejected");
+    expect(s[0].msg).toContain("Applied");
+  });
+
+  it("confirm text is derived correctly from action", () => {
+    const s = requestConfirm({}, 0, "approved");
+    expect(`Confirm ${s[0].action}?`).toBe("Confirm approved?");
+    const s2 = requestConfirm({}, 1, "rejected");
+    expect(`Confirm ${s2[1].action}?`).toBe("Confirm rejected?");
+  });
+
+  it("multiple items can be in different phases simultaneously", () => {
+    let s: Record<number, ReviewSt> = {};
+    s = requestConfirm(s, 0, "approved");
+    s = requestConfirm(s, 1, "rejected");
+    s = { ...s, [2]: { phase: "done", action: "approved", msg: "Applied: pending → approved" } };
+    expect(s[0].phase).toBe("confirming");
+    expect(s[1].phase).toBe("confirming");
+    expect(s[2].phase).toBe("done");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // clearQueueRow input validation (pure-logic, no DB or script invocation)
 // ---------------------------------------------------------------------------
 

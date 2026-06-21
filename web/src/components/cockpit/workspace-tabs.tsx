@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Pill, Dot, Mono, type Tone } from "@/components/ui/primitives";
 import { UnitRegistry } from "@/components/cockpit/unit-registry";
@@ -287,18 +287,44 @@ function Website({ pages }: { pages: WebPage[] }) {
   );
 }
 
-type ReviewState = { done: boolean; action: "approved" | "rejected"; msg: string };
+type ReviewPhase = "idle" | "confirming" | "done";
+type ReviewState = { phase: ReviewPhase; action: "approved" | "rejected"; msg: string };
 
 function Reviews({ items }: { items: ReviewItem[] }) {
+  const router = useRouter();
   const [states, setStates] = useState<Record<number, ReviewState>>({});
+  const [pending, startTransition] = useTransition();
 
-  async function handle(i: number, r: ReviewItem, status: "approved" | "rejected") {
-    if (r.reviewItemId) {
-      const res = await updateReviewItem({ reviewItemId: r.reviewItemId, status, reviewedBy: "operator" });
-      setStates((prev) => ({ ...prev, [i]: { done: true, action: status, msg: res.message } }));
-    } else {
-      setStates((prev) => ({ ...prev, [i]: { done: true, action: status, msg: "preview only (no review item id)" } }));
+  function requestConfirm(i: number, action: "approved" | "rejected") {
+    setStates((prev) => ({ ...prev, [i]: { phase: "confirming", action, msg: "" } }));
+  }
+
+  function cancelConfirm(i: number) {
+    setStates((prev) => {
+      const next = { ...prev };
+      delete next[i];
+      return next;
+    });
+  }
+
+  function confirm(i: number, r: ReviewItem) {
+    const s = states[i];
+    if (!s || s.phase !== "confirming") return;
+    const action = s.action;
+    if (!r.reviewItemId) {
+      setStates((prev) => ({ ...prev, [i]: { phase: "done", action, msg: "preview only (no review item id)" } }));
+      return;
     }
+    startTransition(async () => {
+      const res = await updateReviewItem({
+        reviewItemId: r.reviewItemId!,
+        status: action,
+        reviewedBy: "operator",
+        apply: true,
+      });
+      setStates((prev) => ({ ...prev, [i]: { phase: "done", action, msg: res.message } }));
+      if (res.applied) router.refresh();
+    });
   }
 
   if (!items.length) return <Empty>No pending reviews for this building.</Empty>;
@@ -307,9 +333,10 @@ function Reviews({ items }: { items: ReviewItem[] }) {
       <div className="space-y-3">
         {items.map((r, i) => {
           const s = states[i];
+          const phase = s?.phase ?? "idle";
           return (
             <Card key={i} className="flex items-center gap-4 p-4">
-              <Dot tone={s?.done ? (s.action === "approved" ? "ready" : "blocked") : r.tone} />
+              <Dot tone={phase === "done" ? (s!.action === "approved" ? "ready" : "blocked") : r.tone} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm text-ink/80">{r.title}</div>
                 <div className="text-[11px] text-ink/45">
@@ -318,20 +345,43 @@ function Reviews({ items }: { items: ReviewItem[] }) {
                 </div>
                 {s?.msg && <div className="mt-1 font-mono text-[10px] text-ink/50">{s.msg}</div>}
               </div>
-              {s?.done ? (
-                <Pill tone={s.action === "approved" ? "ready" : "blocked"}>
-                  {s.action}{!r.reviewItemId ? " (preview)" : ""}
+              {phase === "done" && (
+                <Pill tone={s!.action === "approved" ? "ready" : "blocked"}>
+                  {s!.action}{!r.reviewItemId ? " (preview)" : ""}
                 </Pill>
-              ) : (
+              )}
+              {phase === "confirming" && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-ink/60">Confirm {s!.action}?</span>
+                  <button
+                    onClick={() => confirm(i, r)}
+                    disabled={pending}
+                    aria-label={`Confirm ${s!.action}`}
+                    className="rounded-full bg-teal px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-40"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => cancelConfirm(i)}
+                    disabled={pending}
+                    className="rounded-full border border-mist-deep px-3 py-1.5 text-xs font-semibold text-ink/60 hover:bg-mist/40 disabled:opacity-40"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              {phase === "idle" && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handle(i, r, "approved")}
+                    onClick={() => requestConfirm(i, "approved")}
+                    aria-label="Approve review item"
                     className="rounded-full bg-teal px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
                   >
                     Approve
                   </button>
                   <button
-                    onClick={() => handle(i, r, "rejected")}
+                    onClick={() => requestConfirm(i, "rejected")}
+                    aria-label="Reject review item"
                     className="rounded-full border border-mist-deep px-3 py-1.5 text-xs font-semibold text-warm hover:bg-warm/5"
                   >
                     Reject
@@ -343,7 +393,7 @@ function Reviews({ items }: { items: ReviewItem[] }) {
         })}
       </div>
       <p className="mt-4 font-mono text-[11px] text-ink/40">
-        Items marked &ldquo;actionable&rdquo; call the guarded update_review_item.py in dry-run mode. Pass --apply to commit writes.
+        Actionable items write via update_review_item.py --apply behind a confirm step.
       </p>
     </div>
   );

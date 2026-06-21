@@ -778,3 +778,67 @@ test.describe("Audiences page", () => {
     await expect(page.getByText("not connected")).toBeVisible();
   });
 });
+
+// ---------------------------------------------------------------------------
+// /cockpit/buildings/[slug] — Reviews tab two-step confirm flow
+// ---------------------------------------------------------------------------
+
+test.describe("Buildings workspace — Reviews tab confirm flow", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  async function openReviewsTab(page: import("@playwright/test").Page) {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    const is404 = await page.getByText(/not found/i).isVisible().catch(() => false);
+    if (is404) return false;
+    await page.getByRole("button", { name: "Reviews" }).click();
+    return true;
+  }
+
+  test("Reviews tab renders Approve and Reject buttons for pending items", async ({ page }) => {
+    if (!await openReviewsTab(page)) return;
+    const approveBtn = page.getByRole("button", { name: "Approve review item" }).first();
+    if (!await approveBtn.isVisible({ timeout: 3000 }).catch(() => false)) return;
+    await expect(approveBtn).toBeVisible();
+    await expect(page.getByRole("button", { name: "Reject review item" }).first()).toBeVisible();
+  });
+
+  test("Approve button click shows confirm+cancel step", async ({ page }) => {
+    if (!await openReviewsTab(page)) return;
+    const approveBtn = page.getByRole("button", { name: "Approve review item" }).first();
+    if (!await approveBtn.isVisible({ timeout: 3000 }).catch(() => false)) return;
+    await approveBtn.click();
+    await expect(page.getByText("Confirm approved?")).toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole("button", { name: "Confirm approved" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cancel" }).first()).toBeVisible();
+  });
+
+  test("Cancel on approve confirm reverts to idle Approve/Reject buttons", async ({ page }) => {
+    if (!await openReviewsTab(page)) return;
+    const approveBtn = page.getByRole("button", { name: "Approve review item" }).first();
+    if (!await approveBtn.isVisible({ timeout: 3000 }).catch(() => false)) return;
+    await approveBtn.click();
+    await page.getByRole("button", { name: "Cancel" }).first().click();
+    await expect(page.getByRole("button", { name: "Approve review item" }).first()).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText("Confirm approved?")).toBeHidden();
+  });
+
+  test("Reject button click shows confirm rejected+cancel step", async ({ page }) => {
+    if (!await openReviewsTab(page)) return;
+    const rejectBtn = page.getByRole("button", { name: "Reject review item" }).first();
+    if (!await rejectBtn.isVisible({ timeout: 3000 }).catch(() => false)) return;
+    await rejectBtn.click();
+    await expect(page.getByText("Confirm rejected?")).toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole("button", { name: "Confirm rejected" })).toBeVisible();
+  });
+
+  test("Cancel on reject confirm reverts to idle Approve/Reject buttons", async ({ page }) => {
+    if (!await openReviewsTab(page)) return;
+    const rejectBtn = page.getByRole("button", { name: "Reject review item" }).first();
+    if (!await rejectBtn.isVisible({ timeout: 3000 }).catch(() => false)) return;
+    await rejectBtn.click();
+    await page.getByRole("button", { name: "Cancel" }).first().click();
+    await expect(page.getByRole("button", { name: "Reject review item" }).first()).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText("Confirm rejected?")).toBeHidden();
+  });
+});
