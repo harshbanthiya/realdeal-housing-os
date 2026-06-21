@@ -274,3 +274,38 @@ export async function addContactsToGroup(input: { groupSlug: string; contactIds:
   const ok = code === 0 && !/Refusing:/i.test(out);
   return { ...base, ok, applied: ok && apply, message: ok ? headline(out) : out.split("\n")[0] || "Failed.", fields: parseLabeledOutput(out), raw: out };
 }
+
+/**
+ * Log a manual operator note against a contact via scripts/add_contact_note.py.
+ * Writes a contact_activity_events row (event_type='note', direction='internal').
+ * Always writes when apply=true (no dry-run preview needed for notes).
+ */
+export async function logContactNote(input: {
+  contactId: string;
+  note: string;
+  by?: string;
+  apply?: boolean;
+}): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+  if (!UUID_RE.test(input.contactId)) return { ...base, message: "Invalid contact id." };
+  const note = (input.note ?? "").replace(/\0/g, "").trim().slice(0, 500);
+  if (!note) return { ...base, message: "Note cannot be empty." };
+  const by = ((input.by ?? "operator").replace(/\0/g, "").trim().slice(0, 100)) || "operator";
+
+  const argv = ["--contact-id", input.contactId, "--note", note, "--by", by];
+  if (apply) argv.push("--apply");
+  const { code, out } = await runScript("add_contact_note.py", argv);
+  const ok = code === 0 && !/Refusing:/i.test(out);
+  return {
+    ...base,
+    ok,
+    applied: ok && apply,
+    dryRun: !apply,
+    message: ok
+      ? apply ? `Note recorded for contact.` : `Dry run: would record note (no write).`
+      : out.split("\n").find((l) => /Refusing|FAILED|not found|error/i.test(l)) ?? out.split("\n")[0] ?? "Failed.",
+    fields: parseLabeledOutput(out),
+    raw: out,
+  };
+}

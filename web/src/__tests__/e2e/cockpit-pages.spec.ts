@@ -268,13 +268,54 @@ test.describe("Contact detail page", () => {
     expect(await back.count()).toBeGreaterThan(0);
   });
 
-  test("MISSING: no manual activity note button (documented gap)", async ({ page }) => {
+  test("Add note textarea is visible", async ({ page }) => {
     await page.goto(`/cockpit/contacts/c/${REAL_CONTACT_ID}`);
     const is404 = await page.getByText(/not found/i).isVisible().catch(() => false);
     if (is404) return;
-    // This SHOULD fail once the feature is added — then update to pass
-    const addNote = page.getByRole("button", { name: /add note|log activity/i });
-    expect(await addNote.count()).toBe(0); // confirming gap exists
+    await expect(page.getByLabel("Contact note text")).toBeVisible();
+  });
+
+  test("Add note submit button is disabled when textarea is empty", async ({ page }) => {
+    await page.goto(`/cockpit/contacts/c/${REAL_CONTACT_ID}`);
+    const is404 = await page.getByText(/not found/i).isVisible().catch(() => false);
+    if (is404) return;
+    const btn = page.getByRole("button", { name: /add note/i });
+    await expect(btn).toBeDisabled();
+  });
+
+  test("Add note submit button is enabled after typing", async ({ page }) => {
+    await page.goto(`/cockpit/contacts/c/${REAL_CONTACT_ID}`);
+    const is404 = await page.getByText(/not found/i).isVisible().catch(() => false);
+    if (is404) return;
+    const textarea = page.getByLabel("Contact note text");
+    await textarea.fill("Test note from Playwright");
+    const btn = page.getByRole("button", { name: /add note/i });
+    await expect(btn).toBeEnabled();
+  });
+
+  test("Add note shows char counter", async ({ page }) => {
+    await page.goto(`/cockpit/contacts/c/${REAL_CONTACT_ID}`);
+    const is404 = await page.getByText(/not found/i).isVisible().catch(() => false);
+    if (is404) return;
+    await expect(page.getByText(/500 chars left/)).toBeVisible();
+  });
+
+  test("Char counter decrements as user types", async ({ page }) => {
+    await page.goto(`/cockpit/contacts/c/${REAL_CONTACT_ID}`);
+    const is404 = await page.getByText(/not found/i).isVisible().catch(() => false);
+    if (is404) return;
+    const textarea = page.getByLabel("Contact note text");
+    await textarea.fill("Hello");
+    await expect(page.getByText(/495 chars left/)).toBeVisible();
+  });
+
+  test("Add note header label is rendered", async ({ page }) => {
+    await page.goto(`/cockpit/contacts/c/${REAL_CONTACT_ID}`);
+    const is404 = await page.getByText(/not found/i).isVisible().catch(() => false);
+    if (is404) return;
+    // The "Add note" section header is a small label above the textarea
+    const label = page.locator("main").getByText(/add note/i).first();
+    await expect(label).toBeVisible();
   });
 });
 

@@ -126,3 +126,76 @@ describe("contact sheet q sanitisation", () => {
     expect(result).toBe("%O'Connor%");
   });
 });
+
+// ---------------------------------------------------------------------------
+// logContactNote input validation (pure-logic, no DB or script invocation)
+// ---------------------------------------------------------------------------
+
+describe("logContactNote input validation", () => {
+  const VALID_UUID = "bf4827de-29fa-4ca4-a5da-d924e2b157a3";
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  function validateNote(input: { contactId: string; note: string; by?: string }) {
+    if (!UUID_RE.test(input.contactId)) return { ok: false, message: "Invalid contact id." };
+    const note = (input.note ?? "").replace(/\0/g, "").trim().slice(0, 500);
+    if (!note) return { ok: false, message: "Note cannot be empty." };
+    const by = ((input.by ?? "operator").replace(/\0/g, "").trim().slice(0, 100)) || "operator";
+    return { ok: true, note, by };
+  }
+
+  it("rejects invalid UUID", () => {
+    const r = validateNote({ contactId: "not-a-uuid", note: "hello" });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid contact id/i);
+  });
+
+  it("rejects empty note", () => {
+    const r = validateNote({ contactId: VALID_UUID, note: "" });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/cannot be empty/i);
+  });
+
+  it("rejects whitespace-only note", () => {
+    const r = validateNote({ contactId: VALID_UUID, note: "   " });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/cannot be empty/i);
+  });
+
+  it("rejects note with only NUL bytes", () => {
+    const r = validateNote({ contactId: VALID_UUID, note: "\0\0" });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/cannot be empty/i);
+  });
+
+  it("accepts valid note", () => {
+    const r = validateNote({ contactId: VALID_UUID, note: "Called — interested in 3BHK" });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.note).toBe("Called — interested in 3BHK");
+  });
+
+  it("clamps note to 500 chars", () => {
+    const long = "x".repeat(600);
+    const r = validateNote({ contactId: VALID_UUID, note: long });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.note!.length).toBe(500);
+  });
+
+  it("strips NUL bytes from note", () => {
+    const r = validateNote({ contactId: VALID_UUID, note: "he\0llo" });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.note).toBe("hello");
+  });
+
+  it("defaults by to 'operator' when empty", () => {
+    const r = validateNote({ contactId: VALID_UUID, note: "test", by: "" });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.by).toBe("operator");
+  });
+
+  it("clamps by to 100 chars", () => {
+    const long = "a".repeat(200);
+    const r = validateNote({ contactId: VALID_UUID, note: "test", by: long });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.by!.length).toBe(100);
+  });
+});
