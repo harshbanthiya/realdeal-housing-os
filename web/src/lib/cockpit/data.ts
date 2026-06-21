@@ -43,8 +43,8 @@ const SEED_BUILDINGS: Building[] = [
 export async function getBuildings(): Promise<Building[]> {
   if (!live()) return SEED_BUILDINGS;
 
-  const lps = await readQuery<{ launch_key: string; project_display_name: string; area: string; expected_launch_month: string; expected_launch_date: string; seo_status: string; id: string }>(
-    `select id::text, launch_key, project_display_name, area, expected_launch_month, expected_launch_date::text, seo_status from launch_projects`);
+  const lps = await readQuery<{ launch_key: string; project_display_name: string; area: string; expected_launch_month: string; expected_launch_date: string; seo_status: string; id: string; mode: string }>(
+    `select id::text, launch_key, project_display_name, area, expected_launch_month, expected_launch_date::text, seo_status, mode from launch_projects`);
   const blds = await readQuery<{ name: string; locality: string }>(
     `select name, max(locality) locality from buildings group by name`);
   const rd = await readQuery<{ id: string; open: string; blockers: string }>(
@@ -57,7 +57,7 @@ export async function getBuildings(): Promise<Building[]> {
   for (const p of lps) {
     const r = rd.find((x) => x.id === p.id);
     out.push({
-      slug: p.launch_key, name: p.project_display_name, location: p.area, mode: "launch",
+      slug: p.launch_key, name: p.project_display_name, location: p.area, mode: (p.mode as Mode) || "launch",
       launchInDays: launchDays(p.expected_launch_month, p.expected_launch_date),
       seoRank: p.seo_status || "—",
       stats: { owners: 0, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: num(r?.open), blockers: num(r?.blockers) },

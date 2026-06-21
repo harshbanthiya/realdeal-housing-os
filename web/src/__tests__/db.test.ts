@@ -304,6 +304,68 @@ describe("buildStreamStatus stream classification", () => {
 });
 
 // ---------------------------------------------------------------------------
+// updateBuildingMode input validation (pure-logic, no DB or script invocation)
+// ---------------------------------------------------------------------------
+
+describe("updateBuildingMode input validation", () => {
+  const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,80}[a-z0-9]$/;
+  const ALLOWED_MODES = new Set(["prospecting", "active", "launch", "post_launch"]);
+
+  function validate(slug: string, mode: string): { ok: boolean; message?: string } {
+    if (!SLUG_RE.test(slug)) return { ok: false, message: "Invalid building slug." };
+    if (!ALLOWED_MODES.has(mode)) return { ok: false, message: `Invalid mode: ${mode}` };
+    return { ok: true };
+  }
+
+  it("accepts valid slug and mode", () => {
+    expect(validate("dlf-westpark-andheri-west", "launch").ok).toBe(true);
+  });
+
+  it("accepts all four allowed modes", () => {
+    for (const m of ["prospecting", "active", "launch", "post_launch"]) {
+      expect(validate("my-building", m).ok).toBe(true);
+    }
+  });
+
+  it("rejects empty slug", () => {
+    const r = validate("", "launch");
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid.*slug/i);
+  });
+
+  it("rejects slug with uppercase letters", () => {
+    const r = validate("DLF-Westpark", "launch");
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects slug with leading dash", () => {
+    const r = validate("-westpark", "launch");
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects slug with trailing dash", () => {
+    const r = validate("westpark-", "launch");
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects slug with injection characters", () => {
+    const r = validate("west'; DROP TABLE--", "launch");
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects unknown mode", () => {
+    const r = validate("my-building", "unknown");
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid mode/i);
+  });
+
+  it("rejects empty mode", () => {
+    const r = validate("my-building", "");
+    expect(r.ok).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Reviews tab — confirm-gate state machine (pure logic, no React/DOM)
 // ---------------------------------------------------------------------------
 

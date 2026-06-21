@@ -780,6 +780,75 @@ test.describe("Audiences page", () => {
 });
 
 // ---------------------------------------------------------------------------
+// /cockpit/buildings/[slug] — Mode switcher (persist to DB)
+// ---------------------------------------------------------------------------
+
+test.describe("Buildings workspace — mode switcher", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("mode switcher renders 4 mode buttons", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    const group = page.getByRole("group", { name: /building lifecycle mode/i });
+    await expect(group).toBeVisible({ timeout: 5000 });
+    const buttons = group.getByRole("button");
+    await expect(buttons).toHaveCount(4);
+  });
+
+  test("current DB mode has aria-pressed=true", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    const group = page.getByRole("group", { name: /building lifecycle mode/i });
+    await expect(group).toBeVisible({ timeout: 5000 });
+    const pressed = group.locator("button[aria-pressed='true']");
+    await expect(pressed).toHaveCount(1);
+  });
+
+  test("clicking a different mode sets it as pressed", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    const group = page.getByRole("group", { name: /building lifecycle mode/i });
+    await expect(group).toBeVisible({ timeout: 5000 });
+    // Click "Active" (different from default "Launch")
+    await group.getByRole("button", { name: "Active", exact: true }).click();
+    await expect(group.getByRole("button", { name: "Active", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(group.getByRole("button", { name: "Launch", exact: true })).toHaveAttribute("aria-pressed", "false");
+    // Restore launch mode
+    await group.getByRole("button", { name: "Launch", exact: true }).click();
+    await expect(group.getByRole("button", { name: "Launch", exact: true })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("mode persists after page reload (DB write succeeded)", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    const group = page.getByRole("group", { name: /building lifecycle mode/i });
+    await expect(group).toBeVisible({ timeout: 5000 });
+    // Switch to Prospecting and wait for the confirmation message
+    await group.getByRole("button", { name: "Prospecting", exact: true }).click();
+    await expect(group.getByRole("button", { name: "Prospecting", exact: true })).toHaveAttribute("aria-pressed", "true");
+    // Wait for the DB write to complete (mode message appears)
+    await page.waitForTimeout(1500);
+    // Reload and verify the mode was persisted
+    await page.reload();
+    await expect(group).toBeVisible({ timeout: 5000 });
+    await expect(group.getByRole("button", { name: "Prospecting", exact: true })).toHaveAttribute("aria-pressed", "true");
+    // Restore launch mode
+    await group.getByRole("button", { name: "Launch", exact: true }).click();
+    await page.waitForTimeout(1000);
+  });
+
+  test("mode switcher is disabled while write is pending", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    const group = page.getByRole("group", { name: /building lifecycle mode/i });
+    await expect(group).toBeVisible({ timeout: 5000 });
+    await group.getByRole("button", { name: "Active", exact: true }).click();
+    // Verify optimistic update: Active is now pressed
+    await expect(group.getByRole("button", { name: "Active", exact: true })).toHaveAttribute("aria-pressed", "true");
+    // Restore
+    await page.waitForTimeout(1500);
+    await group.getByRole("button", { name: "Launch", exact: true }).click();
+    await page.waitForTimeout(1000);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // /cockpit/buildings/[slug] — Reviews tab two-step confirm flow
 // ---------------------------------------------------------------------------
 

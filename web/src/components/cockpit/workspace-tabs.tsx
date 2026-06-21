@@ -9,7 +9,7 @@ import {
   type Fact, type WebPage, type ReviewItem, type AgentTask, type KanbanTask, type CalendarItem, type Listing,
   type UnitRegistry as UnitRegistryData,
 } from "@/lib/cockpit/types";
-import { updateReviewItem } from "@/lib/cockpit/actions";
+import { updateReviewItem, updateBuildingMode } from "@/lib/cockpit/actions";
 
 const MODE_LABEL: Record<Mode, string> = {
   launch: "Launch", active: "Active", prospecting: "Prospecting", post_launch: "Post-launch",
@@ -34,25 +34,44 @@ export interface WorkspaceData {
 const ROLE_TONE: Record<string, Tone> = { owner: "active", tenant: "ready", client: "review" };
 
 export function WorkspaceTabs({ data }: { data: WorkspaceData }) {
+  const router = useRouter();
   const [tab, setTab] = useState<TabKey>("overview");
   const [mode, setMode] = useState<Mode>(data.building.mode);
+  const [modeMsg, setModeMsg] = useState<string | null>(null);
+  const [modePending, startModeTransition] = useTransition();
   const launch = mode === "launch";
+
+  function switchMode(m: Mode) {
+    if (m === mode) return;
+    setMode(m);           // optimistic: instant UI update
+    setModeMsg(null);
+    startModeTransition(async () => {
+      const res = await updateBuildingMode({ slug: data.building.slug, mode: m, apply: true });
+      setModeMsg(res.message);
+      if (res.applied) router.refresh();
+    });
+  }
 
   return (
     <div>
       {/* Lifecycle mode switcher */}
-      <div className="mb-4 flex items-center gap-1 self-end rounded-full border border-mist-deep p-1 w-fit" role="group" aria-label="Building lifecycle mode">
-        {MODES.map((m) => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            aria-pressed={m === mode}
-            className={`rounded-full px-3 py-1 text-[12px] transition-colors ${m === mode ? "bg-teal text-white" : "text-ink/45 hover:text-ink/70"}`}
-          >
-            {MODE_LABEL[m]}
-          </button>
-        ))}
+      <div className="mb-1 flex items-center gap-3">
+        <div className="flex items-center gap-1 rounded-full border border-mist-deep p-1 w-fit" role="group" aria-label="Building lifecycle mode">
+          {MODES.map((m) => (
+            <button
+              key={m}
+              onClick={() => switchMode(m)}
+              aria-pressed={m === mode}
+              disabled={modePending}
+              className={`rounded-full px-3 py-1 text-[12px] transition-colors disabled:opacity-60 ${m === mode ? "bg-teal text-white" : "text-ink/45 hover:text-ink/70"}`}
+            >
+              {MODE_LABEL[m]}
+            </button>
+          ))}
+        </div>
+        {modeMsg && <span className="font-mono text-[10px] text-ink/40">{modeMsg}</span>}
       </div>
+      <div className="mb-4" />
 
       <div className="sticky top-0 z-10 -mx-6 mb-6 flex gap-1 overflow-x-auto border-b border-mist-deep bg-white/90 px-6 backdrop-blur">
         {TABS.map((t) => (

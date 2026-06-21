@@ -23,6 +23,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const ALLOWED_STATUSES = new Set([
   "pending", "approved", "rejected", "skipped", "needs_more_info", "merged_later",
 ]);
+const ALLOWED_MODES = new Set(["prospecting", "active", "launch", "post_launch"]);
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,80}[a-z0-9]$/;
 
 export interface ActionResult {
   ok: boolean;
@@ -306,6 +308,43 @@ export async function logContactNote(input: {
       ? apply ? `Note recorded for contact.` : `Dry run: would record note (no write).`
       : out.split("\n").find((l) => /Refusing|FAILED|not found|error/i.test(l)) ?? out.split("\n")[0] ?? "Failed.",
     fields: parseLabeledOutput(out),
+    raw: out,
+  };
+}
+
+/**
+ * Persist a building's lifecycle mode to launch_projects.mode.
+ * Dry-run by default; pass apply=true to write.
+ * No-ops gracefully for legacy buildings (no launch_project row).
+ */
+export async function updateBuildingMode(input: {
+  slug: string;
+  mode: string;
+  apply?: boolean;
+}): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+
+  if (!SLUG_RE.test(input.slug)) return { ...base, message: "Invalid building slug." };
+  if (!ALLOWED_MODES.has(input.mode)) return { ...base, message: `Invalid mode: ${input.mode}` };
+
+  const argv = ["--slug", input.slug, "--mode", input.mode];
+  if (apply) argv.push("--apply");
+  const { code, out } = await runScript("update_building_mode.py", argv);
+  const fields = parseLabeledOutput(out);
+  const ok = code === 0;
+  return {
+    ok,
+    applied: ok && apply && fields.rows_updated === "1",
+    dryRun: !apply,
+    message: ok
+      ? apply
+        ? fields.rows_updated === "1"
+          ? `Mode updated → ${input.mode}`
+          : fields.note ?? "No change needed."
+        : `Dry run: would set mode → ${input.mode}`
+      : out.split("\n")[0] ?? "Script failed.",
+    fields,
     raw: out,
   };
 }
