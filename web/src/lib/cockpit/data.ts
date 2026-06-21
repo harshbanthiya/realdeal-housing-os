@@ -13,7 +13,7 @@ import type { Tone } from "@/components/ui/primitives";
 import { isDbConfigured, readQuery } from "@/lib/db";
 import type {
   Mode, Building, ReviewItem, AgentEvent, Blocker, Person, Keyword,
-  Campaign, Fact, WebPage, AgentTask, KanbanTask, CalendarItem,
+  Campaign, Fact, WebPage, AgentTask, KanbanTask, CalendarItem, LaunchStream,
 } from "./types";
 
 export * from "./types";
@@ -99,6 +99,57 @@ export async function getGlobalBlockers(): Promise<Blocker[]> {
   const rows = await readQuery<{ check_type: string; safe_summary: string }>(
     `select check_type, coalesce(safe_summary, check_type) safe_summary from launch_readiness_checks where severity='blocker' and check_status <> 'passed' order by created_at limit 8`);
   return rows.map((r, i) => ({ id: `BLK-${String(i + 1).padStart(3, "0")}`, building: "DLF Westpark", statement: r.safe_summary, openFor: r.check_type }));
+}
+
+const STREAM_DEFS: { label: string; keywords: string[] }[] = [
+  { label: "Tech (Wix / site)",  keywords: ["wix", "n8n", "webhook", "utm", "tracking", "lead_capture", "lead_scoring"] },
+  { label: "Content & SEO",      keywords: ["seo", "social", "content", "email_template", "whatsapp_template"] },
+  { label: "Campaign safety",    keywords: ["consent", "suppression", "attribution", "privacy", "spam"] },
+  { label: "Legal / RERA",       keywords: ["rera", "project_name", "lead_duplicate"] },
+];
+
+function classifyCheckType(checkType: string): number {
+  for (let i = 0; i < STREAM_DEFS.length; i++) {
+    if (STREAM_DEFS[i].keywords.some((kw) => checkType.includes(kw))) return i;
+  }
+  return -1;
+}
+
+export function buildStreamStatus(
+  rows: { check_type: string; check_status: string; severity: string }[]
+): LaunchStream[] {
+  const buckets = STREAM_DEFS.map((d) => ({ label: d.label, total: 0, passed: 0, blockers: 0 }));
+  for (const row of rows) {
+    const idx = classifyCheckType(row.check_type);
+    if (idx < 0) continue;
+    const b = buckets[idx];
+    b.total++;
+    if (row.check_status === "passed") b.passed++;
+    else if (row.severity === "blocker") b.blockers++;
+  }
+  return buckets.map((b) => {
+    let tone: import("@/components/ui/primitives").Tone;
+    let state: string;
+    if (b.total === 0)              { tone = "neutral"; state = "No data"; }
+    else if (b.blockers > 0)        { tone = "blocked"; state = "Blocked"; }
+    else if (b.passed < b.total)    { tone = "review";  state = "In review"; }
+    else                            { tone = "ready";   state = "Ready"; }
+    return { label: b.label, tone, state, total: b.total, passed: b.passed, blockers: b.blockers };
+  });
+}
+
+export async function getStreamReadiness(): Promise<LaunchStream[]> {
+  const fallback: { check_type: string; check_status: string; severity: string }[] = [
+    { check_type: "wix_site_live",          check_status: "passed",       severity: "blocker" },
+    { check_type: "seo_keywords_live",      check_status: "needs_review", severity: "high" },
+    { check_type: "consent_reviewed",       check_status: "pending",      severity: "blocker" },
+    { check_type: "rera_registration",      check_status: "pending",      severity: "blocker" },
+  ];
+  if (!live()) return buildStreamStatus(fallback);
+  const rows = await readQuery<{ check_type: string; check_status: string; severity: string }>(
+    `select check_type, check_status, severity from launch_readiness_checks order by created_at`
+  );
+  return buildStreamStatus(rows.length ? rows : fallback);
 }
 
 // ---------------- workspace panels ----------------

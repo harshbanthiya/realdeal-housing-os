@@ -26,6 +26,14 @@ export interface Fact { label: string; value: string; status: Tone }
 export interface WebPage { path: string; title: string; status: Tone }
 export interface AgentTask { agent: string; task: string; cadence: string; status: Tone }
 export interface KanbanTask { title: string; col: "todo" | "doing" | "blocked" | "done"; stream: string }
+export interface LaunchStream {
+  label: string;
+  tone: Tone;
+  state: string;    // "Ready" | "Blocked" | "In review" | "No data"
+  total: number;    // total checks classified to this stream
+  passed: number;   // checks with check_status = 'passed'
+  blockers: number; // active (non-passed) blocker checks
+}
 export interface CalendarItem { when: string; title: string; channel: string }
 
 export interface RegParty {

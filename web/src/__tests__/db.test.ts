@@ -201,6 +201,109 @@ describe("logContactNote input validation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// buildStreamStatus — pure classification logic (no DB)
+// ---------------------------------------------------------------------------
+
+describe("buildStreamStatus stream classification", () => {
+  // Import the exported helper directly (no DB, pure logic).
+  let buildStreamStatus: typeof import("@/lib/cockpit/data").buildStreamStatus;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ buildStreamStatus } = await import("@/lib/cockpit/data"));
+  });
+
+  it("returns 4 streams always", async () => {
+    const result = buildStreamStatus([]);
+    expect(result).toHaveLength(4);
+  });
+
+  it("all streams are 'No data' / neutral when no checks exist", async () => {
+    const result = buildStreamStatus([]);
+    for (const s of result) {
+      expect(s.state).toBe("No data");
+      expect(s.tone).toBe("neutral");
+      expect(s.total).toBe(0);
+    }
+  });
+
+  it("marks Tech stream as 'Ready' when all wix checks pass", async () => {
+    const rows = [
+      { check_type: "wix_site_live", check_status: "passed", severity: "blocker" },
+      { check_type: "webhook_connected", check_status: "passed", severity: "normal" },
+    ];
+    const result = buildStreamStatus(rows);
+    const tech = result.find((s) => s.label === "Tech (Wix / site)")!;
+    expect(tech.tone).toBe("ready");
+    expect(tech.state).toBe("Ready");
+    expect(tech.passed).toBe(2);
+    expect(tech.total).toBe(2);
+    expect(tech.blockers).toBe(0);
+  });
+
+  it("marks Campaign safety as 'Blocked' when a consent blocker is pending", async () => {
+    const rows = [
+      { check_type: "consent_reviewed", check_status: "pending", severity: "blocker" },
+    ];
+    const result = buildStreamStatus(rows);
+    const campaign = result.find((s) => s.label === "Campaign safety")!;
+    expect(campaign.tone).toBe("blocked");
+    expect(campaign.state).toBe("Blocked");
+    expect(campaign.blockers).toBe(1);
+  });
+
+  it("marks Content & SEO as 'In review' when checks are non-passed but no blocker", async () => {
+    const rows = [
+      { check_type: "seo_keywords_live", check_status: "needs_review", severity: "high" },
+    ];
+    const result = buildStreamStatus(rows);
+    const content = result.find((s) => s.label === "Content & SEO")!;
+    expect(content.tone).toBe("review");
+    expect(content.state).toBe("In review");
+    expect(content.blockers).toBe(0);
+  });
+
+  it("marks Legal / RERA as 'Blocked' when rera check is unresolved blocker", async () => {
+    const rows = [
+      { check_type: "rera_registration", check_status: "pending", severity: "blocker" },
+    ];
+    const result = buildStreamStatus(rows);
+    const legal = result.find((s) => s.label === "Legal / RERA")!;
+    expect(legal.tone).toBe("blocked");
+    expect(legal.blockers).toBe(1);
+  });
+
+  it("unknown check_type is not counted in any stream", async () => {
+    const rows = [
+      { check_type: "unknown_custom_check", check_status: "pending", severity: "blocker" },
+    ];
+    const result = buildStreamStatus(rows);
+    for (const s of result) {
+      expect(s.total).toBe(0);
+    }
+  });
+
+  it("stream labels match expected order", async () => {
+    const result = buildStreamStatus([]);
+    expect(result[0].label).toBe("Tech (Wix / site)");
+    expect(result[1].label).toBe("Content & SEO");
+    expect(result[2].label).toBe("Campaign safety");
+    expect(result[3].label).toBe("Legal / RERA");
+  });
+
+  it("passed checks do not count toward blockers", async () => {
+    const rows = [
+      { check_type: "consent_reviewed", check_status: "passed", severity: "blocker" },
+    ];
+    const result = buildStreamStatus(rows);
+    const campaign = result.find((s) => s.label === "Campaign safety")!;
+    expect(campaign.blockers).toBe(0);
+    expect(campaign.passed).toBe(1);
+    expect(campaign.tone).toBe("ready");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // clearQueueRow input validation (pure-logic, no DB or script invocation)
 // ---------------------------------------------------------------------------
 
