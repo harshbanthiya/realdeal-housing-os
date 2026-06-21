@@ -670,3 +670,52 @@ describe("stagingTone", () => {
   it("planned → neutral", () => expect(stagingTone("planned")).toBe("neutral"));
   it("unknown → neutral", () => expect(stagingTone("something_new")).toBe("neutral"));
 });
+
+// ---------------------------------------------------------------------------
+// channelTone helper (pure-logic, mirrored from data.ts)
+// ---------------------------------------------------------------------------
+
+describe("channelTone", () => {
+  type Tone = "ready" | "review" | "blocked" | "neutral";
+  function channelTone(status: string): Tone {
+    if (status === "live" || status === "active") return "ready";
+    if (status === "under_review" || status === "needs_review") return "review";
+    if (status === "blocked" || status === "disabled") return "blocked";
+    return "neutral";
+  }
+
+  it("live → ready", () => expect(channelTone("live")).toBe("ready"));
+  it("active → ready", () => expect(channelTone("active")).toBe("ready"));
+  it("under_review → review", () => expect(channelTone("under_review")).toBe("review"));
+  it("needs_review → review", () => expect(channelTone("needs_review")).toBe("review"));
+  it("blocked → blocked", () => expect(channelTone("blocked")).toBe("blocked"));
+  it("disabled → blocked", () => expect(channelTone("disabled")).toBe("blocked"));
+  it("planned → neutral (DLF channels are all planned)", () => expect(channelTone("planned")).toBe("neutral"));
+  it("unknown → neutral", () => expect(channelTone("anything_else")).toBe("neutral"));
+});
+
+// ---------------------------------------------------------------------------
+// channel name formatting (mirrors data.ts getCampaigns name mapping)
+// ---------------------------------------------------------------------------
+
+describe("channel name formatting", () => {
+  function formatChannelName(channel: string): string {
+    return (channel || "—").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  it("converts snake_case channel to Title Case", () => {
+    expect(formatChannelName("youtube_shorts")).toBe("Youtube Shorts");
+  });
+  it("converts listing_portal", () => {
+    expect(formatChannelName("listing_portal")).toBe("Listing Portal");
+  });
+  it("single-word channel is capitalised", () => {
+    expect(formatChannelName("whatsapp")).toBe("Whatsapp");
+  });
+  it("phone_call formatted correctly", () => {
+    expect(formatChannelName("phone_call")).toBe("Phone Call");
+  });
+  it("empty string falls through to em-dash", () => {
+    expect(formatChannelName("")).toBe("—");
+  });
+});

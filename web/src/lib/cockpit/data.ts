@@ -228,11 +228,29 @@ export async function getKeywords(slug: string): Promise<Keyword[]> {
     `select keyword, status, intent from seo_keywords order by priority nulls last limit 30`);
   return rows.map((r) => ({ term: r.keyword, rank: "—", volume: r.intent || "—", status: r.status === "ranking" ? "ready" : "review" }));
 }
+function channelTone(status: string): Tone {
+  if (status === "live" || status === "active") return "ready";
+  if (status === "under_review" || status === "needs_review") return "review";
+  if (status === "blocked" || status === "disabled") return "blocked";
+  return "neutral";
+}
 export async function getCampaigns(slug: string): Promise<Campaign[]> {
   if (!live()) return [{ name: "Launch teaser", channel: "WhatsApp", status: "blocked", note: "consent pending" }];
-  const rows = await readQuery<{ channel_type: string; channel_status: string }>(
-    `select channel_type, channel_status from launch_channels order by channel_type limit 20`).catch(() => []);
-  return rows.map((r) => ({ name: `${r.channel_type} channel`, channel: r.channel_type, status: "neutral", note: r.channel_status || "planned" }));
+  const rows = await readQuery<{ channel: string; channel_status: string; send_enabled: boolean }>(
+    `select lc.channel, lc.channel_status, lc.send_enabled
+       from launch_channels lc
+       join launch_projects lp on lp.id = lc.launch_project_id
+      where lp.launch_key = $1
+      order by lc.channel limit 20`,
+    [slug]
+  );
+  if (!rows.length) return [];
+  return rows.map((r) => ({
+    name: (r.channel || "—").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    channel: r.channel || "—",
+    status: channelTone(r.channel_status),
+    note: r.send_enabled ? "send enabled" : r.channel_status || "planned",
+  }));
 }
 export async function getReraFacts(slug: string): Promise<Fact[]> {
   if (slug === DLF_SLUG) {
@@ -378,10 +396,23 @@ export async function getLaunchCalendar(slug?: string): Promise<CalendarItem[]> 
     { when: "T-0", title: "Launch — go-live gate", channel: "All" },
   ];
   if (!live()) return staticCalendar;
-  const rows = await readQuery<{ planned_date: string; channel: string; title: string; status: string }>(
-    `select planned_date::text, channel, title, status
-       from launch_campaign_calendar
-      order by planned_date limit 30`).catch(() => [] as { planned_date: string; channel: string; title: string; status: string }[]);
+  let rows: { planned_date: string; channel: string; title: string; status: string }[];
+  if (slug) {
+    rows = await readQuery<{ planned_date: string; channel: string; title: string; status: string }>(
+      `select lcc.planned_date::text, lcc.channel, lcc.title, lcc.status
+         from launch_campaign_calendar lcc
+         join launch_projects lp on lp.id = lcc.launch_project_id
+        where lp.launch_key = $1
+        order by lcc.planned_date limit 30`,
+      [slug]
+    );
+  } else {
+    rows = await readQuery<{ planned_date: string; channel: string; title: string; status: string }>(
+      `select planned_date::text, channel, title, status
+         from launch_campaign_calendar
+        order by planned_date limit 30`
+    );
+  }
   if (!rows.length) return staticCalendar;
   const now = Date.now();
   return rows.map((r) => {

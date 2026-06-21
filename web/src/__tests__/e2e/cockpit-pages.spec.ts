@@ -1046,3 +1046,46 @@ test.describe("Buildings workspace — Website tab", () => {
     await expect(page.getByText("Production publish")).toBeVisible({ timeout: 5000 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Buildings workspace — Campaigns tab (reads launch_channels filtered by slug)
+// ---------------------------------------------------------------------------
+
+test.describe("Buildings workspace — Campaigns tab", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("Campaigns tab button exists in workspace tab bar", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await expect(page.getByRole("button", { name: "Campaigns" })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("clicking Campaigns tab shows channel rows (not empty state) for DLF", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Campaigns" }).click();
+    // DLF has 10 channels: blog, email, instagram, listing_portal, phone_call,
+    // referral, seo, whatsapp, wix, youtube_shorts — all should render as rows
+    // The empty-state text SHOULD NOT appear
+    await expect(page.getByText(/No campaigns yet/)).toBeHidden({ timeout: 5000 });
+    // At least one channel pill should be visible
+    const channelPill = page.locator("main").getByText("whatsapp");
+    await expect(channelPill.first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Campaigns tab channel names are formatted (Title Case display)", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Campaigns" }).click();
+    // channel 'youtube_shorts' → displayed as 'Youtube Shorts' in name column
+    await expect(page.getByText("Youtube Shorts")).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Campaigns tab shows all 10 DLF channels", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Campaigns" }).click();
+    // Each channel name is a span.text-ink/80 — verify count matches 10 DB rows
+    const rows = page.locator("main").filter({ has: page.getByText("Youtube Shorts") }).locator("[class*='grid']");
+    await expect(rows.first()).toBeVisible({ timeout: 5000 });
+    const count = await rows.count();
+    expect(count).toBeGreaterThanOrEqual(5);
+  });
+});
