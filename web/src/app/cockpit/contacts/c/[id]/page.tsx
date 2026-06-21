@@ -54,7 +54,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <ContactOutreachControls
             contactId={c.contactId}
             groups={groups.map((g) => ({ slug: g.slug, name: g.name }))}
-            inOutreach={activity.queue ? { status: activity.queue.status, step: activity.queue.step } : null}
+            inOutreach={activity.queue ? { status: activity.queue.status, step: activity.queue.step, queueId: activity.queue.queueId } : null}
           />
         </div>
         <div className="mt-3 flex flex-wrap gap-4 font-mono text-[11px] text-ink/50">

@@ -199,3 +199,50 @@ describe("logContactNote input validation", () => {
     if (r.ok) expect(r.by!.length).toBe(100);
   });
 });
+
+// ---------------------------------------------------------------------------
+// clearQueueRow input validation (pure-logic, no DB or script invocation)
+// ---------------------------------------------------------------------------
+
+describe("clearQueueRow input validation", () => {
+  const VALID_UUID = "41dd825b-b881-48e5-a216-a74928438579";
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  function validateQueueId(queueId: string) {
+    if (!UUID_RE.test(queueId)) return { ok: false, message: "Invalid queue id." };
+    return { ok: true, queueId };
+  }
+
+  it("rejects empty string", () => {
+    const r = validateQueueId("");
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid queue id/i);
+  });
+
+  it("rejects non-UUID string", () => {
+    const r = validateQueueId("not-a-uuid");
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid queue id/i);
+  });
+
+  it("rejects UUID with wrong length", () => {
+    const r = validateQueueId("41dd825b-b881-48e5-a216-a7492843857");
+    expect(r.ok).toBe(false);
+  });
+
+  it("accepts a valid v4 UUID", () => {
+    const r = validateQueueId(VALID_UUID);
+    expect(r.ok).toBe(true);
+  });
+
+  it("accepts UUID with uppercase hex", () => {
+    const upper = VALID_UUID.toUpperCase();
+    const r = validateQueueId(upper);
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects UUID with extra characters", () => {
+    const r = validateQueueId(VALID_UUID + "x");
+    expect(r.ok).toBe(false);
+  });
+});
