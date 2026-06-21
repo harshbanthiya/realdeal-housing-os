@@ -5,10 +5,16 @@ import { useRouter } from "next/navigation";
 import { Card, Pill, Dot, Mono, type Tone } from "@/components/ui/primitives";
 import { UnitRegistry } from "@/components/cockpit/unit-registry";
 import {
-  TABS, type TabKey, type Building, type Person, type Keyword, type Campaign,
+  TABS, type TabKey, type Mode, type Building, type Person, type Keyword, type Campaign,
   type Fact, type WebPage, type ReviewItem, type AgentTask, type KanbanTask, type CalendarItem, type Listing,
   type UnitRegistry as UnitRegistryData,
 } from "@/lib/cockpit/types";
+import { updateReviewItem } from "@/lib/cockpit/actions";
+
+const MODE_LABEL: Record<Mode, string> = {
+  launch: "Launch", active: "Active", prospecting: "Prospecting", post_launch: "Post-launch",
+};
+const MODES: Mode[] = ["prospecting", "active", "launch", "post_launch"];
 
 export interface WorkspaceData {
   building: Building;
@@ -29,10 +35,25 @@ const ROLE_TONE: Record<string, Tone> = { owner: "active", tenant: "ready", clie
 
 export function WorkspaceTabs({ data }: { data: WorkspaceData }) {
   const [tab, setTab] = useState<TabKey>("overview");
-  const launch = data.building.mode === "launch";
+  const [mode, setMode] = useState<Mode>(data.building.mode);
+  const launch = mode === "launch";
 
   return (
     <div>
+      {/* Lifecycle mode switcher */}
+      <div className="mb-4 flex items-center gap-1 self-end rounded-full border border-mist-deep p-1 w-fit" role="group" aria-label="Building lifecycle mode">
+        {MODES.map((m) => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            aria-pressed={m === mode}
+            className={`rounded-full px-3 py-1 text-[12px] transition-colors ${m === mode ? "bg-teal text-white" : "text-ink/45 hover:text-ink/70"}`}
+          >
+            {MODE_LABEL[m]}
+          </button>
+        ))}
+      </div>
+
       <div className="sticky top-0 z-10 -mx-6 mb-6 flex gap-1 overflow-x-auto border-b border-mist-deep bg-white/90 px-6 backdrop-blur">
         {TABS.map((t) => (
           <button
@@ -266,31 +287,64 @@ function Website({ pages }: { pages: WebPage[] }) {
   );
 }
 
+type ReviewState = { done: boolean; action: "approved" | "rejected"; msg: string };
+
 function Reviews({ items }: { items: ReviewItem[] }) {
-  const [done, setDone] = useState<number[]>([]);
+  const [states, setStates] = useState<Record<number, ReviewState>>({});
+
+  async function handle(i: number, r: ReviewItem, status: "approved" | "rejected") {
+    if (r.reviewItemId) {
+      const res = await updateReviewItem({ reviewItemId: r.reviewItemId, status, reviewedBy: "operator" });
+      setStates((prev) => ({ ...prev, [i]: { done: true, action: status, msg: res.message } }));
+    } else {
+      setStates((prev) => ({ ...prev, [i]: { done: true, action: status, msg: "preview only (no review item id)" } }));
+    }
+  }
+
   if (!items.length) return <Empty>No pending reviews for this building.</Empty>;
   return (
     <div>
       <div className="space-y-3">
-        {items.map((r, i) => (
-          <Card key={i} className="flex items-center gap-4 p-4">
-            <Dot tone={done.includes(i) ? "ready" : r.tone} />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm text-ink/80">{r.title}</div>
-              <div className="text-[11px] text-ink/45"><Mono className="text-[11px]">{r.domain}</Mono> · {r.age}</div>
-            </div>
-            {done.includes(i) ? (
-              <Pill tone="ready">queued (preview)</Pill>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => setDone([...done, i])} className="rounded-full bg-teal px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">Approve</button>
-                <button onClick={() => setDone([...done, i])} className="rounded-full border border-mist-deep px-3 py-1.5 text-xs font-semibold text-warm hover:bg-warm/5">Reject</button>
+        {items.map((r, i) => {
+          const s = states[i];
+          return (
+            <Card key={i} className="flex items-center gap-4 p-4">
+              <Dot tone={s?.done ? (s.action === "approved" ? "ready" : "blocked") : r.tone} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm text-ink/80">{r.title}</div>
+                <div className="text-[11px] text-ink/45">
+                  <Mono className="text-[11px]">{r.domain}</Mono> · {r.age}
+                  {r.reviewItemId && <> · <Mono className="text-[10px] text-teal/60">actionable</Mono></>}
+                </div>
+                {s?.msg && <div className="mt-1 font-mono text-[10px] text-ink/50">{s.msg}</div>}
               </div>
-            )}
-          </Card>
-        ))}
+              {s?.done ? (
+                <Pill tone={s.action === "approved" ? "ready" : "blocked"}>
+                  {s.action}{!r.reviewItemId ? " (preview)" : ""}
+                </Pill>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handle(i, r, "approved")}
+                    className="rounded-full bg-teal px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handle(i, r, "rejected")}
+                    className="rounded-full border border-mist-deep px-3 py-1.5 text-xs font-semibold text-warm hover:bg-warm/5"
+                  >
+                    Reject
+                  </button>
+                </div>
+              )}
+            </Card>
+          );
+        })}
       </div>
-      <p className="mt-4 font-mono text-[11px] text-ink/40">Actions are preview-only in the shell — they will call the guarded apply / revert scripts next.</p>
+      <p className="mt-4 font-mono text-[11px] text-ink/40">
+        Items marked &ldquo;actionable&rdquo; call the guarded update_review_item.py in dry-run mode. Pass --apply to commit writes.
+      </p>
     </div>
   );
 }
