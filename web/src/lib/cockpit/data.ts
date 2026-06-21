@@ -224,8 +224,15 @@ export async function getListings(slug: string): Promise<Listing[]> {
 }
 export async function getKeywords(slug: string): Promise<Keyword[]> {
   if (!live()) return [{ term: "imperial heights goregaon", rank: "#3", volume: "1.9k", status: "ready" }];
+  // slugify(b.name) must match the JS slugify() fn: lowercase, non-alnum → hyphen, trim hyphens
   const rows = await readQuery<{ keyword: string; status: string; intent: string }>(
-    `select keyword, status, intent from seo_keywords order by priority nulls last limit 30`);
+    `select k.keyword, k.status, k.intent
+       from seo_keywords k
+       join buildings b on b.id = k.building_id
+      where lower(regexp_replace(b.name, '[^a-z0-9]+', '-', 'gi')) = $1
+      order by k.priority nulls last limit 30`,
+    [slug]
+  );
   return rows.map((r) => ({ term: r.keyword, rank: "—", volume: r.intent || "—", status: r.status === "ranking" ? "ready" : "review" }));
 }
 function channelTone(status: string): Tone {

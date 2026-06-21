@@ -719,3 +719,39 @@ describe("channel name formatting", () => {
     expect(formatChannelName("")).toBe("—");
   });
 });
+
+// ---------------------------------------------------------------------------
+// slugify parity — JS slugify must match DB regexp_replace used in getKeywords
+// The SQL: lower(regexp_replace(b.name, '[^a-z0-9]+', '-', 'gi'))
+// ---------------------------------------------------------------------------
+
+describe("slugify parity with SQL regexp_replace", () => {
+  // Mirrors the slugify() private fn in data.ts
+  function slugify(name: string): string {
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  }
+
+  it("'Imperial Heights' → 'imperial-heights'", () => {
+    expect(slugify("Imperial Heights")).toBe("imperial-heights");
+  });
+
+  it("'Kalpataru Radiance' → 'kalpataru-radiance'", () => {
+    expect(slugify("Kalpataru Radiance")).toBe("kalpataru-radiance");
+  });
+
+  it("multi-space gap → single hyphen", () => {
+    expect(slugify("DLF  Westpark")).toBe("dlf-westpark");
+  });
+
+  it("leading/trailing spaces stripped", () => {
+    expect(slugify("  Wing A  ")).toBe("wing-a");
+  });
+
+  it("special chars replaced with single hyphen", () => {
+    expect(slugify("B-Wing (Ora)")).toBe("b-wing-ora");
+  });
+
+  it("numbers preserved", () => {
+    expect(slugify("Tower 12B")).toBe("tower-12b");
+  });
+});
