@@ -568,3 +568,80 @@ describe("clearQueueRow input validation", () => {
     expect(r.ok).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// agentLabel / buildingFromRaw / taskTone helpers (pure-logic, mirrored from data.ts)
+// ---------------------------------------------------------------------------
+
+describe("agentLabel", () => {
+  function agentLabel(taskType: string): string {
+    return (taskType || "unknown").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  it("converts snake_case to Title Case", () => {
+    expect(agentLabel("launch_seo_research")).toBe("Launch Seo Research");
+  });
+
+  it("handles single word", () => {
+    expect(agentLabel("blog")).toBe("Blog");
+  });
+
+  it("handles empty string as 'Unknown'", () => {
+    expect(agentLabel("")).toBe("Unknown");
+  });
+
+  it("preserves already-capitalised words", () => {
+    expect(agentLabel("seo_monitoring")).toBe("Seo Monitoring");
+  });
+});
+
+describe("buildingFromRaw", () => {
+  function buildingFromRaw(raw: Record<string, string> | null): string {
+    if (!raw) return "—";
+    if (raw.building_name) return String(raw.building_name);
+    if (raw.launch_key) {
+      return String(raw.launch_key).split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    }
+    return "—";
+  }
+
+  it("returns building_name when present", () => {
+    expect(buildingFromRaw({ building_name: "Imperial Heights" })).toBe("Imperial Heights");
+  });
+
+  it("converts launch_key to title-cased display name", () => {
+    expect(buildingFromRaw({ launch_key: "dlf-westpark-andheri-west" })).toBe("Dlf Westpark Andheri West");
+  });
+
+  it("returns em-dash when raw is null", () => {
+    expect(buildingFromRaw(null)).toBe("—");
+  });
+
+  it("returns em-dash when raw has neither key", () => {
+    expect(buildingFromRaw({ entity_type: "content_brief" })).toBe("—");
+  });
+
+  it("prefers building_name over launch_key when both present", () => {
+    expect(buildingFromRaw({ building_name: "Kalpataru Radiance", launch_key: "dlf-westpark" })).toBe("Kalpataru Radiance");
+  });
+});
+
+describe("taskTone", () => {
+  type Tone = "ready" | "review" | "blocked" | "neutral";
+  function taskTone(status: string): Tone {
+    if (status === "completed" || status === "done") return "ready";
+    if (status === "running" || status === "in_progress") return "review";
+    if (status === "failed" || status === "error") return "blocked";
+    return "neutral";
+  }
+
+  it("completed → ready", () => expect(taskTone("completed")).toBe("ready"));
+  it("done → ready", () => expect(taskTone("done")).toBe("ready"));
+  it("running → review", () => expect(taskTone("running")).toBe("review"));
+  it("in_progress → review", () => expect(taskTone("in_progress")).toBe("review"));
+  it("failed → blocked", () => expect(taskTone("failed")).toBe("blocked"));
+  it("error → blocked", () => expect(taskTone("error")).toBe("blocked"));
+  it("queued → neutral", () => expect(taskTone("queued")).toBe("neutral"));
+  it("pending → neutral", () => expect(taskTone("pending")).toBe("neutral"));
+  it("unknown string → neutral", () => expect(taskTone("something_else")).toBe("neutral"));
+});

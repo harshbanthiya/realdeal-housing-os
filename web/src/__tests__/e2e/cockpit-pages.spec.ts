@@ -930,3 +930,84 @@ test.describe("Buildings workspace — Reviews tab confirm flow", () => {
     await expect(page.getByText("Confirm rejected?")).toBeHidden();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Home dashboard — Agents panel (reads ai_agent_tasks)
+// ---------------------------------------------------------------------------
+
+test.describe("Home dashboard — Agents panel", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("Agents panel heading is visible", async ({ page }) => {
+    await page.goto("/cockpit");
+    // "Agents" appears in the sidebar nav and as a panel title — scope to main content
+    const panel = page.locator("main").getByText("Agents", { exact: true }).first();
+    await expect(panel).toBeVisible({ timeout: 8000 });
+  });
+
+  test("Agents panel shows at least one row", async ({ page }) => {
+    await page.goto("/cockpit");
+    // Every row in the agents list has a Dot + action div — the action text is always present
+    // We use the li elements inside the Agents card
+    const agentsList = page.locator("main ul").filter({ has: page.locator("li") }).last();
+    const rows = agentsList.locator("li");
+    await expect(rows.first()).toBeVisible({ timeout: 8000 });
+    const count = await rows.count();
+    expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  test("Agents panel rows show action text and agent label", async ({ page }) => {
+    await page.goto("/cockpit");
+    // With real DB: ai_agent_tasks has prompt_summary (action) and task_type (agent label)
+    // Fallback shows "AI agent runtime not deployed yet" or real task actions
+    // Either way: each li should contain non-empty text
+    const agentsList = page.locator("main ul").filter({ has: page.locator("li") }).last();
+    const firstRow = agentsList.locator("li").first();
+    await expect(firstRow).toBeVisible({ timeout: 8000 });
+    const text = await firstRow.textContent();
+    expect(text?.trim().length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Buildings workspace — Agents tab (reads ai_agent_tasks filtered by slug)
+// ---------------------------------------------------------------------------
+
+test.describe("Buildings workspace — Agents tab", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("Agents tab button exists in workspace tab bar", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await expect(page.getByRole("button", { name: "Agents" })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("clicking Agents tab shows task rows", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Agents" }).click();
+    // The Agents component renders rows with span.text-teal for agent names
+    // Either real DB data (DLF tasks) or fallback (4 planned rows) — at least one teal span appears
+    const tealSpan = page.locator("main span.text-teal").first();
+    await expect(tealSpan).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Agents tab shows 'planned' status pill for queued tasks (DLF)", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Agents" }).click();
+    // All DLF ai_agent_tasks have status 'pending' → taskTone → 'neutral' → pill shows "planned"
+    // (If DB not live, fallback also shows 4 planned rows)
+    await expect(page.getByText("planned").first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Agents tab shows task type label for each task", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Agents" }).click();
+    // agentLabel converts e.g. 'launch_seo_research' → 'Launch Seo Research'
+    // Either real DB data or fallback fallback: expect an agent name in teal text
+    const tealLabels = page.locator("main span.text-teal");
+    await expect(tealLabels.first()).toBeVisible({ timeout: 5000 });
+    const text = await tealLabels.first().textContent();
+    expect(text?.trim().length).toBeGreaterThan(0);
+  });
+});

@@ -25,6 +25,24 @@ const num = (v: unknown) => Number(v ?? 0) || 0;
 function maskName(n: string) { const t = (n || "").trim().split(/\s+/); return t[0] ? `${t[0]} ••` : "Contact"; }
 function maskPhone(p: string) { const d = String(p || "").replace(/\D/g, ""); return d ? `•••• ••${d.slice(-2)}` : "—"; }
 function slugify(v: string) { return v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+
+function agentLabel(taskType: string) {
+  return (taskType || "unknown").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+function buildingFromRaw(raw: Record<string, string> | null): string {
+  if (!raw) return "—";
+  if (raw.building_name) return String(raw.building_name);
+  if (raw.launch_key) {
+    return String(raw.launch_key).split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  }
+  return "—";
+}
+function taskTone(status: string): Tone {
+  if (status === "completed" || status === "done") return "ready";
+  if (status === "running" || status === "in_progress") return "review";
+  if (status === "failed" || status === "error") return "blocked";
+  return "neutral"; // queued, pending
+}
 function launchDays(month?: string | null, date?: string | null) {
   const now = new Date();
   let target: Date | null = date ? new Date(date) : null;
@@ -92,7 +110,24 @@ export async function getGlobalReviewQueue(): Promise<ReviewItem[]> {
 }
 export async function getAgentActivity(): Promise<AgentEvent[]> {
   if (!live()) return [{ agent: "SEO monitor", action: "Captured SERP positions", building: "Imperial Heights", status: "ready" }];
-  return [{ agent: "runtime", action: "AI agent runtime not deployed yet — agents are planned, not running", building: "—", status: "neutral" }];
+  const rows = await readQuery<{
+    task_type: string; entity_type: string; status: string;
+    prompt_summary: string; raw_input: Record<string, string>;
+  }>(
+    `select task_type, entity_type, status,
+            coalesce(prompt_summary, task_type) as prompt_summary,
+            raw_input
+       from ai_agent_tasks
+      order by updated_at desc
+      limit 8`
+  );
+  if (!rows.length) return [{ agent: "runtime", action: "No agent tasks queued yet — runtime not deployed", building: "—", status: "neutral" }];
+  return rows.map((r) => ({
+    agent: agentLabel(r.task_type),
+    action: r.prompt_summary || r.task_type,
+    building: buildingFromRaw(r.raw_input),
+    status: taskTone(r.status),
+  }));
 }
 export async function getGlobalBlockers(): Promise<Blocker[]> {
   if (!live()) return [{ id: "BLK-101", building: "DLF Westpark", statement: "RERA registration unverified", openFor: "2d" }];
@@ -251,13 +286,32 @@ export async function getBuildingReviews(slug: string): Promise<ReviewItem[]> {
   return [...derived, ...imported];
 }
 export async function getAgentTasks(slug: string): Promise<AgentTask[]> {
-  const planned: AgentTask[] = [
+  const fallback: AgentTask[] = [
     { agent: "SEO monitor", task: "Track SERP positions daily", cadence: "daily 06:00", status: "neutral" },
     { agent: "Content drafter", task: "Draft blog/landing per gap", cadence: "on gap", status: "neutral" },
     { agent: "Data cleaner", task: "Dedupe + classify contacts", cadence: "nightly", status: "neutral" },
     { agent: "Campaign drafter", task: "Draft compliant outreach", cadence: "weekly", status: "neutral" },
   ];
-  return planned; // runtime not deployed yet — shown as planned
+  if (!live()) return fallback;
+  const rows = await readQuery<{
+    task_type: string; status: string; prompt_summary: string; raw_input: Record<string, string>;
+  }>(
+    `select task_type, status, coalesce(prompt_summary, task_type) prompt_summary, raw_input
+       from ai_agent_tasks
+      order by created_at desc
+      limit 20`
+  );
+  const matched = rows.filter((r) => {
+    const ri = (r.raw_input as Record<string, string>) || {};
+    return ri.launch_key === slug || (ri.building_name ? slugify(ri.building_name) === slug : false);
+  });
+  if (!matched.length) return fallback;
+  return matched.map((r) => ({
+    agent: agentLabel(r.task_type),
+    task: r.prompt_summary || r.task_type,
+    cadence: r.status,
+    status: taskTone(r.status),
+  }));
 }
 
 // ---------------- launch mode ----------------
