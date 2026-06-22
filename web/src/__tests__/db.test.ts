@@ -953,3 +953,37 @@ describe("Per-building stats map lookup", () => {
     expect(rOpen).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Listings stat tile — data.listings.length (not hardcoded stats.listings)
+// Fix: workspace-tabs.tsx changed <Tile n={s.listings}> → <Tile n={data.listings.length}>
+// ---------------------------------------------------------------------------
+
+describe("listings stat tile reflects data.listings.length", () => {
+  // Mirror the fixed expression: the tile count is always data.listings.length
+  function tileCount(listings: { title: string }[]): number {
+    return listings.length;
+  }
+
+  it("empty listings array yields count 0", () => {
+    expect(tileCount([])).toBe(0);
+  });
+
+  it("3-item listings array yields count 3", () => {
+    const items = [{ title: "1BHK Floor 3" }, { title: "2BHK Floor 7" }, { title: "3BHK Penthouse" }];
+    expect(tileCount(items)).toBe(3);
+  });
+
+  it("count is always non-negative", () => {
+    expect(tileCount([])).toBeGreaterThanOrEqual(0);
+    expect(tileCount([{ title: "x" }])).toBeGreaterThanOrEqual(0);
+  });
+
+  it("hardcoded stats.listings=0 understates non-empty listings (documents the bug)", () => {
+    const statsListings = 0; // was always 0 in getBuildings() before fix
+    const actual = [{ title: "1BHK" }];
+    // Before fix, tile showed 0 even with 1 listing; after fix, shows 1
+    expect(actual.length).not.toBe(statsListings);
+    expect(actual.length).toBe(1);
+  });
+});

@@ -116,7 +116,7 @@ function Overview({ data, launch }: { data: WorkspaceData; launch: boolean }) {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Tile n={s.owners + s.tenants} label="Owners & tenants" />
         <Tile n={s.leads} label="Leads" sub={`${s.warm} warm`} />
-        <Tile n={s.listings} label="Listings" />
+        <Tile n={data.listings.length} label="Listings" />
         <Tile n={s.openReviews} label="Open reviews" tone={s.openReviews ? "review" : "neutral"} />
       </div>
 
