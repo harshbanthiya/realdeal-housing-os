@@ -799,3 +799,76 @@ describe("RERA slug prefix-match (getReraFacts variant filter)", () => {
     expect(matchesSlug("Kalpataru Radicand", "kalpataru-radiance")).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Per-building stats map lookup (Loop 18 — ownerMap / reraMap pattern)
+// ---------------------------------------------------------------------------
+
+describe("Per-building stats map lookup", () => {
+  // Mirrors the Map lookup logic in getBuildings() that replaces the global
+  // owner count and global RERA unverified count with per-building values.
+
+  function num(v: string | number | undefined): number {
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function buildOwnerMap(rows: { name: string; owners: string; tenants: string }[]) {
+    return new Map(rows.map((r) => [r.name, { owners: num(r.owners), tenants: num(r.tenants) }]));
+  }
+  function buildReraMap(rows: { name: string; rera_open: string }[]) {
+    return new Map(rows.map((r) => [r.name, num(r.rera_open)]));
+  }
+
+  const ownerRows = [
+    { name: "Imperial Heights", owners: "54", tenants: "0" },
+    { name: "Kalpataru Radiance", owners: "672", tenants: "3" },
+    { name: "Kalpataru Radiance A", owners: "0", tenants: "0" },
+  ];
+  const reraRows = [
+    { name: "Imperial Heights", rera_open: "1" },
+    { name: "Kalpataru Radiance", rera_open: "0" },
+    { name: "Kalpataru Radiance A", rera_open: "0" },
+  ];
+
+  it("ownerMap returns correct per-building owner count for Imperial Heights", () => {
+    const map = buildOwnerMap(ownerRows);
+    expect(map.get("Imperial Heights")?.owners).toBe(54);
+  });
+
+  it("ownerMap returns correct per-building owner count for Kalpataru Radiance", () => {
+    const map = buildOwnerMap(ownerRows);
+    expect(map.get("Kalpataru Radiance")?.owners).toBe(672);
+  });
+
+  it("ownerMap tenant count is included in the lookup", () => {
+    const map = buildOwnerMap(ownerRows);
+    expect(map.get("Kalpataru Radiance")?.tenants).toBe(3);
+  });
+
+  it("stats tile value = owners + tenants (Kalpataru: 672 + 3 = 675)", () => {
+    const map = buildOwnerMap(ownerRows);
+    const cnt = map.get("Kalpataru Radiance") ?? { owners: 0, tenants: 0 };
+    expect(cnt.owners + cnt.tenants).toBe(675);
+  });
+
+  it("reraMap returns 0 for buildings with no unverified RERA profile", () => {
+    const map = buildReraMap(reraRows);
+    expect(map.get("Kalpataru Radiance")).toBe(0);
+    expect(map.get("Kalpataru Radiance A")).toBe(0);
+  });
+
+  it("reraMap returns 1 for Imperial Heights (1 unverified RERA profile)", () => {
+    const map = buildReraMap(reraRows);
+    expect(map.get("Imperial Heights")).toBe(1);
+  });
+
+  it("unknown building falls back to 0 via nullish coalescing", () => {
+    const ownerMap = buildOwnerMap(ownerRows);
+    const reraMap = buildReraMap(reraRows);
+    const cnt = ownerMap.get("Unknown Building") ?? { owners: 0, tenants: 0 };
+    const rOpen = reraMap.get("Unknown Building") ?? 0;
+    expect(cnt.owners + cnt.tenants).toBe(0);
+    expect(rOpen).toBe(0);
+  });
+});

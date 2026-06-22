@@ -67,8 +67,25 @@ export async function getBuildings(): Promise<Building[]> {
     `select name, max(locality) locality from buildings group by name`);
   const rd = await readQuery<{ id: string; open: string; blockers: string }>(
     `select launch_project_id::text id, count(*) filter (where check_status in ('pending','needs_review','failed')) open, count(*) filter (where severity='blocker' and check_status <> 'passed') blockers from launch_readiness_checks group by launch_project_id`);
-  const owners = num((await readQuery<{ n: string }>(`select count(*) n from contact_property_relationships where relationship_type='owner'`))[0]?.n);
-  const reraOpen = num((await readQuery<{ n: string }>(`select count(*) n from rera_project_profiles where verification_status <> 'verified'`))[0]?.n);
+  // Per-building owner/tenant counts via building_units join (avoids global cross-contamination)
+  const ownerRows = await readQuery<{ name: string; owners: string; tenants: string }>(
+    `select b.name,
+            count(cpr.id) filter (where cpr.relationship_type='owner')  owners,
+            count(cpr.id) filter (where cpr.relationship_type='tenant') tenants
+       from buildings b
+       left join building_units bu on bu.building_id = b.id
+       left join contact_property_relationships cpr on cpr.building_unit_id = bu.id
+      group by b.name`
+  );
+  // Per-building open RERA reviews (buildings.id → rera_project_profiles.building_id)
+  const reraRows = await readQuery<{ name: string; rera_open: string }>(
+    `select b.name, count(rp.id) filter (where rp.verification_status <> 'verified') rera_open
+       from buildings b
+       left join rera_project_profiles rp on rp.building_id = b.id
+      group by b.name`
+  );
+  const ownerMap = new Map(ownerRows.map((r) => [r.name, { owners: num(r.owners), tenants: num(r.tenants) }]));
+  const reraMap  = new Map(reraRows.map((r) => [r.name, num(r.rera_open)]));
   const kw = num((await readQuery<{ n: string }>(`select count(*) n from seo_keywords`))[0]?.n);
 
   const out: Building[] = [];
@@ -82,10 +99,12 @@ export async function getBuildings(): Promise<Building[]> {
     });
   }
   for (const b of blds) {
+    const cnt = ownerMap.get(b.name) ?? { owners: 0, tenants: 0 };
+    const rOpen = reraMap.get(b.name) ?? 0;
     out.push({
       slug: slugify(b.name),
       name: b.name, location: b.locality || "Mumbai", mode: "active", seoRank: `${kw} kw`,
-      stats: { owners, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: reraOpen, blockers: 0 },
+      stats: { owners: cnt.owners, tenants: cnt.tenants, leads: 0, warm: 0, listings: 0, openReviews: rOpen, blockers: 0 },
     });
   }
   return out;

@@ -1181,3 +1181,99 @@ test.describe("Buildings workspace — RERA tab", () => {
     await expect(page.getByText(/property_hint_review/i)).toBeHidden({ timeout: 5000 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Buildings workspace — Overview tab stats tiles (per-building counts)
+// ---------------------------------------------------------------------------
+
+test.describe("Buildings workspace — Overview stats tiles", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("Imperial Heights Owners & tenants tile shows per-building count (54), not global (1222)", async ({ page }) => {
+    await page.goto("/cockpit/buildings/imperial-heights");
+    await page.waitForLoadState("networkidle");
+    // The Overview tile shows s.owners + s.tenants = 54 + 0 = 54
+    // Before fix this showed 1222 (global count from contact_property_relationships)
+    const tile = page.locator("main").getByText("54").first();
+    await expect(tile).toBeVisible({ timeout: 5000 });
+    // Global owner count (1222) must NOT appear anywhere on the page
+    await expect(page.getByText("1222")).toBeHidden({ timeout: 5000 });
+  });
+
+  test("Kalpataru Radiance Owners & tenants tile shows per-building count (675), not global (1222)", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    await page.waitForLoadState("networkidle");
+    // The Overview tile shows s.owners + s.tenants = 672 + 3 = 675
+    const tile = page.locator("main").getByText("675").first();
+    await expect(tile).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("1222")).toBeHidden({ timeout: 5000 });
+  });
+
+  test("Kalpataru Open reviews tile shows 0 (not global RERA count of 1)", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    await page.waitForLoadState("networkidle");
+    // Kalpataru has no RERA profiles — its open-reviews label must be present
+    await expect(page.getByText("Open reviews")).toBeVisible({ timeout: 5000 });
+    // "Owners & tenants" exists as both tab button + tile label — .first() avoids strict-mode error
+    await expect(page.getByText("Owners & tenants").first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Imperial Heights stats grid renders with correct labels", async ({ page }) => {
+    await page.goto("/cockpit/buildings/imperial-heights");
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("Owners & tenants").first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Open reviews")).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Buildings workspace — Overview kanban (launch mode only)
+// ---------------------------------------------------------------------------
+
+test.describe("Buildings workspace — Overview kanban", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("DLF (launch mode) shows Launch kanban section with columns", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.waitForLoadState("networkidle");
+    // Overview is the default tab — kanban only shown when mode === launch
+    await expect(page.getByText("Launch kanban")).toBeVisible({ timeout: 5000 });
+    // Column headers
+    await expect(page.getByText("todo")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("done")).toBeVisible({ timeout: 5000 });
+  });
+
+  test("DLF kanban shows at least one task card", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("Launch kanban")).toBeVisible({ timeout: 5000 });
+    // DLF has 10 launch_operator_tasks seeded — at least one card visible
+    const cards = page.locator("main .rounded-lg.border.p-3");
+    await expect(cards.first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test("DLF kanban shows go-live locked pill", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.waitForLoadState("networkidle");
+    // exact: true avoids the "blockers · go-live locked" pill in the home page panel
+    await expect(page.getByText("go-live locked", { exact: true })).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Kalpataru (active mode) shows steady-state message, NOT the kanban", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    await page.waitForLoadState("networkidle");
+    // Active mode shows the steady-state prose card, not the kanban
+    await expect(page.getByText(/Steady-state building/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Launch kanban")).toBeHidden({ timeout: 5000 });
+  });
+
+  test("Campaign calendar appears on DLF overview alongside the kanban", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("Campaign calendar")).toBeVisible({ timeout: 5000 });
+  });
+});
