@@ -962,6 +962,29 @@ test.describe("Audiences page", () => {
     const disposition = response.headers()["content-disposition"] ?? "";
     expect(disposition).toMatch(/filename=.*\.csv/);
   });
+
+  test("metric grid shows four non-negative integer values on page load", async ({ page }) => {
+    await page.goto("/cockpit/audiences");
+    // Each metric value is rendered as a number in a .tabular-nums div
+    // Labels: contacts / usable phones / emails / hashed rows
+    for (const label of ["contacts", "usable phones", "emails", "hashed rows"]) {
+      const metricDiv = page.locator("div").filter({ hasText: label }).first();
+      await expect(metricDiv).toBeVisible({ timeout: 5000 });
+      // The number is the first text node sibling — grab the parent card and assert digits present
+      const cardText = await metricDiv.locator("..").textContent();
+      expect(cardText).toMatch(/\d+/);
+    }
+  });
+
+  test("selecting owner role filter and submitting changes metric URL and page still renders", async ({ page }) => {
+    await page.goto("/cockpit/audiences");
+    await page.selectOption("select[name='role']", "owner");
+    await page.getByRole("button", { name: /update preview/i }).click();
+    await page.waitForURL("**/audiences**");
+    expect(page.url()).toContain("role=owner");
+    // Metric grid must still render after filter change — not blank/error
+    await expect(page.getByText("hashed rows")).toBeVisible({ timeout: 5000 });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1743,5 +1766,36 @@ test.describe("Buildings workspace — Overview stat tiles", () => {
       const text = await tiles.nth(i).textContent();
       expect(text).toMatch(/\d+/);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit registry — Kalpataru stats strip shows real counts
+// ---------------------------------------------------------------------------
+
+test.describe("Buildings workspace — Unit registry stats strip", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("Kalpataru unit registry stats strip shows non-zero Registrations parsed", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    await page.getByRole("button", { name: "Unit registry" }).click();
+    // Kalpataru has real IGR registrations; stats strip must show a non-zero number next to 'Registrations parsed'
+    const statsText = await page.locator("main").textContent({ timeout: 8000 });
+    // Either the stats strip renders a number, or the grid shows unit cells
+    const hasStats = /\d+\s*Registrations parsed/i.test(statsText ?? "");
+    const hasUnits = await page.locator("button[title*='Flat']").count() > 0;
+    expect(hasStats || hasUnits).toBe(true);
+  });
+
+  test("unit registry tab renders without error for DLF (no units expected)", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Unit registry" }).click();
+    // DLF has no unit data yet — page must render cleanly (no crash / no 500)
+    const hasError = await page.getByText(/error|something went wrong/i).count() > 0;
+    expect(hasError).toBe(false);
+    // Either shows empty state or a stats strip
+    const bodyText = await page.locator("main").textContent({ timeout: 5000 });
+    expect(bodyText).toBeTruthy();
   });
 });

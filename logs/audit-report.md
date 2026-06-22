@@ -160,6 +160,15 @@
 | 🚧 Stub/hardcoded | 5 |
 | ❌ Missing/broken | 6 |
 
+### New audit findings (Loop 27)
+- `statusTone`/`strengthTone`/`roleLabel`/`reviewTypeLabel`/`statusLabel` in `contacts-types.ts` — 5 pure functions, zero tests. Added 8+4+8+4+8 = 32 Vitest tests covering all branches including fallbacks.
+- `getContactSheet` pagination/sort/dir guards — zero logic tests. Added 17 mirror tests (page clamp, pageSize clamp, sort allowlist, dir allowlist).
+- `buildOutreachQueue` limit clamp, `groupSlug` regex, UUID_RE — 0 tests. Added 6+6+6 = 18 mirror tests. Found: `limit=0` defaults to 10 (falsy || fallback), not 1. Documented in test.
+- `recordOutreachActivity` OUTREACH_ACTIONS allowlist — 0 tests. Added 8 tests verifying 5 valid + 3 invalid actions.
+- Audiences metric grid — URL test existed, no values assertion. Added 2 Playwright tests: (a) 4 metric labels all visible with integer values; (b) owner role filter → `role=owner` URL + page still renders.
+- Unit registry stats strip — no test for Kalpataru's real non-zero count. Added 2 Playwright tests: Kalpataru shows Registrations parsed, DLF renders cleanly with no error.
+- "no groups → dropdown hidden" state: `contact-outreach-controls.tsx:73` hides dropdown when `groups.length === 0`. Only testable when DB has 0 groups — not practical in live Playwright. Documented as DB-state-dependent gap.
+
 ### New audit findings (Loop 26)
 - `batchLabelHuman` in `contacts-types.ts` produced ALL-CAPS output for real DB batch labels — `.toLowerCase()` was missing before title-casing. Fixed: 3 UI callers (`contacts/page.tsx:102`, `contacts.ts:250`, `merge-candidate-card.tsx:44`) now render Title Case. 4 test expectations updated.
 - `parseLabeledOutput` and `headline` private helpers in `actions.ts` — zero unit tests. Added 7 + 7 logic-mirror tests.

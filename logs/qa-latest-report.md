@@ -1,7 +1,7 @@
-# QA Report — Loop 26
+# QA Report — Loop 27
 **Date:** 2026-06-22  
 **Branch:** qa/full-stack-test-hardening  
-**Coverage area:** `batchLabelHuman` UI bug fix + `parseLabeledOutput`/`headline` logic-mirror tests + flaky Leads test hardening
+**Coverage area:** contacts-types.ts pure functions + sheet/action validation mirrors + audiences metrics + unit registry Playwright
 
 ---
 
@@ -10,18 +10,18 @@
 ```
 # Baseline
 python3 -m pytest tests/python/ -q              # 111 passed
-cd web && npm test                               # 212 passed (Vitest)
-COCKPIT_AUTH_TOKEN=... npx playwright test       # 172/173 passed (1 flaky: Leads tab)
+cd web && npm test                               # 226 passed (Vitest)
+COCKPIT_AUTH_TOKEN=... npx playwright test       # 173 passed
 
-# After Loop 26 changes
-npm test                                         # 226 passed (+14 Vitest)
-COCKPIT_AUTH_TOKEN=... npx playwright test       # 173 passed (flaky Leads test fixed)
+# After Loop 27 additions
+npm test                                         # 301 passed (+75 Vitest)
+COCKPIT_AUTH_TOKEN=... npx playwright test       # 177 passed (+4 Playwright)
 
 # Final full suite
 python3 -m pytest tests/python/ -q              # 111 passed
-npm test                                         # 226 passed
-COCKPIT_AUTH_TOKEN=... npx playwright test       # 173 passed
-Total: 510
+npm test                                         # 301 passed
+COCKPIT_AUTH_TOKEN=... npx playwright test       # 177 passed
+Total: 589
 ```
 
 ---
@@ -30,10 +30,8 @@ Total: 510
 
 | File | Type | Notes |
 |---|---|---|
-| `web/src/lib/cockpit/contacts-types.ts` | MODIFIED | Fix `batchLabelHuman`: add `.toLowerCase()` before title-casing; all-caps DB labels now render as Title Case in UI |
-| `web/src/__tests__/db.test.ts` | MODIFIED | Update 4 stale test expectations (CAPS→Title Case); +7 `parseLabeledOutput` tests; +7 `headline` tests |
-| `web/src/__tests__/e2e/cockpit-pages.spec.ts` | MODIFIED | Leads flaky test: add `test.setTimeout(30000)` + `waitForLoadState("networkidle")` |
-| `scripts/cleanup_fake_*.py` (6 files) | DELETED | Deletions committed — these were deleted on disk in Loop 25's `_db.py` refactor but not staged |
+| `web/src/__tests__/db.test.ts` | MODIFIED | +75 tests: statusTone(8) + strengthTone(4) + roleLabel(8) + reviewTypeLabel(4) + statusLabel(8) + pagination mirrors(17) + limit clamp(6) + groupSlug(6) + UUID_RE(6) + action allowlist(8) |
+| `web/src/__tests__/e2e/cockpit-pages.spec.ts` | MODIFIED | +4 tests: audiences metric grid values(1) + role filter render(1) + Kalpataru unit stats(1) + DLF unit registry clean(1) |
 
 ---
 
@@ -42,53 +40,54 @@ Total: 510
 | Suite | Pass | Fail | Total |
 |---|---|---|---|
 | Python — all suites | 111 | 0 | 111 |
-| TypeScript Vitest | 226 | 0 | 226 |
-| Playwright E2E | 173 | 0 | 173 |
-| **Grand total** | **510** | **0** | **510** |
+| TypeScript Vitest | 301 | 0 | 301 |
+| Playwright E2E | 177 | 0 | 177 |
+| **Grand total** | **589** | **0** | **589** |
 
 ---
 
 ## AUDIT findings this loop
 
-### 1. `batchLabelHuman` produces ALL-CAPS output for real DB batch labels (BUG — FIXED)
+### 1. Five pure functions in contacts-types.ts — zero unit tests (GAP — CLOSED)
 
-`batchLabelHuman` in `contacts-types.ts` used `\b\w → toUpperCase` (title-case pattern) but never called `.toLowerCase()` first. Real DB batch labels are uppercase (`REAL_IMPERIAL_HEIGHTS_OWNERS`) so the output was `IMPERIAL HEIGHTS OWNERS` instead of the intended `Imperial Heights Owners`.
+`statusTone`, `strengthTone`, `roleLabel`, `reviewTypeLabel`, `statusLabel` are all called in multiple UI components with no test coverage. Added 32 tests covering all switch branches and fallbacks.
 
-**Fix:** Added `.toLowerCase()` before the title-case step.
+### 2. getContactSheet pagination/sort/dir clamping — zero logic tests (GAP — CLOSED)
 
-**Impact:** 3 UI callers:
-- `web/src/app/cockpit/contacts/page.tsx:102` — import batch list title
-- `web/src/lib/cockpit/contacts.ts:250` — kanban card secondary text
-- `web/src/components/cockpit/merge-candidate-card.tsx:44` — "from BATCH_LABEL" text
+The guards at `contacts.ts:295-298`:
+- `page = Math.max(1, Math.floor(opts.page ?? 1))` — clamps page to ≥1
+- `pageSize = Math.min(Math.max(opts.pageSize ?? 25, 5), 100)` — clamps to 5–100
+- `sort` — whitelist check against `SHEET_SORTS` keys
+- `dir` — only "asc" passes through, everything else is "desc"
 
-**Tests:** Updated 4 existing test expectations from CAPS to Title Case.
+Added 17 logic-mirror tests.
 
-### 2. `parseLabeledOutput` and `headline` — zero unit tests (LOW-MEDIUM GAP — CLOSED)
+### 3. buildOutreachQueue / clearQueueRow / recordOutreachActivity validation — zero tests (GAP — CLOSED)
 
-Both are private helpers in `actions.ts` (`"use server"`) called multiple times (`parseLabeledOutput` × 6, `headline` × 4). Added as pure logic-mirror suites in `db.test.ts`.
+Key discovery: `Math.max(1, Math.min(50, Number(raw) || 10))` — `limit=0` produces 10, NOT 1, because `0` is falsy in the `|| 10` fallback. This is a subtle footgun documented in the test.
 
-**`parseLabeledOutput` (7 tests):** single line, multiple lines, uppercase-key rejection, no-separator rejection, value with spaces, empty input, last-duplicate-wins.
+### 4. Audiences metric grid — metric values untested (GAP — CLOSED)
 
-**`headline` (7 tests):** first non-SQL line, INSERT skip, all-SQL fallback to first line, plain output, whitespace trimming, empty input.
+Added 2 Playwright tests: metric labels visible with integer values on page load; metric grid still renders after role filter is applied.
 
-### 3. Leads flaky test (RECURRING FLAKE — HARDENED)
+### 5. Unit registry stats strip for real buildings (GAP — CLOSED)
 
-DLF building workspace page runs 11 parallel SSR queries. Even at `timeout: 15000`, the `toBeVisible` check was failing because hydration wasn't complete. Fixed by:
-- `test.setTimeout(30000)` scoped to just this test
-- `waitForLoadState("networkidle", { timeout: 20000 })` after `page.goto` to ensure all SSR data fetches complete before clicking
+Added 2 Playwright tests: Kalpataru has real IGR registrations so the stats strip must show a number; DLF (no units) must render cleanly without error.
 
-### 4. Uncommitted script deletions from Loop 25 (REPO HYGIENE — FIXED)
+### 6. "no groups → dropdown hidden" — DB-state-dependent (DEFERRED)
 
-6 `scripts/cleanup_fake_*.py` files were deleted on disk as part of the Loop 25 `_db.py` refactor but the deletions weren't staged in commit `e8bfd30`. Included in this loop's commit.
+`contact-outreach-controls.tsx:73` hides the group select when `groups.length === 0`. `getContactGroups()` returns ALL groups in the DB. Since the live DB always has groups (Test Group etc.), this state is unreachable in Playwright. Only testable in isolation (e.g., component test with mock props). Not worth mocking just to cover a CSS `{groups.length > 0 && ...}` guard.
 
 ---
 
 ## Recommended Next QA Loop (Priority Order)
 
-**1. Contact sheet pagination edge cases** — `page=999` (0 rows) and `page=0` (clamped to 1) are correct but untested. Quick Vitest assertion on `getContactSheet` clamping logic.
+**1. `q` search sanitisation edge cases** — `getContactSheet` sanitises `q` to max 100 chars, strips NUL, trims. Only the basic ILIKE pattern is tested (Loop 5). Add: NUL strip, 101-char truncation, LIKE metachar escape (`%`, `_`, `\`).
 
-**2. Audiences page filter role submission** — No test verifies that applying a role filter changes the audience size metric in response.
+**2. `updateReviewItem` / `updateBuildingMode` validation** — `updateReviewItem` checks `ALLOWED_STATUSES` (6 values); `updateBuildingMode` checks `ALLOWED_MODES` (4 values). Both have Vitest tests but the mode/status ALLOWLIST membership isn't directly tested as its own suite.
 
-**3. Contact detail group dropdown show/hide** — No test for "no groups → dropdown hidden, has groups → dropdown visible" state machine (only the "has groups" path is covered).
+**3. `logContactNote` note length clamp** — note is trimmed to 500 chars server-side. Test the 501-char case to confirm it's silently truncated (not rejected).
 
-**4. WhatsApp send gate** — `send_enabled=false` is the hard gate. No test asserts the "Open in WhatsApp" links are present but the queue-send script enforces the flag. Worth one Playwright assertion that "Open in WhatsApp" link exists in the queue row.
+**4. Outreach page — empty queue state** — If queue is empty, an empty-state message should show. No test verifies this path.
+
+**5. Contact detail — "In outreach" badge vs "Add to outreach" mutual exclusion** — When a contact is in the queue, "Add to outreach" should be replaced by "In outreach · status (step N)". No Playwright test verifies the mutual exclusion.
