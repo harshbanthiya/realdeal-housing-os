@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, Pill, Mono, type Tone } from "@/components/ui/primitives";
 import { ContactsSubnav } from "@/components/cockpit/contacts-subnav";
 import { getContactPipeline } from "@/lib/cockpit/contacts";
@@ -67,8 +68,8 @@ function Column({ col }: { col: PipelineColumn }) {
 const ROLE_TONE: Record<string, Tone> = { owner: "active", tenant: "ready", broker: "review", lead: "neutral" };
 
 function StageCard({ card, stage }: { card: PipelineCard; stage: PipelineColumn["stage"] }) {
-  return (
-    <Card className="p-3">
+  const inner = (
+    <Card className={`p-3 ${card.contactId ? "hover:border-teal/40 hover:shadow-sm transition-shadow cursor-pointer" : ""}`}>
       <div className="flex items-start gap-2">
         <span className="truncate text-[13px] font-medium text-ink/85">{card.primary}</span>
         {stage === "attached" && card.role && (
@@ -80,6 +81,17 @@ function StageCard({ card, stage }: { card: PipelineCard; stage: PipelineColumn[
       ) : (
         card.secondary && <Mono className="mt-1 block truncate text-[10px]">{card.secondary}</Mono>
       )}
+      {card.contactId && (
+        <div className="mt-1.5 font-mono text-[10px] text-teal/60">open contact →</div>
+      )}
     </Card>
   );
+  if (card.contactId) {
+    return (
+      <Link href={`/cockpit/contacts/c/${card.contactId}`} aria-label={`Open contact ${card.primary}`}>
+        {inner}
+      </Link>
+    );
+  }
+  return inner;
 }

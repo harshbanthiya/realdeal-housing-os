@@ -123,6 +123,8 @@ export interface PipelineCard {
   role?: string;          // lead | owner | tenant | broker (attached stage)
   building?: string;      // building name (attached stage)
   tone: Tone;
+  /** Contact UUID — set on canonical + attached cards; absent on review-item cards. */
+  contactId?: string;
 }
 
 export interface PipelineColumn {

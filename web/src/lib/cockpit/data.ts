@@ -13,7 +13,7 @@ import type { Tone } from "@/components/ui/primitives";
 import { isDbConfigured, readQuery } from "@/lib/db";
 import type {
   Mode, Building, ReviewItem, AgentEvent, Blocker, Person, Keyword,
-  Campaign, Fact, WebPage, AgentTask, KanbanTask, CalendarItem,
+  Campaign, Fact, WebPage, AgentTask, KanbanTask, CalendarItem, LaunchStream,
 } from "./types";
 
 export * from "./types";
@@ -25,6 +25,24 @@ const num = (v: unknown) => Number(v ?? 0) || 0;
 function maskName(n: string) { const t = (n || "").trim().split(/\s+/); return t[0] ? `${t[0]} ••` : "Contact"; }
 function maskPhone(p: string) { const d = String(p || "").replace(/\D/g, ""); return d ? `•••• ••${d.slice(-2)}` : "—"; }
 function slugify(v: string) { return v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+
+export function agentLabel(taskType: string) {
+  return (taskType || "unknown").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+export function buildingFromRaw(raw: Record<string, string> | null): string {
+  if (!raw) return "—";
+  if (raw.building_name) return String(raw.building_name);
+  if (raw.launch_key) {
+    return String(raw.launch_key).split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  }
+  return "—";
+}
+export function taskTone(status: string): Tone {
+  if (status === "completed" || status === "done") return "ready";
+  if (status === "running" || status === "in_progress") return "review";
+  if (status === "failed" || status === "error") return "blocked";
+  return "neutral"; // queued, pending
+}
 function launchDays(month?: string | null, date?: string | null) {
   const now = new Date();
   let target: Date | null = date ? new Date(date) : null;
@@ -43,31 +61,61 @@ const SEED_BUILDINGS: Building[] = [
 export async function getBuildings(): Promise<Building[]> {
   if (!live()) return SEED_BUILDINGS;
 
-  const lps = await readQuery<{ launch_key: string; project_display_name: string; area: string; expected_launch_month: string; expected_launch_date: string; seo_status: string; id: string }>(
-    `select id::text, launch_key, project_display_name, area, expected_launch_month, expected_launch_date::text, seo_status from launch_projects`);
+  const lps = await readQuery<{ launch_key: string; project_display_name: string; area: string; expected_launch_month: string; expected_launch_date: string; seo_status: string; id: string; mode: string }>(
+    `select id::text, launch_key, project_display_name, area, expected_launch_month, expected_launch_date::text, seo_status, mode from launch_projects`);
   const blds = await readQuery<{ name: string; locality: string }>(
     `select name, max(locality) locality from buildings group by name`);
   const rd = await readQuery<{ id: string; open: string; blockers: string }>(
     `select launch_project_id::text id, count(*) filter (where check_status in ('pending','needs_review','failed')) open, count(*) filter (where severity='blocker' and check_status <> 'passed') blockers from launch_readiness_checks group by launch_project_id`);
-  const owners = num((await readQuery<{ n: string }>(`select count(*) n from contact_property_relationships where relationship_type='owner'`))[0]?.n);
-  const reraOpen = num((await readQuery<{ n: string }>(`select count(*) n from rera_project_profiles where verification_status <> 'verified'`))[0]?.n);
+  // Per-building owner/tenant counts via building_units join (avoids global cross-contamination)
+  const ownerRows = await readQuery<{ name: string; owners: string; tenants: string }>(
+    `select b.name,
+            count(cpr.id) filter (where cpr.relationship_type='owner')  owners,
+            count(cpr.id) filter (where cpr.relationship_type='tenant') tenants
+       from buildings b
+       left join building_units bu on bu.building_id = b.id
+       left join contact_property_relationships cpr on cpr.building_unit_id = bu.id
+      group by b.name`
+  );
+  // Per-building open RERA reviews (buildings.id → rera_project_profiles.building_id)
+  const reraRows = await readQuery<{ name: string; rera_open: string }>(
+    `select b.name, count(rp.id) filter (where rp.verification_status <> 'verified') rera_open
+       from buildings b
+       left join rera_project_profiles rp on rp.building_id = b.id
+      group by b.name`
+  );
+  // Per-building inbound leads (buildings.id → inbound_leads.related_building_id)
+  const leadsRows = await readQuery<{ name: string; leads: string; warm: string }>(
+    `select b.name,
+            count(il.id) filter (where il.lead_status <> 'spam')                                          leads,
+            count(il.id) filter (where il.lead_status <> 'spam' and il.lead_intent in ('warm','hot','buy')) warm
+       from buildings b
+       left join inbound_leads il on il.related_building_id = b.id
+      group by b.name`
+  );
+  const ownerMap = new Map(ownerRows.map((r) => [r.name, { owners: num(r.owners), tenants: num(r.tenants) }]));
+  const reraMap  = new Map(reraRows.map((r) => [r.name, num(r.rera_open)]));
+  const leadsMap = new Map(leadsRows.map((r) => [r.name, { leads: num(r.leads), warm: num(r.warm) }]));
   const kw = num((await readQuery<{ n: string }>(`select count(*) n from seo_keywords`))[0]?.n);
 
   const out: Building[] = [];
   for (const p of lps) {
     const r = rd.find((x) => x.id === p.id);
     out.push({
-      slug: p.launch_key, name: p.project_display_name, location: p.area, mode: "launch",
+      slug: p.launch_key, name: p.project_display_name, location: p.area, mode: (p.mode as Mode) || "launch",
       launchInDays: launchDays(p.expected_launch_month, p.expected_launch_date),
       seoRank: p.seo_status || "—",
       stats: { owners: 0, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: num(r?.open), blockers: num(r?.blockers) },
     });
   }
   for (const b of blds) {
+    const cnt = ownerMap.get(b.name) ?? { owners: 0, tenants: 0 };
+    const rOpen = reraMap.get(b.name) ?? 0;
+    const lc = leadsMap.get(b.name) ?? { leads: 0, warm: 0 };
     out.push({
       slug: slugify(b.name),
       name: b.name, location: b.locality || "Mumbai", mode: "active", seoRank: `${kw} kw`,
-      stats: { owners, tenants: 0, leads: 0, warm: 0, listings: 0, openReviews: reraOpen, blockers: 0 },
+      stats: { owners: cnt.owners, tenants: cnt.tenants, leads: lc.leads, warm: lc.warm, listings: 0, openReviews: rOpen, blockers: 0 },
     });
   }
   return out;
@@ -92,13 +140,81 @@ export async function getGlobalReviewQueue(): Promise<ReviewItem[]> {
 }
 export async function getAgentActivity(): Promise<AgentEvent[]> {
   if (!live()) return [{ agent: "SEO monitor", action: "Captured SERP positions", building: "Imperial Heights", status: "ready" }];
-  return [{ agent: "runtime", action: "AI agent runtime not deployed yet — agents are planned, not running", building: "—", status: "neutral" }];
+  const rows = await readQuery<{
+    task_type: string; entity_type: string; status: string;
+    prompt_summary: string; raw_input: Record<string, string>;
+  }>(
+    `select task_type, entity_type, status,
+            coalesce(prompt_summary, task_type) as prompt_summary,
+            raw_input
+       from ai_agent_tasks
+      order by updated_at desc
+      limit 8`
+  );
+  if (!rows.length) return [{ agent: "runtime", action: "No agent tasks queued yet — runtime not deployed", building: "—", status: "neutral" }];
+  return rows.map((r) => ({
+    agent: agentLabel(r.task_type),
+    action: r.prompt_summary || r.task_type,
+    building: buildingFromRaw(r.raw_input),
+    status: taskTone(r.status),
+  }));
 }
 export async function getGlobalBlockers(): Promise<Blocker[]> {
   if (!live()) return [{ id: "BLK-101", building: "DLF Westpark", statement: "RERA registration unverified", openFor: "2d" }];
   const rows = await readQuery<{ check_type: string; safe_summary: string }>(
     `select check_type, coalesce(safe_summary, check_type) safe_summary from launch_readiness_checks where severity='blocker' and check_status <> 'passed' order by created_at limit 8`);
   return rows.map((r, i) => ({ id: `BLK-${String(i + 1).padStart(3, "0")}`, building: "DLF Westpark", statement: r.safe_summary, openFor: r.check_type }));
+}
+
+const STREAM_DEFS: { label: string; keywords: string[] }[] = [
+  { label: "Tech (Wix / site)",  keywords: ["wix", "n8n", "webhook", "utm", "tracking", "lead_capture", "lead_scoring"] },
+  { label: "Content & SEO",      keywords: ["seo", "social", "content", "email_template", "whatsapp_template"] },
+  { label: "Campaign safety",    keywords: ["consent", "suppression", "attribution", "privacy", "spam"] },
+  { label: "Legal / RERA",       keywords: ["rera", "project_name", "lead_duplicate"] },
+];
+
+function classifyCheckType(checkType: string): number {
+  for (let i = 0; i < STREAM_DEFS.length; i++) {
+    if (STREAM_DEFS[i].keywords.some((kw) => checkType.includes(kw))) return i;
+  }
+  return -1;
+}
+
+export function buildStreamStatus(
+  rows: { check_type: string; check_status: string; severity: string }[]
+): LaunchStream[] {
+  const buckets = STREAM_DEFS.map((d) => ({ label: d.label, total: 0, passed: 0, blockers: 0 }));
+  for (const row of rows) {
+    const idx = classifyCheckType(row.check_type);
+    if (idx < 0) continue;
+    const b = buckets[idx];
+    b.total++;
+    if (row.check_status === "passed") b.passed++;
+    else if (row.severity === "blocker") b.blockers++;
+  }
+  return buckets.map((b) => {
+    let tone: import("@/components/ui/primitives").Tone;
+    let state: string;
+    if (b.total === 0)              { tone = "neutral"; state = "No data"; }
+    else if (b.blockers > 0)        { tone = "blocked"; state = "Blocked"; }
+    else if (b.passed < b.total)    { tone = "review";  state = "In review"; }
+    else                            { tone = "ready";   state = "Ready"; }
+    return { label: b.label, tone, state, total: b.total, passed: b.passed, blockers: b.blockers };
+  });
+}
+
+export async function getStreamReadiness(): Promise<LaunchStream[]> {
+  const fallback: { check_type: string; check_status: string; severity: string }[] = [
+    { check_type: "wix_site_live",          check_status: "passed",       severity: "blocker" },
+    { check_type: "seo_keywords_live",      check_status: "needs_review", severity: "high" },
+    { check_type: "consent_reviewed",       check_status: "pending",      severity: "blocker" },
+    { check_type: "rera_registration",      check_status: "pending",      severity: "blocker" },
+  ];
+  if (!live()) return buildStreamStatus(fallback);
+  const rows = await readQuery<{ check_type: string; check_status: string; severity: string }>(
+    `select check_type, check_status, severity from launch_readiness_checks order by created_at`
+  );
+  return buildStreamStatus(rows.length ? rows : fallback);
 }
 
 // ---------------- workspace panels ----------------
@@ -138,54 +254,162 @@ export async function getListings(slug: string): Promise<Listing[]> {
 }
 export async function getKeywords(slug: string): Promise<Keyword[]> {
   if (!live()) return [{ term: "imperial heights goregaon", rank: "#3", volume: "1.9k", status: "ready" }];
+  // slugify(b.name) must match the JS slugify() fn: lowercase, non-alnum → hyphen, trim hyphens
   const rows = await readQuery<{ keyword: string; status: string; intent: string }>(
-    `select keyword, status, intent from seo_keywords order by priority nulls last limit 30`);
+    `select k.keyword, k.status, k.intent
+       from seo_keywords k
+       join buildings b on b.id = k.building_id
+      where lower(regexp_replace(b.name, '[^a-z0-9]+', '-', 'gi')) = $1
+      order by k.priority nulls last limit 30`,
+    [slug]
+  );
   return rows.map((r) => ({ term: r.keyword, rank: "—", volume: r.intent || "—", status: r.status === "ranking" ? "ready" : "review" }));
+}
+function channelTone(status: string): Tone {
+  if (status === "live" || status === "active") return "ready";
+  if (status === "under_review" || status === "needs_review") return "review";
+  if (status === "blocked" || status === "disabled") return "blocked";
+  return "neutral";
 }
 export async function getCampaigns(slug: string): Promise<Campaign[]> {
   if (!live()) return [{ name: "Launch teaser", channel: "WhatsApp", status: "blocked", note: "consent pending" }];
-  const rows = await readQuery<{ channel_type: string; channel_status: string }>(
-    `select channel_type, channel_status from launch_channels order by channel_type limit 20`).catch(() => []);
-  return rows.map((r) => ({ name: `${r.channel_type} channel`, channel: r.channel_type, status: "neutral", note: r.channel_status || "planned" }));
+  const rows = await readQuery<{ channel: string; channel_status: string; send_enabled: boolean }>(
+    `select lc.channel, lc.channel_status, lc.send_enabled
+       from launch_channels lc
+       join launch_projects lp on lp.id = lc.launch_project_id
+      where lp.launch_key = $1
+      order by lc.channel limit 20`,
+    [slug]
+  );
+  if (!rows.length) return [];
+  return rows.map((r) => ({
+    name: (r.channel || "—").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    channel: r.channel || "—",
+    status: channelTone(r.channel_status),
+    note: r.send_enabled ? "send enabled" : r.channel_status || "planned",
+  }));
 }
 export async function getReraFacts(slug: string): Promise<Fact[]> {
   if (slug === DLF_SLUG) {
     return dlfFacts.map((f) => ({ label: f.label, value: f.value, status: f.status === "operator_confirmed" ? "ready" : f.status === "pending_review" ? "review" : "blocked" }));
   }
   if (!live()) return [{ label: "RERA Registration", value: "Verified", status: "ready" }];
+  // Match building slug exactly OR as a hyphen-prefix variant (e.g. kalpataru-radiance-a).
+  // slugify(b.name) = lower(regexp_replace(b.name, '[^a-z0-9]+', '-', 'gi'))
   const rows = await readQuery<{ official_project_name: string; rera_registration_number: string; registration_status: string; verification_status: string; district: string; locality: string }>(
-    `select official_project_name, rera_registration_number, registration_status, verification_status, district, locality from rera_project_profiles limit 1`);
+    `select rp.official_project_name, rp.rera_registration_number, rp.registration_status,
+            rp.verification_status, rp.district, rp.locality
+       from rera_project_profiles rp
+       join buildings b on b.id = rp.building_id
+      where lower(regexp_replace(b.name, '[^a-z0-9]+', '-', 'gi')) = $1
+         or lower(regexp_replace(b.name, '[^a-z0-9]+', '-', 'gi')) like $1 || '-%'
+      order by rp.created_at
+      limit 5`,
+    [slug]
+  );
   if (!rows.length) return [{ label: "RERA", value: "No profile captured yet", status: "review" }];
-  const r = rows[0];
-  const vtone: Tone = r.verification_status === "verified" ? "ready" : "review";
-  return [
-    { label: "Official project name", value: r.official_project_name || "—", status: vtone },
-    { label: "RERA registration", value: r.rera_registration_number || "RERA_VERIFY", status: r.registration_status?.includes("registered") ? "ready" : "review" },
-    { label: "Verification status", value: r.verification_status || "—", status: vtone },
-    { label: "Location", value: [r.locality, r.district].filter(Boolean).join(", ") || "—", status: "review" },
-  ];
+  const facts: Fact[] = [];
+  for (const r of rows) {
+    const vtone: Tone = r.verification_status === "verified" ? "ready" : "review";
+    facts.push(
+      { label: "Official project name", value: r.official_project_name || "—", status: vtone },
+      { label: "RERA registration", value: r.rera_registration_number || "RERA_VERIFY", status: r.registration_status?.includes("registered") ? "ready" : "review" },
+      { label: "Verification status", value: r.verification_status || "—", status: vtone },
+      { label: "Location", value: [r.locality, r.district].filter(Boolean).join(", ") || "—", status: "review" },
+    );
+  }
+  return facts;
+}
+function stagingTone(status: string): Tone {
+  if (status === "created_manually" || status === "live") return "ready";
+  if (status === "under_review" || status === "qa_in_progress") return "review";
+  if (status === "blocked" || status === "failed") return "blocked";
+  return "neutral"; // planned, pending
 }
 export async function getWebsitePages(slug: string): Promise<WebPage[]> {
-  if (slug === DLF_SLUG) return [
-    { path: "/dlf-westpark-andheri-west", title: "Landing page (Next.js)", status: "ready" },
-    { path: "wix:Test/cms", title: "Wix Test CMS — 7 collections", status: "ready" },
-    { path: "publish", title: "Production publish", status: "blocked" },
+  const landingPath = slug === DLF_SLUG ? `/dlf-westpark-andheri-west` : `/projects/${slug}`;
+  const pages: WebPage[] = [
+    { path: landingPath, title: "Landing page (Next.js)", status: "ready" },
   ];
-  return [{ path: `/projects/${slug}`, title: "Project page (Next.js)", status: "ready" }];
+  if (!live()) {
+    if (slug === DLF_SLUG) {
+      pages.push({ path: "wix:Test/cms", title: "Wix Test CMS — 7 collections", status: "ready" });
+      pages.push({ path: "publish", title: "Production publish", status: "blocked" });
+    }
+    return pages;
+  }
+  const sites = await readQuery<{ staging_site_name: string; staging_site_url: string; staging_status: string; page_published: boolean }>(
+    `select ws.staging_site_name, ws.staging_site_url, ws.staging_status, ws.page_published
+       from wix_staging_sites ws
+       join launch_projects lp on lp.id = ws.launch_project_id
+      where lp.launch_key = $1
+      order by ws.created_at desc
+      limit 5`,
+    [slug]
+  );
+  for (const s of sites) {
+    pages.push({
+      path: s.staging_site_url || "wix:staging",
+      title: s.staging_site_name ? `Wix staging — ${s.staging_site_name}` : "Wix staging site",
+      status: stagingTone(s.staging_status),
+    });
+  }
+  const cms = await readQuery<{ collection_key: string; collection_name: string; status: string }>(
+    `select collection_key, coalesce(collection_name, collection_key) collection_name, status
+       from wix_cms_collections order by created_at limit 10`
+  );
+  for (const c of cms) {
+    pages.push({
+      path: `cms:${c.collection_key}`,
+      title: `CMS: ${c.collection_name}`,
+      status: c.status === "live" ? "ready" : c.status === "planned" ? "neutral" : "review",
+    });
+  }
+  pages.push({ path: "publish", title: "Production publish", status: "blocked" });
+  return pages;
 }
+function formatAge(ts: string | null | undefined): string {
+  if (!ts) return "open";
+  const ms = Date.now() - new Date(ts).getTime();
+  const d = Math.floor(ms / 86_400_000);
+  return d === 0 ? "today" : `${d}d`;
+}
+
 export async function getBuildingReviews(slug: string): Promise<ReviewItem[]> {
   const b = await getBuilding(slug);
   if (!b) return [];
+  // derived: launch_readiness_checks / rera_profiles filtered by building name (see getGlobalReviewQueue)
+  // import_review_items excluded: contact-pipeline rows have no building_id link and would
+  // flood every building's Reviews tab with 4000+ unrelated inventory/duplicate review items.
   return (await getGlobalReviewQueue()).filter((r) => r.building === b.name);
 }
 export async function getAgentTasks(slug: string): Promise<AgentTask[]> {
-  const planned: AgentTask[] = [
+  const fallback: AgentTask[] = [
     { agent: "SEO monitor", task: "Track SERP positions daily", cadence: "daily 06:00", status: "neutral" },
     { agent: "Content drafter", task: "Draft blog/landing per gap", cadence: "on gap", status: "neutral" },
     { agent: "Data cleaner", task: "Dedupe + classify contacts", cadence: "nightly", status: "neutral" },
     { agent: "Campaign drafter", task: "Draft compliant outreach", cadence: "weekly", status: "neutral" },
   ];
-  return planned; // runtime not deployed yet — shown as planned
+  if (!live()) return fallback;
+  const rows = await readQuery<{
+    task_type: string; status: string; prompt_summary: string; raw_input: Record<string, string>;
+  }>(
+    `select task_type, status, coalesce(prompt_summary, task_type) prompt_summary, raw_input
+       from ai_agent_tasks
+      order by created_at desc
+      limit 20`
+  );
+  const matched = rows.filter((r) => {
+    const ri = (r.raw_input as Record<string, string>) || {};
+    return ri.launch_key === slug || (ri.building_name ? slugify(ri.building_name) === slug : false);
+  });
+  if (!matched.length) return fallback;
+  return matched.map((r) => ({
+    agent: agentLabel(r.task_type),
+    task: r.prompt_summary || r.task_type,
+    cadence: r.status,
+    status: taskTone(r.status),
+  }));
 }
 
 // ---------------- launch mode ----------------
@@ -203,14 +427,40 @@ export async function getLaunchKanban(slug: string): Promise<KanbanTask[]> {
   const colOf = (s: string): KanbanTask["col"] => s === "done" ? "done" : s === "in_progress" ? "doing" : s === "blocked" ? "blocked" : "todo";
   return rows.map((r) => ({ title: r.safe_summary, col: colOf(r.task_status), stream: r.task_type?.split("_")[0] || "task" }));
 }
-export function getLaunchCalendar(): CalendarItem[] {
-  return [
+export async function getLaunchCalendar(slug?: string): Promise<CalendarItem[]> {
+  const staticCalendar: CalendarItem[] = [
     { when: "T-45d", title: "Publish first SEO blog", channel: "Website" },
     { when: "T-30d", title: "Owner teaser (after consent)", channel: "WhatsApp" },
     { when: "T-14d", title: "Andheri West awareness email", channel: "Email" },
     { when: "T-7d", title: "Open pre-launch interest list", channel: "Landing form" },
     { when: "T-0", title: "Launch — go-live gate", channel: "All" },
   ];
+  if (!live()) return staticCalendar;
+  let rows: { planned_date: string; channel: string; title: string; status: string }[];
+  if (slug) {
+    rows = await readQuery<{ planned_date: string; channel: string; title: string; status: string }>(
+      `select lcc.planned_date::text, lcc.channel, lcc.title, lcc.status
+         from launch_campaign_calendar lcc
+         join launch_projects lp on lp.id = lcc.launch_project_id
+        where lp.launch_key = $1
+        order by lcc.planned_date limit 30`,
+      [slug]
+    );
+  } else {
+    rows = await readQuery<{ planned_date: string; channel: string; title: string; status: string }>(
+      `select planned_date::text, channel, title, status
+         from launch_campaign_calendar
+        order by planned_date limit 30`
+    );
+  }
+  if (!rows.length) return staticCalendar;
+  const now = Date.now();
+  return rows.map((r) => {
+    const dt = r.planned_date ? new Date(r.planned_date).getTime() : now;
+    const diffDays = Math.round((dt - now) / 86_400_000);
+    const when = diffDays === 0 ? "T-0" : diffDays > 0 ? `T-${diffDays}d` : `T+${Math.abs(diffDays)}d`;
+    return { when, title: r.title || r.channel, channel: r.channel || "—" };
+  });
 }
 
 // ---------------- unit registry (per-building, per-tower apartment stack) ----------------
@@ -275,13 +525,25 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
         and (bu.metadata->>'offgrid') is distinct from 'true'`);
   const myUnits = bunits.filter((u) => slugify(u.bn) === slug && u.unit_number);
 
-  const orel = await readQuery<{ building_unit_id: string | null; full_name: string }>(
-    `select r.building_unit_id::text, c.full_name from contact_property_relationships r
+  const orel = await readQuery<{ building_unit_id: string | null; full_name: string; contact_id: string }>(
+    `select r.building_unit_id::text, c.full_name, c.id::text contact_id
+       from contact_property_relationships r
        join contacts c on c.id = r.contact_id
       where r.relationship_type = 'owner' and r.building_unit_id is not null
         and r.relationship_status in ('active','approved','pending_review')`);
-  const ownerByUnit = new Map<string, string>();
-  for (const r of orel) if (r.building_unit_id) ownerByUnit.set(r.building_unit_id, r.full_name);
+  const ownerByUnit = new Map<string, { name: string; contactId: string }>();
+  for (const r of orel) if (r.building_unit_id) ownerByUnit.set(r.building_unit_id, { name: r.full_name, contactId: r.contact_id });
+
+  // IGR-parsed owner→canonical contact matches (first match per unit wins).
+  const igrPartyMatches = await readQuery<{ building_unit_id: string; contact_id: string }>(
+    `select building_unit_id::text, contact_id::text
+       from registration_party_contact_matches
+      where match_status = 'matched' and building_unit_id is not null
+      order by created_at`);
+  const igrContactByUnit = new Map<string, string>();
+  for (const m of igrPartyMatches) {
+    if (!igrContactByUnit.has(m.building_unit_id)) igrContactByUnit.set(m.building_unit_id, m.contact_id);
+  }
 
   // group registration events by unit key (tower + flat) — handles linked and unlinked records.
   const toEvent = (r: typeof myRecs[number]): UEvent => ({
@@ -324,14 +586,17 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     const activeLease = tenancy.filter((e) => e.active).slice(-1)[0];
     const lastOwn = ownership.slice(-1)[0];
     const relOwner = ownerByUnit.get(u.id);
-    const currentOwner = lastOwn ? partyNames(lastOwn, ["purchaser", "buyer"]) || undefined : relOwner ?? undefined;
+    const igrContactId = igrContactByUnit.get(u.id);
+    const currentOwner = lastOwn ? partyNames(lastOwn, ["purchaser", "buyer"]) || undefined : relOwner?.name ?? undefined;
     const status: UCell["status"] = activeLease ? "tenanted"
       : currentOwner ? "owned"
       : events.length ? "registered" : "unknown";
+    const resolvedContactId = relOwner?.contactId ?? (lastOwn && igrContactId ? igrContactId : undefined);
     const fp = deriveFloorPos(flat);
     units.push({
       flat, floor: fp.floor, position: fp.pos, tower,
-      status, currentOwner, ownerContact: !lastOwn && Boolean(relOwner),
+      status, currentOwner, ownerContact: Boolean(resolvedContactId),
+      ownerContactId: resolvedContactId,
       ownerSince: lastOwn?.date, lastPrice: lastOwn?.consideration,
       currentTenant: activeLease ? partyNames(activeLease, ["lessee", "tenant"]) || undefined : undefined,
       rent: activeLease?.rent, tenancyEnd: activeLease?.tenancyEnd,

@@ -229,12 +229,16 @@ def clean_contacts(input_path: Path, output_dir: Path) -> Dict[str, object]:
             reasons: List[str] = []
             if not raw_name and not row_get(row, "organization") and not row_get(row, "website"):
                 reasons.append("missing_name")
-            if not phone_primary and not email_primary and not row_get(row, "website"):
+            has_valid_contact = bool(phone_primary or email_primary or row_get(row, "website"))
+            if not has_valid_contact:
                 reasons.append("missing_valid_phone_or_email")
-            if phone_errors and not phone_primary:
-                reasons.append(phone_errors[0])
-            if email_errors and not email_primary:
-                reasons.append(email_errors[0])
+                # Only surface bad-field errors when there is NO valid contact
+                # method — otherwise a placeholder phone with a valid email (or
+                # vice versa) silently rejects a reachable contact.
+                if phone_errors:
+                    reasons.append(phone_errors[0])
+                if email_errors:
+                    reasons.append(email_errors[0])
 
             source_format = row_get(row, "source_format")
             structured_hint = bool(wing or unit_number or building_name or building_code)

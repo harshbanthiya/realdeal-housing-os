@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Card, Pill, Mono, type Tone } from "@/components/ui/primitives";
+import { enqueueContact } from "@/lib/cockpit/actions";
 import type { UnitRegistry as UnitRegistryData, UnitCell, UnitTimelineEvent, RegParty } from "@/lib/cockpit/types";
 
 const STATUS_META: Record<UnitCell["status"], { label: string; dot: string; cell: string; tone: Tone }> = {
@@ -109,18 +112,65 @@ export function UnitRegistry({ data }: { data: UnitRegistryData }) {
   );
 }
 
+function UnitOutreachButton({ contactId }: { contactId: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => {
+          setMsg(null);
+          start(async () => {
+            const res = await enqueueContact({ contactId, apply: true });
+            setMsg(res.message);
+            if (res.applied) router.refresh();
+          });
+        }}
+        disabled={pending}
+        className="rounded-lg bg-teal px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-teal/90 disabled:opacity-40"
+      >
+        + Add to outreach
+      </button>
+      {msg && <span className="font-mono text-[11px] text-ink/55">{msg}</span>}
+    </div>
+  );
+}
+
 function UnitDetail({ unit }: { unit: UnitCell }) {
   const meta = STATUS_META[unit.status];
   return (
     <Card className="p-5">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-teal">Flat {unit.flat}</h3>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h3 className="text-lg font-semibold text-teal">Flat {unit.flat}</h3>
+          {unit.ownerContactId && (
+            <div className="mt-2">
+              <UnitOutreachButton contactId={unit.ownerContactId} />
+            </div>
+          )}
+        </div>
         <Pill tone={meta.tone}>{meta.label}</Pill>
       </div>
       <p className="mt-0.5 text-[12px] text-ink/45">Tower {unit.tower} · floor {unit.floor} · {unit.registrationCount} registration{unit.registrationCount === 1 ? "" : "s"}</p>
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-[13px]">
-        <Field label={unit.ownerContact ? "Owner (from contacts)" : "Current owner"} value={unit.currentOwner ?? "—"} />
+        <div>
+          <div className="text-[11px] uppercase tracking-wide text-ink/40">
+            {unit.ownerContact ? "Owner (from contacts)" : "Current owner"}
+          </div>
+          {unit.ownerContactId ? (
+            <Link
+              href={`/cockpit/contacts/c/${unit.ownerContactId}`}
+              aria-label={`Open contact for ${unit.currentOwner ?? "owner"}`}
+              className="text-teal underline underline-offset-2 hover:opacity-75"
+            >
+              {unit.currentOwner ?? "—"}
+            </Link>
+          ) : (
+            <div className="text-ink/85">{unit.currentOwner ?? "—"}</div>
+          )}
+        </div>
         <Field label="Owned since" value={ymd(unit.ownerSince)} />
         <Field label="Last sale price" value={inr(unit.lastPrice)} />
         <Field label="Active tenant" value={unit.currentTenant ?? "—"} />

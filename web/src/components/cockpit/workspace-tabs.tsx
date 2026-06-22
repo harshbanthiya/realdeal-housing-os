@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Pill, Dot, Mono, type Tone } from "@/components/ui/primitives";
 import { UnitRegistry } from "@/components/cockpit/unit-registry";
 import {
-  TABS, type TabKey, type Building, type Person, type Keyword, type Campaign,
+  TABS, type TabKey, type Mode, type Building, type Person, type Keyword, type Campaign,
   type Fact, type WebPage, type ReviewItem, type AgentTask, type KanbanTask, type CalendarItem, type Listing,
   type UnitRegistry as UnitRegistryData,
 } from "@/lib/cockpit/types";
+import { updateReviewItem, updateBuildingMode } from "@/lib/cockpit/actions";
+
+const MODE_LABEL: Record<Mode, string> = {
+  launch: "Launch", active: "Active", prospecting: "Prospecting", post_launch: "Post-launch",
+};
+const MODES: Mode[] = ["prospecting", "active", "launch", "post_launch"];
 
 export interface WorkspaceData {
   building: Building;
@@ -28,11 +34,45 @@ export interface WorkspaceData {
 const ROLE_TONE: Record<string, Tone> = { owner: "active", tenant: "ready", client: "review" };
 
 export function WorkspaceTabs({ data }: { data: WorkspaceData }) {
+  const router = useRouter();
   const [tab, setTab] = useState<TabKey>("overview");
-  const launch = data.building.mode === "launch";
+  const [mode, setMode] = useState<Mode>(data.building.mode);
+  const [modeMsg, setModeMsg] = useState<string | null>(null);
+  const [modePending, startModeTransition] = useTransition();
+  const launch = mode === "launch";
+
+  function switchMode(m: Mode) {
+    if (m === mode) return;
+    setMode(m);           // optimistic: instant UI update
+    setModeMsg(null);
+    startModeTransition(async () => {
+      const res = await updateBuildingMode({ slug: data.building.slug, mode: m, apply: true });
+      setModeMsg(res.message);
+      if (res.applied) router.refresh();
+    });
+  }
 
   return (
     <div>
+      {/* Lifecycle mode switcher */}
+      <div className="mb-1 flex items-center gap-3">
+        <div className="flex items-center gap-1 rounded-full border border-mist-deep p-1 w-fit" role="group" aria-label="Building lifecycle mode">
+          {MODES.map((m) => (
+            <button
+              key={m}
+              onClick={() => switchMode(m)}
+              aria-pressed={m === mode}
+              disabled={modePending}
+              className={`rounded-full px-3 py-1 text-[12px] transition-colors disabled:opacity-60 ${m === mode ? "bg-teal text-white" : "text-ink/45 hover:text-ink/70"}`}
+            >
+              {MODE_LABEL[m]}
+            </button>
+          ))}
+        </div>
+        {modeMsg && <span className="font-mono text-[10px] text-ink/40">{modeMsg}</span>}
+      </div>
+      <div className="mb-4" />
+
       <div className="sticky top-0 z-10 -mx-6 mb-6 flex gap-1 overflow-x-auto border-b border-mist-deep bg-white/90 px-6 backdrop-blur">
         {TABS.map((t) => (
           <button
@@ -76,7 +116,7 @@ function Overview({ data, launch }: { data: WorkspaceData; launch: boolean }) {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Tile n={s.owners + s.tenants} label="Owners & tenants" />
         <Tile n={s.leads} label="Leads" sub={`${s.warm} warm`} />
-        <Tile n={s.listings} label="Listings" />
+        <Tile n={data.listings.length} label="Listings" />
         <Tile n={s.openReviews} label="Open reviews" tone={s.openReviews ? "review" : "neutral"} />
       </div>
 
@@ -266,31 +306,114 @@ function Website({ pages }: { pages: WebPage[] }) {
   );
 }
 
+type ReviewPhase = "idle" | "confirming" | "done";
+type ReviewState = { phase: ReviewPhase; action: "approved" | "rejected"; msg: string };
+
 function Reviews({ items }: { items: ReviewItem[] }) {
-  const [done, setDone] = useState<number[]>([]);
+  const router = useRouter();
+  const [states, setStates] = useState<Record<number, ReviewState>>({});
+  const [pending, startTransition] = useTransition();
+
+  function requestConfirm(i: number, action: "approved" | "rejected") {
+    setStates((prev) => ({ ...prev, [i]: { phase: "confirming", action, msg: "" } }));
+  }
+
+  function cancelConfirm(i: number) {
+    setStates((prev) => {
+      const next = { ...prev };
+      delete next[i];
+      return next;
+    });
+  }
+
+  function confirm(i: number, r: ReviewItem) {
+    const s = states[i];
+    if (!s || s.phase !== "confirming") return;
+    const action = s.action;
+    if (!r.reviewItemId) {
+      setStates((prev) => ({ ...prev, [i]: { phase: "done", action, msg: "preview only (no review item id)" } }));
+      return;
+    }
+    startTransition(async () => {
+      const res = await updateReviewItem({
+        reviewItemId: r.reviewItemId!,
+        status: action,
+        reviewedBy: "operator",
+        apply: true,
+      });
+      setStates((prev) => ({ ...prev, [i]: { phase: "done", action, msg: res.message } }));
+      if (res.applied) router.refresh();
+    });
+  }
+
   if (!items.length) return <Empty>No pending reviews for this building.</Empty>;
   return (
     <div>
       <div className="space-y-3">
-        {items.map((r, i) => (
-          <Card key={i} className="flex items-center gap-4 p-4">
-            <Dot tone={done.includes(i) ? "ready" : r.tone} />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm text-ink/80">{r.title}</div>
-              <div className="text-[11px] text-ink/45"><Mono className="text-[11px]">{r.domain}</Mono> · {r.age}</div>
-            </div>
-            {done.includes(i) ? (
-              <Pill tone="ready">queued (preview)</Pill>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => setDone([...done, i])} className="rounded-full bg-teal px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">Approve</button>
-                <button onClick={() => setDone([...done, i])} className="rounded-full border border-mist-deep px-3 py-1.5 text-xs font-semibold text-warm hover:bg-warm/5">Reject</button>
+        {items.map((r, i) => {
+          const s = states[i];
+          const phase = s?.phase ?? "idle";
+          return (
+            <Card key={i} className="flex items-center gap-4 p-4">
+              <Dot tone={phase === "done" ? (s!.action === "approved" ? "ready" : "blocked") : r.tone} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm text-ink/80">{r.title}</div>
+                <div className="text-[11px] text-ink/45">
+                  <Mono className="text-[11px]">{r.domain}</Mono> · {r.age}
+                  {r.reviewItemId && <> · <Mono className="text-[10px] text-teal/60">actionable</Mono></>}
+                </div>
+                {s?.msg && <div className="mt-1 font-mono text-[10px] text-ink/50">{s.msg}</div>}
               </div>
-            )}
-          </Card>
-        ))}
+              {phase === "done" && (
+                <Pill tone={s!.action === "approved" ? "ready" : "blocked"}>
+                  {s!.action}{!r.reviewItemId ? " (preview)" : ""}
+                </Pill>
+              )}
+              {phase === "confirming" && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-ink/60">Confirm {s!.action}?</span>
+                  <button
+                    onClick={() => confirm(i, r)}
+                    disabled={pending}
+                    aria-label={`Confirm ${s!.action}`}
+                    className="rounded-full bg-teal px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-40"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => cancelConfirm(i)}
+                    disabled={pending}
+                    className="rounded-full border border-mist-deep px-3 py-1.5 text-xs font-semibold text-ink/60 hover:bg-mist/40 disabled:opacity-40"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              {phase === "idle" && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => requestConfirm(i, "approved")}
+                    aria-label="Approve review item"
+                    className="rounded-full bg-teal px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => requestConfirm(i, "rejected")}
+                    aria-label="Reject review item"
+                    className="rounded-full border border-mist-deep px-3 py-1.5 text-xs font-semibold text-warm hover:bg-warm/5"
+                  >
+                    Reject
+                  </button>
+                </div>
+              )}
+            </Card>
+          );
+        })}
       </div>
-      <p className="mt-4 font-mono text-[11px] text-ink/40">Actions are preview-only in the shell — they will call the guarded apply / revert scripts next.</p>
+      <p className="mt-4 font-mono text-[11px] text-ink/40">
+        Actionable items write via update_review_item.py --apply behind a confirm step.
+      </p>
     </div>
   );
 }

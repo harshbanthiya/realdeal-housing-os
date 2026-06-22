@@ -4,6 +4,7 @@ import { Card, Pill, Mono, PanelTitle, type Tone } from "@/components/ui/primiti
 import { getContactDetail } from "@/lib/cockpit/contacts";
 import { getContactActivity, getContactGroups } from "@/lib/cockpit/outreach";
 import { ContactOutreachControls } from "@/components/cockpit/contact-outreach-controls";
+import { ContactNoteForm } from "@/components/cockpit/contact-note-form";
 import { roleLabel, statusLabel, type ContactMethodDetail } from "@/lib/cockpit/contacts-types";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +54,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <ContactOutreachControls
             contactId={c.contactId}
             groups={groups.map((g) => ({ slug: g.slug, name: g.name }))}
-            inOutreach={activity.queue ? { status: activity.queue.status, step: activity.queue.step } : null}
+            inOutreach={activity.queue ? { status: activity.queue.status, step: activity.queue.step, queueId: activity.queue.queueId } : null}
           />
         </div>
         <div className="mt-3 flex flex-wrap gap-4 font-mono text-[11px] text-ink/50">
@@ -128,6 +129,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
             ))}
           </ul>
         )}
+        <ContactNoteForm contactId={c.contactId} />
       </Card>
     </div>
   );

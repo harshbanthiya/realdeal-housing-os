@@ -2,14 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { enqueueContact, addContactsToGroup } from "@/lib/cockpit/actions";
+import { enqueueContact, addContactsToGroup, clearQueueRow } from "@/lib/cockpit/actions";
 
 export function ContactOutreachControls({
   contactId, groups, inOutreach,
 }: {
   contactId: string;
   groups: { slug: string; name: string }[];
-  inOutreach: { status: string; step: number } | null;
+  inOutreach: { status: string; step: number; queueId: string } | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -20,6 +20,16 @@ export function ContactOutreachControls({
     setMsg(null);
     startTransition(async () => {
       const res = await enqueueContact({ contactId, apply: true });
+      setMsg(res.message);
+      if (res.applied) router.refresh();
+    });
+  }
+
+  function removeFromOutreach() {
+    if (!inOutreach) return;
+    setMsg(null);
+    startTransition(async () => {
+      const res = await clearQueueRow({ queueId: inOutreach.queueId, apply: true });
       setMsg(res.message);
       if (res.applied) router.refresh();
     });
@@ -38,9 +48,19 @@ export function ContactOutreachControls({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {inOutreach ? (
-        <span className="rounded-lg bg-teal/10 px-3 py-1.5 text-[13px] font-medium text-teal">
-          In outreach · {inOutreach.status.replace(/_/g, " ")} (step {inOutreach.step})
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-lg bg-teal/10 px-3 py-1.5 text-[13px] font-medium text-teal">
+            In outreach · {inOutreach.status.replace(/_/g, " ")} (step {inOutreach.step})
+          </span>
+          <button
+            onClick={removeFromOutreach}
+            disabled={pending}
+            aria-label="Remove from outreach queue"
+            className="rounded-lg border border-warm/30 px-3 py-1.5 text-[13px] font-medium text-warm hover:bg-warm/5 disabled:opacity-40"
+          >
+            Remove
+          </button>
+        </div>
       ) : (
         <button
           onClick={addToOutreach} disabled={pending}

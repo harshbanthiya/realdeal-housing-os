@@ -5,6 +5,7 @@ import {
   getGlobalReviewQueue,
   getAgentActivity,
   getGlobalBlockers,
+  getStreamReadiness,
   type Mode,
 } from "@/lib/cockpit/data";
 
@@ -15,16 +16,9 @@ const MODE_TONE: Record<Mode, Tone> = {
   launch: "blocked", active: "ready", prospecting: "review", post_launch: "neutral",
 };
 
-const STREAMS: { label: string; tone: Tone; state: string }[] = [
-  { label: "Tech (Wix / site)", tone: "ready", state: "Ready" },
-  { label: "Content & SEO", tone: "review", state: "In review" },
-  { label: "Campaign safety", tone: "blocked", state: "Blocked" },
-  { label: "Legal / RERA", tone: "blocked", state: "Blocked" },
-];
-
 export default async function CockpitHome() {
-  const [buildings, reviews, agents, blockers] = await Promise.all([
-    getBuildings(), getGlobalReviewQueue(), getAgentActivity(), getGlobalBlockers(),
+  const [buildings, reviews, agents, blockers, streams] = await Promise.all([
+    getBuildings(), getGlobalReviewQueue(), getAgentActivity(), getGlobalBlockers(), getStreamReadiness(),
   ]);
 
   return (
@@ -38,13 +32,18 @@ export default async function CockpitHome() {
       <Card className="mb-7 p-5">
         <PanelTitle hint="DLF Westpark · T-58d">Launch readiness</PanelTitle>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {STREAMS.map((s) => (
+          {streams.map((s) => (
             <div key={s.label} className="rounded-lg border border-mist-deep p-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-ink/60">{s.label}</span>
                 <Dot tone={s.tone} />
               </div>
-              <div className="mt-2"><Pill tone={s.tone}>{s.state}</Pill></div>
+              <div className="mt-2 flex items-center justify-between">
+                <Pill tone={s.tone}>{s.state}</Pill>
+                {s.total > 0 && (
+                  <span className="text-[10px] text-ink/40">{s.passed}/{s.total}</span>
+                )}
+              </div>
             </div>
           ))}
         </div>
