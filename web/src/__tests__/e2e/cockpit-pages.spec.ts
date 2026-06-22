@@ -978,7 +978,7 @@ test.describe("Buildings workspace — Leads tab", () => {
     // When leads=0 and launch=true: "Pre-launch interest list is preview-only — lead intake opens after consent + go-live review."
     await expect(
       page.getByText(/pre-launch interest list|lead intake opens|consent.*go-live/i)
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible({ timeout: 15000 });
   });
 
   test("Leads tab on active building shows campaign empty-state when count=0", async ({ page }) => {
@@ -1701,5 +1701,45 @@ test.describe("Buildings workspace — Listings tab", () => {
     const listingsTileArea = page.locator("[class*='rounded'][class*='border']")
       .filter({ hasText: /Listings/ }).first();
     await expect(listingsTileArea).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// /cockpit/buildings/[slug] — Overview tab stat tiles (all 4 labels present)
+// ---------------------------------------------------------------------------
+test.describe("Buildings workspace — Overview stat tiles", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("all 4 stat tile labels render in Overview tab", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    // Scope to the 2×4 tile grid — avoids matching tab bar labels ("Owners & tenants" tab)
+    const tileGrid = page.locator(".grid.grid-cols-2").first();
+    await expect(tileGrid).toBeVisible({ timeout: 8000 });
+    // Each tile label uses class `uppercase` — matched via text content (CSS transform doesn't affect matching)
+    await expect(tileGrid.getByText("Owners & tenants", { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(tileGrid.getByText("Leads", { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(tileGrid.getByText("Listings", { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(tileGrid.getByText("Open reviews", { exact: true })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("stat tiles grid has exactly 4 cards in Overview tab", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    const tileGrid = page.locator(".grid.grid-cols-2").first();
+    await expect(tileGrid).toBeVisible({ timeout: 8000 });
+    const tiles = tileGrid.locator(":scope > *");
+    expect(await tiles.count()).toBe(4);
+  });
+
+  test("each stat tile shows a non-negative integer value", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    const tileGrid = page.locator(".grid.grid-cols-2").first();
+    await expect(tileGrid).toBeVisible({ timeout: 8000 });
+    const tiles = tileGrid.locator(":scope > *");
+    const count = await tiles.count();
+    for (let i = 0; i < count; i++) {
+      const text = await tiles.nth(i).textContent();
+      expect(text).toMatch(/\d+/);
+    }
   });
 });

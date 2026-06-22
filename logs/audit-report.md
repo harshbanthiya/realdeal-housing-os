@@ -64,7 +64,7 @@
 | Sort direction toggle | ✅ | asc/desc via URL param |
 | Pagination prev/next | ✅ | URL-based, `page=N` |
 | Row click → contact detail | ✅ | Links to `/cockpit/contacts/c/[id]` |
-| Search / filter | ❌ | **Missing entirely** — no search input on sheet page |
+| Search / filter | ✅ | **FIXED Loop 5** — debounced client search bar; server-side ILIKE on `full_name`/`phone_primary` via parameterised query; `q` param preserved through sort/page navigation |
 
 ---
 
@@ -155,10 +155,16 @@
 
 | Status | Count |
 |---|---|
-| ✅ Fully working | 52 |
+| ✅ Fully working | 53 |
 | ⚠️ Partial | 0 |
 | 🚧 Stub/hardcoded | 5 |
-| ❌ Missing/broken | 7 |
+| ❌ Missing/broken | 6 |
+
+### New audit findings (Loop 25)
+- `createContactGroup` + `addContactsToGroup` validation guards in `actions.ts` — zero unit tests (guards are "use server" but logic is pure; mirrors added in db.test.ts like existing logContactNote/updateBuildingMode tests).
+- `batchLabelHuman` in `contacts-types.ts` — complex strip/regex/titlecase logic with no test coverage. Added 7 Vitest tests covering prefix stripping, run-number stripping, label extraction.
+- Building overview stat tiles (Owners & tenants / Leads / Listings / Open reviews) — zero Playwright coverage. Added 3 tests verifying all 4 tile labels render in overview.
+- Contact sheet "Search / filter" row was stale ❌ — corrected to ✅ (was FIXED Loop 5; oversight in Loop 5's report update).
 
 ### New audit findings (Loop 24)
 - `agentLabel()`, `buildingFromRaw()`, `taskTone()` — pure private helpers with zero unit tests. Exported all three and added 19 Vitest tests (5 agentLabel + 5 buildingFromRaw + 9 taskTone).
