@@ -160,6 +160,12 @@
 | 🚧 Stub/hardcoded | 5 |
 | ❌ Missing/broken | 6 |
 
+### New audit findings (Loop 28)
+- `updateReviewItem` in `actions.ts` — 3 validation guards (UUID check, ALLOWED_STATUSES allowlist, reviewedBy required), zero unit tests. Added 9 Vitest mirror tests covering all guards + edge cases (whitespace-only reviewedBy, SQL injection, all 6 valid statuses).
+- Outreach queue "No contacts queued for today" empty state — the `wa.me` test skipped silently when queue empty but never explicitly asserted the empty-state message. Added 2 Playwright tests: (a) either rows OR empty-state message is shown (never blank); (b) "Today's send queue" panel title always visible.
+- Contact detail activity timeline empty state — "No interactions recorded yet" never asserted on the contact detail page. Added 1 Playwright test (events OR empty message).
+- Kalpataru Owners tab with real data — only a weak `hasContent` check existed. Added 2 Playwright tests: (a) tab renders without error, (b) "Owners & tenants" stat tile is > 0 for Kalpataru (which has 22 IGR-matched owner contacts).
+
 ### New audit findings (Loop 27)
 - `statusTone`/`strengthTone`/`roleLabel`/`reviewTypeLabel`/`statusLabel` in `contacts-types.ts` — 5 pure functions, zero tests. Added 8+4+8+4+8 = 32 Vitest tests covering all branches including fallbacks.
 - `getContactSheet` pagination/sort/dir guards — zero logic tests. Added 17 mirror tests (page clamp, pageSize clamp, sort allowlist, dir allowlist).

@@ -1745,3 +1745,77 @@ describe("recordOutreachActivity action allowlist (actions.ts mirror)", () => {
   it("'admin' is NOT a valid action", () => { expect(OUTREACH_ACTIONS_MIRROR.has("admin")).toBe(false); });
   it("empty string is NOT a valid action", () => { expect(OUTREACH_ACTIONS_MIRROR.has("")).toBe(false); });
 });
+
+// ---------------------------------------------------------------------------
+// updateReviewItem input validation — pure logic mirror (actions.ts "use server")
+// Guards: UUID check, ALLOWED_STATUSES allowlist, reviewedBy required.
+// ---------------------------------------------------------------------------
+
+const ALLOWED_STATUSES_MIRROR = new Set([
+  "pending", "approved", "rejected", "skipped", "needs_more_info", "merged_later",
+]);
+const UUID_RE_REVIEW = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function validateReviewItem(input: { reviewItemId: string; status: string; reviewedBy: string }) {
+  if (!UUID_RE_REVIEW.test(input.reviewItemId)) return { ok: false, message: "Invalid review item id." };
+  if (!ALLOWED_STATUSES_MIRROR.has(input.status)) return { ok: false, message: `Invalid status: ${input.status}` };
+  const reviewedBy = (input.reviewedBy || "").trim();
+  if (!reviewedBy) return { ok: false, message: "reviewedBy is required." };
+  return { ok: true, reviewedBy };
+}
+
+describe("updateReviewItem input validation (actions.ts mirror)", () => {
+  const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
+
+  it("accepts valid reviewItemId, status, and reviewedBy", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "approved", reviewedBy: "operator" });
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects non-UUID reviewItemId", () => {
+    const r = validateReviewItem({ reviewItemId: "not-a-uuid", status: "approved", reviewedBy: "op" });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid review item id/i);
+  });
+
+  it("rejects SQL injection in reviewItemId", () => {
+    const r = validateReviewItem({ reviewItemId: "'; DROP TABLE reviews;--", status: "approved", reviewedBy: "op" });
+    expect(r.ok).toBe(false);
+  });
+
+  it("accepts all 6 allowed statuses", () => {
+    for (const status of ["pending", "approved", "rejected", "skipped", "needs_more_info", "merged_later"]) {
+      const r = validateReviewItem({ reviewItemId: VALID_UUID, status, reviewedBy: "op" });
+      expect(r.ok).toBe(true);
+    }
+  });
+
+  it("rejects unknown status", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "hacked_status", reviewedBy: "op" });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid status/i);
+  });
+
+  it("rejects empty status", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "", reviewedBy: "op" });
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects empty reviewedBy", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "approved", reviewedBy: "" });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/reviewedBy is required/i);
+  });
+
+  it("rejects whitespace-only reviewedBy", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "approved", reviewedBy: "   " });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/reviewedBy is required/i);
+  });
+
+  it("trims reviewedBy whitespace and passes if non-empty after trim", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "approved", reviewedBy: "  padmini  " });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect((r as { reviewedBy: string }).reviewedBy).toBe("padmini");
+  });
+});

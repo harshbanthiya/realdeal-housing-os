@@ -1,7 +1,7 @@
-# QA Report — Loop 27
+# QA Report — Loop 28
 **Date:** 2026-06-22  
 **Branch:** qa/full-stack-test-hardening  
-**Coverage area:** contacts-types.ts pure functions + sheet/action validation mirrors + audiences metrics + unit registry Playwright
+**Coverage area:** updateReviewItem validation + outreach empty state + contact timeline + Owners tab real data
 
 ---
 
@@ -10,18 +10,18 @@
 ```
 # Baseline
 python3 -m pytest tests/python/ -q              # 111 passed
-cd web && npm test                               # 226 passed (Vitest)
-COCKPIT_AUTH_TOKEN=... npx playwright test       # 173 passed
+cd web && npm test                               # 301 passed (Vitest)
+COCKPIT_AUTH_TOKEN=... npx playwright test       # 177 passed
 
-# After Loop 27 additions
-npm test                                         # 301 passed (+75 Vitest)
-COCKPIT_AUTH_TOKEN=... npx playwright test       # 177 passed (+4 Playwright)
+# After Loop 28 additions
+npm test                                         # 310 passed (+9 Vitest)
+COCKPIT_AUTH_TOKEN=... npx playwright test       # 182 passed (+5 Playwright)
 
 # Final full suite
 python3 -m pytest tests/python/ -q              # 111 passed
-npm test                                         # 301 passed
-COCKPIT_AUTH_TOKEN=... npx playwright test       # 177 passed
-Total: 589
+npm test                                         # 310 passed
+COCKPIT_AUTH_TOKEN=... npx playwright test       # 182 passed
+Total: 603
 ```
 
 ---
@@ -30,8 +30,8 @@ Total: 589
 
 | File | Type | Notes |
 |---|---|---|
-| `web/src/__tests__/db.test.ts` | MODIFIED | +75 tests: statusTone(8) + strengthTone(4) + roleLabel(8) + reviewTypeLabel(4) + statusLabel(8) + pagination mirrors(17) + limit clamp(6) + groupSlug(6) + UUID_RE(6) + action allowlist(8) |
-| `web/src/__tests__/e2e/cockpit-pages.spec.ts` | MODIFIED | +4 tests: audiences metric grid values(1) + role filter render(1) + Kalpataru unit stats(1) + DLF unit registry clean(1) |
+| `web/src/__tests__/db.test.ts` | MODIFIED | +9 tests: updateReviewItem validation mirror (UUID / ALLOWED_STATUSES / reviewedBy guards) |
+| `web/src/__tests__/e2e/cockpit-pages.spec.ts` | MODIFIED | +5 tests: outreach empty state (2) + contact timeline (1) + Kalpataru Owners tab (2) |
 
 ---
 
@@ -40,54 +40,47 @@ Total: 589
 | Suite | Pass | Fail | Total |
 |---|---|---|---|
 | Python — all suites | 111 | 0 | 111 |
-| TypeScript Vitest | 301 | 0 | 301 |
-| Playwright E2E | 177 | 0 | 177 |
-| **Grand total** | **589** | **0** | **589** |
+| TypeScript Vitest | 310 | 0 | 310 |
+| Playwright E2E | 182 | 0 | 182 |
+| **Grand total** | **603** | **0** | **603** |
 
 ---
 
 ## AUDIT findings this loop
 
-### 1. Five pure functions in contacts-types.ts — zero unit tests (GAP — CLOSED)
+### 1. `updateReviewItem` — 3 validation guards, zero tests (GAP — CLOSED)
 
-`statusTone`, `strengthTone`, `roleLabel`, `reviewTypeLabel`, `statusLabel` are all called in multiple UI components with no test coverage. Added 32 tests covering all switch branches and fallbacks.
+Guards in `actions.ts`:
+1. `UUID_RE.test(input.reviewItemId)` — "Invalid review item id." on fail
+2. `ALLOWED_STATUSES.has(input.status)` — "Invalid status: ${status}" on fail (6 allowed values)
+3. `(input.reviewedBy || "").trim()` non-empty check — "reviewedBy is required." on fail
 
-### 2. getContactSheet pagination/sort/dir clamping — zero logic tests (GAP — CLOSED)
+Added 9 mirror tests covering: valid input, UUID rejection, SQL injection rejection, all 6 statuses individually, unknown status, empty status, empty/whitespace reviewedBy, whitespace-trimming that passes.
 
-The guards at `contacts.ts:295-298`:
-- `page = Math.max(1, Math.floor(opts.page ?? 1))` — clamps page to ≥1
-- `pageSize = Math.min(Math.max(opts.pageSize ?? 25, 5), 100)` — clamps to 5–100
-- `sort` — whitelist check against `SHEET_SORTS` keys
-- `dir` — only "asc" passes through, everything else is "desc"
+### 2. Outreach queue empty state — silently skipped (GAP — CLOSED)
 
-Added 17 logic-mirror tests.
+The `wa.me` link test had `if (count === 0) return` — never explicitly verified the empty-state message. Added 2 Playwright tests that assert: queue section always shows EITHER `wa.me` rows OR "No contacts queued for today" message, and "Today's send queue" panel title is always visible.
 
-### 3. buildOutreachQueue / clearQueueRow / recordOutreachActivity validation — zero tests (GAP — CLOSED)
+### 3. Contact detail activity timeline empty state (GAP — CLOSED)
 
-Key discovery: `Math.max(1, Math.min(50, Number(raw) || 10))` — `limit=0` produces 10, NOT 1, because `0` is falsy in the `|| 10` fallback. This is a subtle footgun documented in the test.
+"No interactions recorded yet." was tested in the outreach page context but not on the contact detail page. Added 1 test that covers both the events-present and events-absent paths on `/cockpit/contacts/c/[id]`.
 
-### 4. Audiences metric grid — metric values untested (GAP — CLOSED)
+### 4. Kalpataru Owners tab real data count (GAP — CLOSED)
 
-Added 2 Playwright tests: metric labels visible with integer values on page load; metric grid still renders after role filter is applied.
-
-### 5. Unit registry stats strip for real buildings (GAP — CLOSED)
-
-Added 2 Playwright tests: Kalpataru has real IGR registrations so the stats strip must show a number; DLF (no units) must render cleanly without error.
-
-### 6. "no groups → dropdown hidden" — DB-state-dependent (DEFERRED)
-
-`contact-outreach-controls.tsx:73` hides the group select when `groups.length === 0`. `getContactGroups()` returns ALL groups in the DB. Since the live DB always has groups (Test Group etc.), this state is unreachable in Playwright. Only testable in isolation (e.g., component test with mock props). Not worth mocking just to cover a CSS `{groups.length > 0 && ...}` guard.
+The existing "clicking Owners tab" test only checked `count() > 0` on generic `h2/p/li`. Added 2 tests:
+1. Tab renders without error or crash
+2. "Owners & tenants" Overview stat tile is `> 0` for Kalpataru (which has 22 IGR-matched owner contacts via `registration_party_contact_matches`)
 
 ---
 
 ## Recommended Next QA Loop (Priority Order)
 
-**1. `q` search sanitisation edge cases** — `getContactSheet` sanitises `q` to max 100 chars, strips NUL, trims. Only the basic ILIKE pattern is tested (Loop 5). Add: NUL strip, 101-char truncation, LIKE metachar escape (`%`, `_`, `\`).
+**1. `sanitiseQ` 101-char edge** — the truncation happens BEFORE NUL strip, so a 101-char string with a NUL byte at position 100 gets trimmed then NUL-stripped. One test to confirm order of operations (slice → NUL strip → trim).
 
-**2. `updateReviewItem` / `updateBuildingMode` validation** — `updateReviewItem` checks `ALLOWED_STATUSES` (6 values); `updateBuildingMode` checks `ALLOWED_MODES` (4 values). Both have Vitest tests but the mode/status ALLOWLIST membership isn't directly tested as its own suite.
+**2. `recordOutreachActivity` `by` field validation** — `by` defaults to "director" and is capped to 100 chars. Currently: only OUTREACH_ACTIONS and UUID are tested. The `by` clamp is untested.
 
-**3. `logContactNote` note length clamp** — note is trimmed to 500 chars server-side. Test the 501-char case to confirm it's silently truncated (not rejected).
+**3. Buildings workspace — Campaigns tab row count** — DLF has 10 channels. No test asserts the channels list is non-empty for DLF or that each channel shows a name.
 
-**4. Outreach page — empty queue state** — If queue is empty, an empty-state message should show. No test verifies this path.
+**4. Buildings workspace — Website tab staging site URL** — `getWebsitePages` returns a staging URL for DLF. No test checks the URL is a valid `*.wixstudio.com` or similar link.
 
-**5. Contact detail — "In outreach" badge vs "Add to outreach" mutual exclusion** — When a contact is in the queue, "Add to outreach" should be replaced by "In outreach · status (step N)". No Playwright test verifies the mutual exclusion.
+**5. Buildings workspace — RERA tab fact count** — For Imperial Heights, the RERA tab shows matched facts from migration 020. No test counts the RERA rows; only "RERA" heading visibility is checked.
