@@ -1538,6 +1538,21 @@ test.describe("Outreach — interactive behaviors", () => {
     const hasEmpty = await page.getByText(/No groups yet/i).count() > 0;
     expect(anyGroupVisible || hasEmpty).toBe(true);
   });
+
+  test("Build queue from group click shows a result message", async ({ page }) => {
+    await page.goto("/cockpit/outreach");
+    // Look for any enabled "Build queue" button in the groups list
+    const buildBtns = page.getByRole("button", { name: "Build queue" });
+    if (await buildBtns.count() === 0) return; // no groups rendered
+    // Find first non-disabled button
+    const first = buildBtns.first();
+    const isDisabled = await first.isDisabled();
+    if (isDisabled) return; // sequence not active or no reachable members
+    await first.click();
+    // OutreachGroups renders msg in a font-mono div after the action completes
+    await expect(page.locator("[class*='font-mono'][class*='text-ink']").last())
+      .toBeVisible({ timeout: 15000 });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1570,6 +1585,20 @@ test.describe("Contact detail — group select with real groups", () => {
     const hasBtn = await addGroupBtn.count() > 0;
     const hasNoGroupsNote = await page.getByText(/No groups yet/i).count() > 0;
     expect(hasBtn || hasNoGroupsNote).toBe(true);
+  });
+
+  test("Add to group click fires action and shows a response message", async ({ page }) => {
+    await page.goto("/cockpit/contacts/sheet");
+    const firstLink = page.locator(`a[href^="/cockpit/contacts/c/"]`).first();
+    if (await firstLink.count() === 0) return;
+    await firstLink.click();
+    await page.waitForLoadState("networkidle", { timeout: 15000 });
+    const addGroupBtn = page.getByRole("button", { name: /add to group/i });
+    if (await addGroupBtn.count() === 0) return; // no groups in DB
+    await addGroupBtn.click();
+    // The action returns a message string — component renders it in a font-mono span
+    // Message is either success ("add N contact(s) to group...") or error
+    await expect(page.locator("span.font-mono").last()).toBeVisible({ timeout: 15000 });
   });
 });
 

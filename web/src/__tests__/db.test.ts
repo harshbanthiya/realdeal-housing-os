@@ -989,6 +989,89 @@ describe("listings stat tile reflects data.listings.length", () => {
 });
 
 // ---------------------------------------------------------------------------
+// audienceScope — CSV filename scope slug generation
+// ---------------------------------------------------------------------------
+
+describe("audienceScope filename slug generation", () => {
+  let audienceScope: typeof import("@/lib/cockpit/audiences").audienceScope;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ audienceScope } = await import("@/lib/cockpit/audiences"));
+  });
+
+  it("no filters → 'all-buildings'", () => expect(audienceScope({})).toBe("all-buildings"));
+
+  it("building only → slugified name", () =>
+    expect(audienceScope({ building: "Imperial Heights" })).toBe("imperial-heights"));
+
+  it("building + role → 'building-slug-role'", () =>
+    expect(audienceScope({ building: "Imperial Heights", role: "owner" })).toBe("imperial-heights-owner"));
+
+  it("role only (no building) → 'all-buildings-role'", () =>
+    expect(audienceScope({ role: "tenant" })).toBe("all-buildings-tenant"));
+
+  it("building with special chars (& space) → dashes", () =>
+    expect(audienceScope({ building: "A & B Properties" })).toBe("a-b-properties"));
+
+  it("consecutive non-alnum chars → single dash (no double-dash)", () =>
+    expect(audienceScope({ building: "Wing A / Wing B" })).toBe("wing-a-wing-b"));
+
+  it("leading/trailing spaces in building → no leading/trailing hyphens", () => {
+    const scope = audienceScope({ building: "  Test  " });
+    expect(scope).not.toMatch(/^-|-$/);
+    expect(scope).toBe("test");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseAudienceFilters — input sanitisation + role allowlist guard
+// ---------------------------------------------------------------------------
+
+describe("parseAudienceFilters input sanitisation", () => {
+  let parseAudienceFilters: typeof import("@/lib/cockpit/audiences").parseAudienceFilters;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ parseAudienceFilters } = await import("@/lib/cockpit/audiences"));
+  });
+
+  it("empty inputs → both undefined", () => {
+    const f = parseAudienceFilters({});
+    expect(f.building).toBeUndefined();
+    expect(f.role).toBeUndefined();
+  });
+
+  it("building='all' → undefined (cleaned as sentinel)", () => {
+    expect(parseAudienceFilters({ building: "all" }).building).toBeUndefined();
+  });
+
+  it("null inputs → both undefined", () => {
+    const f = parseAudienceFilters({ building: null, role: null });
+    expect(f.building).toBeUndefined();
+    expect(f.role).toBeUndefined();
+  });
+
+  it("valid role 'owner' → passes through", () => {
+    expect(parseAudienceFilters({ role: "owner" }).role).toBe("owner");
+  });
+
+  it("invalid role 'admin' → undefined (allowlist blocks injection)", () => {
+    expect(parseAudienceFilters({ role: "admin" }).role).toBeUndefined();
+  });
+
+  it("role with whitespace padding → trimmed and accepted", () => {
+    expect(parseAudienceFilters({ role: " tenant " }).role).toBe("tenant");
+  });
+
+  it("building + valid role → both preserved", () => {
+    const f = parseAudienceFilters({ building: "Imperial Heights", role: "landlord" });
+    expect(f.building).toBe("Imperial Heights");
+    expect(f.role).toBe("landlord");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // e164Indian — phone normalisation for Meta audience CSV hashing
 // ---------------------------------------------------------------------------
 
