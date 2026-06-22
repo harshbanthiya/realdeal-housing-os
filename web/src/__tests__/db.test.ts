@@ -1546,3 +1546,276 @@ describe("headline (actions.ts mirror)", () => {
     expect(headline_mirror("")).toBe("");
   });
 });
+
+// ---------------------------------------------------------------------------
+// contacts-types.ts — statusTone, strengthTone, roleLabel, reviewTypeLabel, statusLabel
+// All pure functions — imported directly (no "use server").
+// ---------------------------------------------------------------------------
+
+describe("statusTone", () => {
+  let statusTone: typeof import("@/lib/cockpit/contacts-types").statusTone;
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ statusTone } = await import("@/lib/cockpit/contacts-types"));
+  });
+
+  it("approved → ready", () => { expect(statusTone("approved")).toBe("ready"); });
+  it("merged → ready", () => { expect(statusTone("merged")).toBe("ready"); });
+  it("resolved → ready", () => { expect(statusTone("resolved")).toBe("ready"); });
+  it("rejected → blocked", () => { expect(statusTone("rejected")).toBe("blocked"); });
+  it("needs_more_info → review", () => { expect(statusTone("needs_more_info")).toBe("review"); });
+  it("needs_review → review", () => { expect(statusTone("needs_review")).toBe("review"); });
+  it("pending → neutral (default)", () => { expect(statusTone("pending")).toBe("neutral"); });
+  it("unknown string → neutral (default)", () => { expect(statusTone("anything")).toBe("neutral"); });
+});
+
+describe("strengthTone", () => {
+  let strengthTone: typeof import("@/lib/cockpit/contacts-types").strengthTone;
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ strengthTone } = await import("@/lib/cockpit/contacts-types"));
+  });
+
+  it("strong → blocked", () => { expect(strengthTone("strong")).toBe("blocked"); });
+  it("medium → review", () => { expect(strengthTone("medium")).toBe("review"); });
+  it("weak → neutral (default)", () => { expect(strengthTone("weak")).toBe("neutral"); });
+  it("empty string → neutral", () => { expect(strengthTone("")).toBe("neutral"); });
+});
+
+describe("roleLabel", () => {
+  let roleLabel: typeof import("@/lib/cockpit/contacts-types").roleLabel;
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ roleLabel } = await import("@/lib/cockpit/contacts-types"));
+  });
+
+  it("owner → owner", () => { expect(roleLabel("owner")).toBe("owner"); });
+  it("OWNER (uppercase) → owner", () => { expect(roleLabel("OWNER")).toBe("owner"); });
+  it("tenant → tenant", () => { expect(roleLabel("tenant")).toBe("tenant"); });
+  it("broker → broker", () => { expect(roleLabel("broker")).toBe("broker"); });
+  it("agent → broker (alias)", () => { expect(roleLabel("agent")).toBe("broker"); });
+  it("buyer → lead (alias)", () => { expect(roleLabel("buyer")).toBe("lead"); });
+  it("lead → lead", () => { expect(roleLabel("lead")).toBe("lead"); });
+  it("unknown → passed through (lowercased)", () => { expect(roleLabel("investor")).toBe("investor"); });
+});
+
+describe("reviewTypeLabel", () => {
+  let reviewTypeLabel: typeof import("@/lib/cockpit/contacts-types").reviewTypeLabel;
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ reviewTypeLabel } = await import("@/lib/cockpit/contacts-types"));
+  });
+
+  it("merge_candidate → mapped label", () => {
+    expect(reviewTypeLabel("merge_candidate")).toBe("Possible contact to merge");
+  });
+  it("duplicate_contact → mapped label", () => {
+    expect(reviewTypeLabel("duplicate_contact")).toBe("Duplicate to resolve");
+  });
+  it("property_hint_review → mapped label", () => {
+    expect(reviewTypeLabel("property_hint_review")).toBe("Property / unit link to confirm");
+  });
+  it("unknown_type → title-cased fallback", () => {
+    expect(reviewTypeLabel("some_review_type")).toBe("Some Review Type");
+  });
+});
+
+describe("statusLabel", () => {
+  let statusLabel: typeof import("@/lib/cockpit/contacts-types").statusLabel;
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ statusLabel } = await import("@/lib/cockpit/contacts-types"));
+  });
+
+  it("pending → Pending", () => { expect(statusLabel("pending")).toBe("Pending"); });
+  it("approved → Approved", () => { expect(statusLabel("approved")).toBe("Approved"); });
+  it("rejected → Rejected", () => { expect(statusLabel("rejected")).toBe("Rejected"); });
+  it("needs_more_info → Needs info", () => { expect(statusLabel("needs_more_info")).toBe("Needs info"); });
+  it("merged → Merged", () => { expect(statusLabel("merged")).toBe("Merged"); });
+  it("merged_later → Merged (alias)", () => { expect(statusLabel("merged_later")).toBe("Merged"); });
+  it("skipped → Skipped", () => { expect(statusLabel("skipped")).toBe("Skipped"); });
+  it("unknown → title-cased fallback", () => { expect(statusLabel("some_status")).toBe("Some Status"); });
+});
+
+// ---------------------------------------------------------------------------
+// getContactSheet pagination / sort / dir clamping — pure logic mirrors
+// contacts.ts lines 295-298
+// ---------------------------------------------------------------------------
+
+function clampPage(page: number | undefined): number {
+  return Math.max(1, Math.floor(page ?? 1));
+}
+
+function clampPageSize(pageSize: number | undefined): number {
+  return Math.min(Math.max(pageSize ?? 25, 5), 100);
+}
+
+const SHEET_SORTS_KEYS = new Set(["created", "contact", "status", "methods"]);
+
+function resolveSort(sort: string | undefined): string {
+  return sort && SHEET_SORTS_KEYS.has(sort) ? sort : "created";
+}
+
+function resolveDir(dir: string | undefined): "asc" | "desc" {
+  return dir === "asc" ? "asc" : "desc";
+}
+
+describe("getContactSheet pagination / sort guards (contacts.ts mirror)", () => {
+  it("page=0 clamps to 1", () => { expect(clampPage(0)).toBe(1); });
+  it("page=-5 clamps to 1", () => { expect(clampPage(-5)).toBe(1); });
+  it("page=1.7 floors to 1 (Math.floor first, then max 1)", () => { expect(clampPage(1.7)).toBe(1); });
+  it("page=3.9 floors to 3", () => { expect(clampPage(3.9)).toBe(3); });
+  it("page=undefined defaults to 1", () => { expect(clampPage(undefined)).toBe(1); });
+
+  it("pageSize=0 clamps to minimum 5", () => { expect(clampPageSize(0)).toBe(5); });
+  it("pageSize=3 clamps to minimum 5", () => { expect(clampPageSize(3)).toBe(5); });
+  it("pageSize=200 clamps to maximum 100", () => { expect(clampPageSize(200)).toBe(100); });
+  it("pageSize=25 stays 25 (within 5–100)", () => { expect(clampPageSize(25)).toBe(25); });
+  it("pageSize=undefined defaults to 25", () => { expect(clampPageSize(undefined)).toBe(25); });
+
+  it("valid sort key passes through", () => { expect(resolveSort("contact")).toBe("contact"); });
+  it("unknown sort key falls back to 'created'", () => { expect(resolveSort("hacked_col; drop table--")).toBe("created"); });
+  it("undefined sort falls back to 'created'", () => { expect(resolveSort(undefined)).toBe("created"); });
+
+  it("dir='asc' passes through", () => { expect(resolveDir("asc")).toBe("asc"); });
+  it("dir='desc' passes through", () => { expect(resolveDir("desc")).toBe("desc"); });
+  it("dir=undefined falls back to 'desc'", () => { expect(resolveDir(undefined)).toBe("desc"); });
+  it("dir='DROP TABLE' falls back to 'desc'", () => { expect(resolveDir("DROP TABLE")).toBe("desc"); });
+});
+
+// ---------------------------------------------------------------------------
+// buildOutreachQueue / clearQueueRow / recordOutreachActivity validation
+// Pure logic mirrors of the guards in actions.ts ("use server").
+// ---------------------------------------------------------------------------
+
+const UUID_RE_MIRROR = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const GROUP_SLUG_RE = /^[a-z0-9-]{1,64}$/;
+const OUTREACH_ACTIONS_MIRROR = new Set(["sent", "replied", "enquired", "opted-in", "opted-out"]);
+
+function clampLimit(raw: unknown): number {
+  return Math.max(1, Math.min(50, Number(raw) || 10));
+}
+
+describe("buildOutreachQueue limit clamping (actions.ts mirror)", () => {
+  // Number(raw) || 10: 0 and NaN are falsy → default 10; negative is truthy → clamped by Math.max
+  it("limit=0 defaults to 10 (0 is falsy in || fallback)", () => { expect(clampLimit(0)).toBe(10); });
+  it("limit=-5 clamps to 1 via Math.max (negative is truthy, bypasses ||10)", () => { expect(clampLimit(-5)).toBe(1); });
+  it("limit=100 clamps to 50 via Math.min", () => { expect(clampLimit(100)).toBe(50); });
+  it("limit=5 passes through (within 1–50)", () => { expect(clampLimit(5)).toBe(5); });
+  it("limit=undefined defaults to 10 (NaN || 10)", () => { expect(clampLimit(undefined)).toBe(10); });
+  it("limit='abc' defaults to 10 (NaN || 10)", () => { expect(clampLimit("abc")).toBe(10); });
+});
+
+describe("buildOutreachQueue groupSlug validation (actions.ts mirror)", () => {
+  it("valid slug passes", () => { expect(GROUP_SLUG_RE.test("my-group-1")).toBe(true); });
+  it("empty string rejected", () => { expect(GROUP_SLUG_RE.test("")).toBe(false); });
+  it("uppercase letters rejected", () => { expect(GROUP_SLUG_RE.test("My-Group")).toBe(false); });
+  it("slug with spaces rejected", () => { expect(GROUP_SLUG_RE.test("my group")).toBe(false); });
+  it("65-char slug rejected (max 64)", () => {
+    expect(GROUP_SLUG_RE.test("a".repeat(65))).toBe(false);
+  });
+  it("64-char slug accepted (at max)", () => {
+    expect(GROUP_SLUG_RE.test("a".repeat(64))).toBe(true);
+  });
+});
+
+describe("UUID_RE contactId / queueId validation (actions.ts mirror)", () => {
+  const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
+  it("valid UUID passes", () => { expect(UUID_RE_MIRROR.test(VALID_UUID)).toBe(true); });
+  it("uppercase UUID passes (case-insensitive flag)", () => {
+    expect(UUID_RE_MIRROR.test(VALID_UUID.toUpperCase())).toBe(true);
+  });
+  it("empty string rejected", () => { expect(UUID_RE_MIRROR.test("")).toBe(false); });
+  it("plain string rejected", () => { expect(UUID_RE_MIRROR.test("not-a-uuid")).toBe(false); });
+  it("UUID missing one segment rejected", () => {
+    expect(UUID_RE_MIRROR.test("550e8400-e29b-41d4-a716")).toBe(false);
+  });
+  it("SQL injection string rejected", () => {
+    expect(UUID_RE_MIRROR.test("'; DROP TABLE contacts;--")).toBe(false);
+  });
+});
+
+describe("recordOutreachActivity action allowlist (actions.ts mirror)", () => {
+  it("'sent' is valid", () => { expect(OUTREACH_ACTIONS_MIRROR.has("sent")).toBe(true); });
+  it("'replied' is valid", () => { expect(OUTREACH_ACTIONS_MIRROR.has("replied")).toBe(true); });
+  it("'enquired' is valid", () => { expect(OUTREACH_ACTIONS_MIRROR.has("enquired")).toBe(true); });
+  it("'opted-in' is valid", () => { expect(OUTREACH_ACTIONS_MIRROR.has("opted-in")).toBe(true); });
+  it("'opted-out' is valid", () => { expect(OUTREACH_ACTIONS_MIRROR.has("opted-out")).toBe(true); });
+  it("'delete' is NOT a valid action", () => { expect(OUTREACH_ACTIONS_MIRROR.has("delete")).toBe(false); });
+  it("'admin' is NOT a valid action", () => { expect(OUTREACH_ACTIONS_MIRROR.has("admin")).toBe(false); });
+  it("empty string is NOT a valid action", () => { expect(OUTREACH_ACTIONS_MIRROR.has("")).toBe(false); });
+});
+
+// ---------------------------------------------------------------------------
+// updateReviewItem input validation — pure logic mirror (actions.ts "use server")
+// Guards: UUID check, ALLOWED_STATUSES allowlist, reviewedBy required.
+// ---------------------------------------------------------------------------
+
+const ALLOWED_STATUSES_MIRROR = new Set([
+  "pending", "approved", "rejected", "skipped", "needs_more_info", "merged_later",
+]);
+const UUID_RE_REVIEW = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function validateReviewItem(input: { reviewItemId: string; status: string; reviewedBy: string }) {
+  if (!UUID_RE_REVIEW.test(input.reviewItemId)) return { ok: false, message: "Invalid review item id." };
+  if (!ALLOWED_STATUSES_MIRROR.has(input.status)) return { ok: false, message: `Invalid status: ${input.status}` };
+  const reviewedBy = (input.reviewedBy || "").trim();
+  if (!reviewedBy) return { ok: false, message: "reviewedBy is required." };
+  return { ok: true, reviewedBy };
+}
+
+describe("updateReviewItem input validation (actions.ts mirror)", () => {
+  const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
+
+  it("accepts valid reviewItemId, status, and reviewedBy", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "approved", reviewedBy: "operator" });
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects non-UUID reviewItemId", () => {
+    const r = validateReviewItem({ reviewItemId: "not-a-uuid", status: "approved", reviewedBy: "op" });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid review item id/i);
+  });
+
+  it("rejects SQL injection in reviewItemId", () => {
+    const r = validateReviewItem({ reviewItemId: "'; DROP TABLE reviews;--", status: "approved", reviewedBy: "op" });
+    expect(r.ok).toBe(false);
+  });
+
+  it("accepts all 6 allowed statuses", () => {
+    for (const status of ["pending", "approved", "rejected", "skipped", "needs_more_info", "merged_later"]) {
+      const r = validateReviewItem({ reviewItemId: VALID_UUID, status, reviewedBy: "op" });
+      expect(r.ok).toBe(true);
+    }
+  });
+
+  it("rejects unknown status", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "hacked_status", reviewedBy: "op" });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid status/i);
+  });
+
+  it("rejects empty status", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "", reviewedBy: "op" });
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects empty reviewedBy", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "approved", reviewedBy: "" });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/reviewedBy is required/i);
+  });
+
+  it("rejects whitespace-only reviewedBy", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "approved", reviewedBy: "   " });
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/reviewedBy is required/i);
+  });
+
+  it("trims reviewedBy whitespace and passes if non-empty after trim", () => {
+    const r = validateReviewItem({ reviewItemId: VALID_UUID, status: "approved", reviewedBy: "  padmini  " });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect((r as { reviewedBy: string }).reviewedBy).toBe("padmini");
+  });
+});
