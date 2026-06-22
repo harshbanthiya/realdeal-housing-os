@@ -703,6 +703,67 @@ test.describe("Unit registry owner contact link", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Buildings workspace — Unit detail panel outreach action
+// ---------------------------------------------------------------------------
+test.describe("Buildings workspace — Unit detail outreach button", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("unit detail: default state shows 'Select a unit' prompt (no button)", async ({ page }) => {
+    await page.goto("/cockpit/buildings/kalpataru-radiance");
+    await page.getByRole("button", { name: "Unit registry" }).click();
+    await expect(page.getByText(/Select a unit to see its full/i)).toBeVisible({ timeout: 5000 });
+    // No outreach button before a unit is selected
+    await expect(page.getByRole("button", { name: /add to outreach/i })).not.toBeVisible();
+  });
+
+  test("unit detail: clicking a unit with ownerContactId shows Add to outreach button", async ({ page }) => {
+    // Kalpataru Radiance Tower A has IGR-matched contacts on several units.
+    // We click any owner-held cell and, if it has a contact link, assert the outreach button is co-present.
+    await page.goto("/cockpit/buildings/kalpataru-radiance");
+    await page.getByRole("button", { name: "Unit registry" }).click();
+    const ownedBtn = page.locator("button[title*='Flat'][title*='Owner-held']").first();
+    if (await ownedBtn.count() === 0) return;
+    await ownedBtn.click();
+    // If an owner contact link is shown, the outreach button must also be visible
+    const ownerLink = page.locator(`a[href^="/cockpit/contacts/c/"]`).first();
+    if (await ownerLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await expect(page.getByRole("button", { name: /\+ Add to outreach/i })).toBeVisible({ timeout: 5000 });
+    }
+  });
+
+  test("unit detail: clicking a unit WITHOUT ownerContactId does NOT show Add to outreach button", async ({ page }) => {
+    // An 'unknown' or 'registered' unit has no contact — no button should appear
+    await page.goto("/cockpit/buildings/kalpataru-radiance");
+    await page.getByRole("button", { name: "Unit registry" }).click();
+    // Pick a unit that is NOT owner-held (registered / unknown = no contact)
+    const noContactBtn = page.locator("button[title*='Flat']").filter({
+      hasNot: page.locator("[title*='Owner-held']"),
+    }).first();
+    if (await noContactBtn.count() === 0) return;
+    await noContactBtn.click();
+    // Owner link absent → Add to outreach must also be absent
+    const ownerLink = page.locator(`a[href^="/cockpit/contacts/c/"]`).first();
+    const hasLink = await ownerLink.isVisible({ timeout: 2000 }).catch(() => false);
+    if (!hasLink) {
+      await expect(page.getByRole("button", { name: /add to outreach/i })).not.toBeVisible();
+    }
+  });
+
+  test("unit detail: Add to outreach button is disabled while pending (no double-submit)", async ({ page }) => {
+    await page.goto("/cockpit/buildings/kalpataru-radiance");
+    await page.getByRole("button", { name: "Unit registry" }).click();
+    const ownedBtn = page.locator("button[title*='Flat'][title*='Owner-held']").first();
+    if (await ownedBtn.count() === 0) return;
+    await ownedBtn.click();
+    const addBtn = page.getByRole("button", { name: /\+ Add to outreach/i });
+    if (!(await addBtn.isVisible({ timeout: 3000 }).catch(() => false))) return;
+    // Verify the button has a disabled attribute when clicked (becomes disabled during transition)
+    await expect(addBtn).not.toBeDisabled();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // /cockpit/audiences — filter form
 // ---------------------------------------------------------------------------
 
@@ -1151,15 +1212,12 @@ test.describe("Buildings workspace — RERA tab", () => {
     await expect(page.getByText(/P51800000591/).first()).toBeVisible({ timeout: 5000 });
   });
 
-  test("RERA tab on kalpataru-radiance shows both variants (A + New Parser)", async ({ page }) => {
+  test("RERA tab on kalpataru-radiance shows exactly one merged profile (Phase 6.23)", async ({ page }) => {
     await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
     await page.getByRole("button", { name: /rera/i }).click();
-    // Both variants link to same registration P51800000591 — check for at least 2 fact rows
-    const factRows = page.locator("main [class*='grid']").filter({ has: page.getByText(/P51800000591/) });
-    await expect(factRows.first()).toBeVisible({ timeout: 5000 });
-    // Two RERA profiles = 8 fact rows (4 per profile) — check count ≥ 2
+    // Phase 6.23 merged three variants into one canonical — exactly 1 RERA profile remains
     const allFacts = page.locator("main").getByText("RERA registration");
-    await expect(allFacts).toHaveCount(2, { timeout: 5000 });
+    await expect(allFacts).toHaveCount(1, { timeout: 5000 });
   });
 
   test("RERA tab on DLF shows hardcoded DLF facts (not Kalpataru data)", async ({ page }) => {

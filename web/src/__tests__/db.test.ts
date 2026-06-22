@@ -128,6 +128,48 @@ describe("contact sheet q sanitisation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// UnitCell ownerContactId resolution logic (mirrors data.ts lines 577-588)
+// ---------------------------------------------------------------------------
+describe("UnitCell ownerContactId resolution", () => {
+  type RelOwner = { name: string; contactId: string } | undefined;
+  type LastOwn = { date: string } | undefined;
+
+  function resolveContactId(relOwner: RelOwner, lastOwn: LastOwn, igrContactId: string | undefined): string | undefined {
+    return relOwner?.contactId ?? (lastOwn && igrContactId ? igrContactId : undefined);
+  }
+
+  it("returns relOwner contactId when relationship-based owner exists", () => {
+    const result = resolveContactId({ name: "Asha Mehta", contactId: "rel-uuid" }, { date: "2020-01-01" }, "igr-uuid");
+    expect(result).toBe("rel-uuid");
+  });
+
+  it("returns IGR contact when lastOwn exists and IGR match exists but no relOwner", () => {
+    const result = resolveContactId(undefined, { date: "2020-01-01" }, "igr-uuid");
+    expect(result).toBe("igr-uuid");
+  });
+
+  it("returns undefined when no lastOwn even if IGR match exists (unit not yet parsed)", () => {
+    const result = resolveContactId(undefined, undefined, "igr-uuid");
+    expect(result).toBeUndefined();
+  });
+
+  it("returns undefined when no relOwner, no lastOwn, no IGR match", () => {
+    const result = resolveContactId(undefined, undefined, undefined);
+    expect(result).toBeUndefined();
+  });
+
+  it("returns undefined when no relOwner, lastOwn exists but no IGR match", () => {
+    const result = resolveContactId(undefined, { date: "2019-06-01" }, undefined);
+    expect(result).toBeUndefined();
+  });
+
+  it("relOwner always wins over IGR even when both present", () => {
+    const result = resolveContactId({ name: "Ravi Joshi", contactId: "rel-uuid" }, undefined, "igr-uuid");
+    expect(result).toBe("rel-uuid");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // logContactNote input validation (pure-logic, no DB or script invocation)
 // ---------------------------------------------------------------------------
 
