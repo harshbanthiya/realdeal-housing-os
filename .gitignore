@@ -40,6 +40,10 @@ id_ed25519*
 data/
 backups/
 
+# Temporary workspace and generated script outputs (never commit)
+.codex_tmp/
+outputs/
+
 # Private imports, client files, and generated outputs
 imports/
 exports/
