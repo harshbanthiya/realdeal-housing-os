@@ -860,6 +860,113 @@ test.describe("Audiences page", () => {
 });
 
 // ---------------------------------------------------------------------------
+// /cockpit/buildings/[slug] — Leads tab empty-state messages
+// ---------------------------------------------------------------------------
+test.describe("Buildings workspace — Leads tab", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("Leads tab on launch building shows pre-launch interest message when count=0", async ({ page }) => {
+    // DLF is launch mode — empty state must mention 'pre-launch' or 'consent'
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: "Leads" }).click();
+    // When leads=0 and launch=true: "Pre-launch interest list is preview-only — lead intake opens after consent + go-live review."
+    await expect(
+      page.getByText(/pre-launch interest list|lead intake opens|consent.*go-live/i)
+    ).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Leads tab on active building shows campaign empty-state when count=0", async ({ page }) => {
+    // Kalpataru/IH are active mode — empty state should say 'Run a campaign'
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    await page.getByRole("button", { name: "Leads" }).click();
+    // When leads=0 and launch=false: "0 leads captured. Run a campaign to convert contacts into warm leads."
+    await expect(
+      page.getByText(/0 leads captured|Run a campaign/i)
+    ).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Leads stats tile on overview shows count from DB (currently 0)", async ({ page }) => {
+    // stats.leads is now wired to inbound_leads table; DB has 0 → tile shows 0
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    // Overview tab is default — check the Leads tile label exists
+    const leadsTile = page.locator("main").getByText("Leads").first();
+    await expect(leadsTile).toBeVisible({ timeout: 5000 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// /cockpit/contacts — Cleanup funnel index page
+// ---------------------------------------------------------------------------
+test.describe("Contacts cleanup funnel", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("cleanup funnel renders 4 stage stats (Imported / In review / Approved / Canonical)", async ({ page }) => {
+    await page.goto("/cockpit/contacts");
+    // Stage labels are small-cap text in border boxes; use .first() to avoid strict-mode on "Canonical" appearing elsewhere
+    const card = page.locator("main").filter({ hasText: "Cleanup funnel" }).first();
+    await expect(card.getByText("Imported rows", { exact: true })).toBeVisible({ timeout: 5000 });
+    await expect(card.getByText("In review", { exact: true })).toBeVisible({ timeout: 5000 });
+    await expect(card.getByText("Approved", { exact: true })).toBeVisible({ timeout: 5000 });
+    await expect(card.getByText("Canonical", { exact: true })).toBeVisible({ timeout: 5000 });
+  });
+
+  test("contacts sub-nav shows Pipeline / All contacts links", async ({ page }) => {
+    // ContactsSubnav labels: Overview, Pipeline, All contacts (not "Sheet")
+    await page.goto("/cockpit/contacts");
+    await expect(page.getByRole("link", { name: "Pipeline", exact: true })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("link", { name: "All contacts", exact: true })).toBeVisible({ timeout: 5000 });
+  });
+
+  test("sub-nav Pipeline link navigates to /cockpit/contacts/pipeline", async ({ page }) => {
+    await page.goto("/cockpit/contacts");
+    await page.getByRole("link", { name: "Pipeline", exact: true }).click();
+    await expect(page).toHaveURL(/\/cockpit\/contacts\/pipeline/, { timeout: 5000 });
+  });
+
+  test("sub-nav All contacts link navigates to /cockpit/contacts/sheet", async ({ page }) => {
+    await page.goto("/cockpit/contacts");
+    await page.getByRole("link", { name: "All contacts", exact: true }).click();
+    await expect(page).toHaveURL(/\/cockpit\/contacts\/sheet/, { timeout: 5000 });
+  });
+
+  test("merge candidates section renders (queue or empty state)", async ({ page }) => {
+    await page.goto("/cockpit/contacts");
+    // Either shows merge candidate cards or the empty state message
+    const hasCandidates = await page.getByText(/No pending merge candidates/i).isVisible().catch(() => false);
+    const hasCard = await page.locator("main").getByText(/Preview approve|merge candidate/i).first().isVisible().catch(() => false);
+    // One of the two must be true
+    expect(hasCandidates || hasCard).toBe(true);
+  });
+
+  test("review queues panel shows pending counts by type", async ({ page }) => {
+    await page.goto("/cockpit/contacts");
+    await expect(page.getByText(/Review queues/i)).toBeVisible({ timeout: 5000 });
+    // Should show at least one review type row
+    await expect(page.getByText(/pending/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test("import batches panel renders batch cards", async ({ page }) => {
+    await page.goto("/cockpit/contacts");
+    // Use heading role to avoid strict-mode collision
+    await expect(page.getByRole("heading", { name: /Import batches/i })).toBeVisible({ timeout: 5000 });
+  });
+
+  test("cleanup funnel canonical count is a non-negative integer", async ({ page }) => {
+    await page.goto("/cockpit/contacts");
+    // The subtitle says "N cleaned canonical · M awaiting review …"
+    const subtitle = page.locator("main").getByText(/cleaned canonical/i).first();
+    await expect(subtitle).toBeVisible({ timeout: 5000 });
+    const text = await subtitle.textContent();
+    // Extract the leading number
+    const match = text?.match(/^(\d+)/);
+    expect(match).not.toBeNull();
+    expect(Number(match![1])).toBeGreaterThanOrEqual(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // /cockpit/buildings/[slug] — Mode switcher (persist to DB)
 // ---------------------------------------------------------------------------
 

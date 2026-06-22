@@ -84,8 +84,18 @@ export async function getBuildings(): Promise<Building[]> {
        left join rera_project_profiles rp on rp.building_id = b.id
       group by b.name`
   );
+  // Per-building inbound leads (buildings.id → inbound_leads.related_building_id)
+  const leadsRows = await readQuery<{ name: string; leads: string; warm: string }>(
+    `select b.name,
+            count(il.id) filter (where il.lead_status <> 'spam')                                          leads,
+            count(il.id) filter (where il.lead_status <> 'spam' and il.lead_intent in ('warm','hot','buy')) warm
+       from buildings b
+       left join inbound_leads il on il.related_building_id = b.id
+      group by b.name`
+  );
   const ownerMap = new Map(ownerRows.map((r) => [r.name, { owners: num(r.owners), tenants: num(r.tenants) }]));
   const reraMap  = new Map(reraRows.map((r) => [r.name, num(r.rera_open)]));
+  const leadsMap = new Map(leadsRows.map((r) => [r.name, { leads: num(r.leads), warm: num(r.warm) }]));
   const kw = num((await readQuery<{ n: string }>(`select count(*) n from seo_keywords`))[0]?.n);
 
   const out: Building[] = [];
@@ -101,10 +111,11 @@ export async function getBuildings(): Promise<Building[]> {
   for (const b of blds) {
     const cnt = ownerMap.get(b.name) ?? { owners: 0, tenants: 0 };
     const rOpen = reraMap.get(b.name) ?? 0;
+    const lc = leadsMap.get(b.name) ?? { leads: 0, warm: 0 };
     out.push({
       slug: slugify(b.name),
       name: b.name, location: b.locality || "Mumbai", mode: "active", seoRank: `${kw} kw`,
-      stats: { owners: cnt.owners, tenants: cnt.tenants, leads: 0, warm: 0, listings: 0, openReviews: rOpen, blockers: 0 },
+      stats: { owners: cnt.owners, tenants: cnt.tenants, leads: lc.leads, warm: lc.warm, listings: 0, openReviews: rOpen, blockers: 0 },
     });
   }
   return out;

@@ -128,6 +128,45 @@ describe("contact sheet q sanitisation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Per-building leads map (mirrors data.ts leadsMap pattern)
+// ---------------------------------------------------------------------------
+describe("Per-building leads map", () => {
+  function num(v: string | number | undefined): number { const n = Number(v); return isNaN(n) ? 0 : n; }
+  function buildLeadsMap(rows: { name: string; leads: string; warm: string }[]) {
+    return new Map(rows.map((r) => [r.name, { leads: num(r.leads), warm: num(r.warm) }]));
+  }
+
+  it("correctly maps lead count by building name", () => {
+    const map = buildLeadsMap([
+      { name: "DLF Westpark", leads: "7", warm: "3" },
+      { name: "Imperial Heights", leads: "0", warm: "0" },
+    ]);
+    expect(map.get("DLF Westpark")).toEqual({ leads: 7, warm: 3 });
+  });
+
+  it("returns 0 for buildings with no leads", () => {
+    const map = buildLeadsMap([{ name: "Imperial Heights", leads: "0", warm: "0" }]);
+    expect(map.get("Imperial Heights")).toEqual({ leads: 0, warm: 0 });
+  });
+
+  it("falls back to {leads:0,warm:0} for unknown building", () => {
+    const map = buildLeadsMap([{ name: "DLF Westpark", leads: "4", warm: "2" }]);
+    expect(map.get("Unknown Building") ?? { leads: 0, warm: 0 }).toEqual({ leads: 0, warm: 0 });
+  });
+
+  it("warm is never greater than leads", () => {
+    const map = buildLeadsMap([{ name: "DLF Westpark", leads: "5", warm: "5" }]);
+    const v = map.get("DLF Westpark")!;
+    expect(v.warm).toBeLessThanOrEqual(v.leads);
+  });
+
+  it("handles string zero correctly (SQL returns '0' not 0)", () => {
+    const map = buildLeadsMap([{ name: "Test", leads: "0", warm: "0" }]);
+    expect(map.get("Test")).toEqual({ leads: 0, warm: 0 });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // UnitCell ownerContactId resolution logic (mirrors data.ts lines 577-588)
 // ---------------------------------------------------------------------------
 describe("UnitCell ownerContactId resolution", () => {
