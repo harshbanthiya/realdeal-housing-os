@@ -26,10 +26,10 @@ function maskName(n: string) { const t = (n || "").trim().split(/\s+/); return t
 function maskPhone(p: string) { const d = String(p || "").replace(/\D/g, ""); return d ? `•••• ••${d.slice(-2)}` : "—"; }
 function slugify(v: string) { return v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 
-function agentLabel(taskType: string) {
+export function agentLabel(taskType: string) {
   return (taskType || "unknown").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
-function buildingFromRaw(raw: Record<string, string> | null): string {
+export function buildingFromRaw(raw: Record<string, string> | null): string {
   if (!raw) return "—";
   if (raw.building_name) return String(raw.building_name);
   if (raw.launch_key) {
@@ -37,7 +37,7 @@ function buildingFromRaw(raw: Record<string, string> | null): string {
   }
   return "—";
 }
-function taskTone(status: string): Tone {
+export function taskTone(status: string): Tone {
   if (status === "completed" || status === "done") return "ready";
   if (status === "running" || status === "in_progress") return "review";
   if (status === "failed" || status === "error") return "blocked";

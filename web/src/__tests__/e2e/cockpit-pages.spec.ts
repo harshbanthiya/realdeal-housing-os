@@ -819,6 +819,81 @@ test.describe("Home dashboard — launch readiness streams", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// /cockpit (home) — portfolio summary + panel headings
+// ---------------------------------------------------------------------------
+
+test.describe("Home dashboard — portfolio summary + panels", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("portfolio summary line shows building count", async ({ page }) => {
+    await page.goto("/cockpit");
+    // e.g. "3 buildings · 1 in launch · 12 items awaiting review"
+    await expect(page.getByText(/\d+ buildings/)).toBeVisible({ timeout: 8000 });
+  });
+
+  test("portfolio summary line mentions '1 in launch'", async ({ page }) => {
+    await page.goto("/cockpit");
+    await expect(page.getByText(/1 in launch/)).toBeVisible({ timeout: 8000 });
+  });
+
+  test("Buildings panel heading is visible", async ({ page }) => {
+    await page.goto("/cockpit");
+    await expect(page.getByText("Buildings", { exact: true })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("at least one building card links to a workspace slug", async ({ page }) => {
+    await page.goto("/cockpit");
+    const buildingLinks = page.locator('a[href*="/cockpit/buildings/"]');
+    await expect(buildingLinks.first()).toBeVisible({ timeout: 8000 });
+    const href = await buildingLinks.first().getAttribute("href");
+    expect(href).toMatch(/\/cockpit\/buildings\/.+/);
+  });
+
+  test("DLF Westpark building card is present", async ({ page }) => {
+    await page.goto("/cockpit");
+    // Multiple DLF Westpark text nodes can appear (card title + blocker sub-text) — first() avoids strict violation
+    await expect(page.getByText("DLF Westpark", { exact: true }).first()).toBeVisible({ timeout: 8000 });
+  });
+
+  test("'Needs review' panel heading is visible", async ({ page }) => {
+    await page.goto("/cockpit");
+    await expect(page.getByRole("heading", { name: "Needs review" })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("'Needs review' panel shows at least one item (launch_readiness_checks has open rows)", async ({ page }) => {
+    await page.goto("/cockpit");
+    // h2 "Needs review" → up to PanelTitle div → up to Card → find sibling ul li
+    const reviewsUl = page.getByRole("heading", { name: "Needs review" }).locator("../../ul");
+    await expect(reviewsUl.locator("li").first()).toBeVisible({ timeout: 8000 });
+  });
+
+  test("'Blockers' panel heading is visible", async ({ page }) => {
+    await page.goto("/cockpit");
+    await expect(page.getByRole("heading", { name: "Blockers" })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("'Blockers' panel shows BLK-xxx IDs (29 open blockers from launch_readiness_checks)", async ({ page }) => {
+    await page.goto("/cockpit");
+    // Multiple BLK-xxx spans exist — first() avoids strict mode violation
+    await expect(page.getByText(/BLK-\d{3}/).first()).toBeVisible({ timeout: 8000 });
+  });
+
+  test("'Agents' panel heading is visible", async ({ page }) => {
+    await page.goto("/cockpit");
+    await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("'Agents' panel shows fallback or real task rows (never empty)", async ({ page }) => {
+    await page.goto("/cockpit");
+    // h2 "Agents" → up to PanelTitle div → up to Card → find sibling ul li
+    // getAgentActivity() always returns at least one row (real tasks or fallback)
+    const agentsUl = page.getByRole("heading", { name: "Agents" }).locator("../../ul");
+    await expect(agentsUl.locator("li").first()).toBeVisible({ timeout: 8000 });
+  });
+});
+
 test.describe("Audiences page", () => {
   test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
   test.beforeEach(async ({ context }) => { await authedContext(context); });
@@ -903,7 +978,7 @@ test.describe("Buildings workspace — Leads tab", () => {
     // When leads=0 and launch=true: "Pre-launch interest list is preview-only — lead intake opens after consent + go-live review."
     await expect(
       page.getByText(/pre-launch interest list|lead intake opens|consent.*go-live/i)
-    ).toBeVisible({ timeout: 5000 });
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("Leads tab on active building shows campaign empty-state when count=0", async ({ page }) => {

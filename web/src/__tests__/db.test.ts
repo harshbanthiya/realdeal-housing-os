@@ -1184,3 +1184,118 @@ describe("metaCsvFromRows CSV generation", () => {
     expect(lines).toHaveLength(3); // header + 2 data rows
   });
 });
+
+// ---------------------------------------------------------------------------
+// agentLabel — title-cases task_type strings
+// ---------------------------------------------------------------------------
+
+describe("agentLabel", () => {
+  let agentLabel: typeof import("@/lib/cockpit/data").agentLabel;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ agentLabel } = await import("@/lib/cockpit/data"));
+  });
+
+  it("converts single underscore_word to title case", () => {
+    expect(agentLabel("seo_monitor")).toBe("Seo Monitor");
+  });
+
+  it("converts multi-segment task type", () => {
+    expect(agentLabel("content_quality_check")).toBe("Content Quality Check");
+  });
+
+  it("already-titled word passes through", () => {
+    expect(agentLabel("audit")).toBe("Audit");
+  });
+
+  it("empty string falls back to 'Unknown'", () => {
+    expect(agentLabel("")).toBe("Unknown");
+  });
+
+  it("handles single-word type", () => {
+    expect(agentLabel("seo")).toBe("Seo");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildingFromRaw — extracts building name from raw_input JSONB
+// ---------------------------------------------------------------------------
+
+describe("buildingFromRaw", () => {
+  let buildingFromRaw: typeof import("@/lib/cockpit/data").buildingFromRaw;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ buildingFromRaw } = await import("@/lib/cockpit/data"));
+  });
+
+  it("returns '—' for null input", () => {
+    expect(buildingFromRaw(null)).toBe("—");
+  });
+
+  it("returns building_name when present", () => {
+    expect(buildingFromRaw({ building_name: "Imperial Heights" })).toBe("Imperial Heights");
+  });
+
+  it("prefers building_name over launch_key when both present", () => {
+    expect(buildingFromRaw({ building_name: "DLF Westpark", launch_key: "dlf-westpark-andheri-west" })).toBe("DLF Westpark");
+  });
+
+  it("falls back to title-casing launch_key when building_name absent", () => {
+    expect(buildingFromRaw({ launch_key: "dlf-westpark-andheri-west" })).toBe("Dlf Westpark Andheri West");
+  });
+
+  it("returns '—' for empty object", () => {
+    expect(buildingFromRaw({})).toBe("—");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// taskTone — maps task status to Tone
+// ---------------------------------------------------------------------------
+
+describe("taskTone", () => {
+  let taskTone: typeof import("@/lib/cockpit/data").taskTone;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ taskTone } = await import("@/lib/cockpit/data"));
+  });
+
+  it("'completed' → ready", () => {
+    expect(taskTone("completed")).toBe("ready");
+  });
+
+  it("'done' → ready", () => {
+    expect(taskTone("done")).toBe("ready");
+  });
+
+  it("'running' → review", () => {
+    expect(taskTone("running")).toBe("review");
+  });
+
+  it("'in_progress' → review", () => {
+    expect(taskTone("in_progress")).toBe("review");
+  });
+
+  it("'failed' → blocked", () => {
+    expect(taskTone("failed")).toBe("blocked");
+  });
+
+  it("'error' → blocked", () => {
+    expect(taskTone("error")).toBe("blocked");
+  });
+
+  it("'queued' → neutral (unknown status fallback)", () => {
+    expect(taskTone("queued")).toBe("neutral");
+  });
+
+  it("'pending' → neutral", () => {
+    expect(taskTone("pending")).toBe("neutral");
+  });
+
+  it("empty string → neutral", () => {
+    expect(taskTone("")).toBe("neutral");
+  });
+});
