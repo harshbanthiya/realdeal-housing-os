@@ -9,41 +9,11 @@ emails, websites, or addresses.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 # (section label, table, status column). NULL statuses bucket as '(none)'.
 SECTIONS = [
     ("seo_profiles", "building_web_profiles", "seo_status"),
@@ -56,7 +26,6 @@ SECTIONS = [
     ("ai_agent_tasks", "ai_agent_tasks", "status"),
 ]
 
-
 def breakdown_sql() -> str:
     parts = [
         f"SELECT '{label}' AS section, COALESCE({col}::text, '(none)') AS bucket, count(*)::text AS n "
@@ -64,7 +33,6 @@ def breakdown_sql() -> str:
         for label, table, col in SECTIONS
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY section, bucket;"
-
 
 def main() -> int:
     print("Growth-pipeline summary. Counts only; no raw personal values are printed.")
@@ -94,7 +62,6 @@ def main() -> int:
     print(f"  communications_enabled_count (send_enabled campaigns): {enabled if code2 == 0 else 'ERROR'}")
     print("  communications_sent_count: 0  (no send pipeline exists in this phase)")
     return code or code2
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

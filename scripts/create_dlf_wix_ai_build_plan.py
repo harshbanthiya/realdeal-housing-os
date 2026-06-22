@@ -10,16 +10,14 @@ never prints the staging URL.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import json
 import re
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.23"
 SOURCE = "dlf_wix_ai_build_plan"
 ARTIFACT_SUBDIR = "dlf-westpark-gallery-white-v1"
@@ -33,46 +31,8 @@ PLACEHOLDERS = (
     "RERA_VERIFY", "PRICE_VERIFY", "BROCHURE_LINK_PENDING", "WIX_PAGE_PENDING",
     "VERIFY", "VISUAL_DIRECTION_PENDING",
 )
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
 def json_literal(value) -> str:
     return sql_literal(json.dumps(value, sort_keys=True))
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def probe_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
     return f"""
@@ -102,7 +62,6 @@ SELECT
   (SELECT ready_for_production_publish::text FROM vw_dlf_wix_staging_readiness WHERE launch_key = {lk});
 """
 
-
 def permission_summary_sql() -> str:
     return """
 SELECT recommended_status || '|' || risk_level || '|' || count(*)
@@ -110,7 +69,6 @@ FROM wix_api_permission_catalog
 GROUP BY recommended_status, risk_level
 ORDER BY recommended_status, risk_level;
 """
-
 
 def choose_route(preferred_route: str) -> tuple[str, str, str, list[str], list[str], list[str], list[str]]:
     if preferred_route == "auto":
@@ -144,7 +102,6 @@ def choose_route(preferred_route: str) -> tuple[str, str, str, list[str], list[s
         "social_posting", "payments", "members", "bookings", "ecommerce",
     ]
     return route, fallback, status, now, later, forbidden, blockers + setup
-
 
 def artifact_texts(route: str) -> dict[str, tuple[str, str]]:
     copy_blocks = "\n".join([
@@ -294,7 +251,6 @@ SEO text must stay in DOM. No canvas text.
         "gallery-white-static-preview.css": ("static_preview_css", css),
     }
 
-
 def validate_artifacts(artifacts: dict[str, tuple[str, str]]) -> dict[str, str]:
     all_text = "\n".join(text for _, text in artifacts.values())
     checks = {
@@ -314,7 +270,6 @@ def validate_artifacts(artifacts: dict[str, tuple[str, str]]) -> dict[str, str]:
     }
     return {key: ("passed" if ok else "failed") for key, ok in checks.items()}
 
-
 def write_artifacts(output_dir: Path, artifacts: dict[str, tuple[str, str]], apply: bool) -> list[tuple[str, str, str]]:
     target = output_dir / ARTIFACT_SUBDIR
     rows = []
@@ -328,10 +283,8 @@ def write_artifacts(output_dir: Path, artifacts: dict[str, tuple[str, str]], app
         rows.append((artifact_key, artifact_type, str(rel)))
     return rows
 
-
 def values_sql(rows: list[tuple[str, ...]]) -> str:
     return ",\n".join("(" + ", ".join(sql_literal(v) for v in row) + ")" for row in rows)
-
 
 def apply_sql(args: argparse.Namespace, route_data, artifact_rows, validation_statuses) -> str:
     route, fallback, status, now, later, forbidden, setup = route_data
@@ -505,7 +458,6 @@ UNION ALL SELECT 'ready_for_fake_lead_test', ready_for_fake_lead_test::text FROM
 ORDER BY 1, 2;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create Phase 7.23 DLF Wix AI build execution plan. Dry-run by default.")
     parser.add_argument("--launch-key", default="dlf-westpark-andheri-west")
@@ -595,7 +547,6 @@ def main() -> int:
     print("Apply result:" if code == 0 else "Apply FAILED:")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

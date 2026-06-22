@@ -12,14 +12,12 @@ requires --apply AND --real-ok. Counts only; no raw personal values are printed.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.2"
 SOURCE = "wix_content_review_prep"
 
@@ -30,37 +28,8 @@ DELETE_ORDER = [
     ("wix_cms_field_mappings", "raw_context"),
     ("wix_cms_collections", "raw_context"),
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def tag(col: str) -> str:
     return f"{col}->>'phase' = '{PHASE}' AND {col}->>'source' = '{SOURCE}'"
-
 
 def counts_sql() -> str:
     parts = [
@@ -68,7 +37,6 @@ def counts_sql() -> str:
         for t, col in DELETE_ORDER
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
-
 
 def guard_sql() -> str:
     """published publishing rows | tagged rows with external_calls_made=true."""
@@ -81,11 +49,9 @@ def guard_sql() -> str:
         f"({ext_parts})::text;"
     )
 
-
 def delete_sql() -> str:
     stmts = "\n".join(f"DELETE FROM {t} WHERE {tag(col)};" for t, col in DELETE_ORDER)
     return f"BEGIN;\n{stmts}\nCOMMIT;\n{counts_sql()}"
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Cleanup Phase 6.2 Wix content-review prep. Dry-run by default.")
@@ -124,7 +90,6 @@ def main() -> int:
     print("Remaining phase-6.2 rows after cleanup (expect all 0):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

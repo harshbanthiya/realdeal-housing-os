@@ -7,50 +7,14 @@ staging records, never calls Wix APIs, and never touches leads/contacts/messages
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.23"
 SOURCE = "dlf_wix_ai_build_plan"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def probe_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
     return f"""
@@ -78,7 +42,6 @@ SELECT
   (SELECT communication_sent FROM vw_dlf_operator_safety_posture WHERE launch_key = {lk});
 """
 
-
 def artifact_paths_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
     return f"""
@@ -92,7 +55,6 @@ WHERE p.launch_key = {lk}
   AND artifact_path IS NOT NULL
 ORDER BY artifact_path;
 """
-
 
 def apply_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
@@ -183,7 +145,6 @@ UNION ALL SELECT 'contacts', count(*)::text FROM contacts
 ORDER BY 1;
 """
 
-
 def delete_artifacts(launch_key: str) -> int:
     code, output = run_psql(artifact_paths_sql(launch_key))
     if code != 0:
@@ -207,7 +168,6 @@ def delete_artifacts(launch_key: str) -> int:
             return 1
     print(f"artifacts_deleted: {deleted}")
     return 0
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Clean up Phase 7.23 DLF Wix AI build plan rows. Dry-run by default.")
@@ -255,7 +215,6 @@ def main() -> int:
     print("Cleanup applied:" if code == 0 else "Cleanup FAILED:")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

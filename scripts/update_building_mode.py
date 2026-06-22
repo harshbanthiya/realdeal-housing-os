@@ -2,51 +2,16 @@
 """Safely update a building's lifecycle mode in launch_projects."""
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import re
-import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 
 ALLOWED_MODES = {"prospecting", "active", "launch", "post_launch"}
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,80}[a-z0-9]$")
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as fh:
-        for line in fh:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i",
-        "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql",
-        "-U", user, "-d", db_name,
-        "-At", "-F", "\t", "-v", "ON_ERROR_STOP=1",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.rstrip("\n") or result.stderr.strip()
-
-
 def fetch_current(slug: str) -> tuple[int, str | None, str | None]:
     """Return (code, current_mode, project_id) for the given slug."""
     sql = f"SELECT mode::text, id::text FROM launch_projects WHERE launch_key = {sql_literal(slug)} LIMIT 1;"
@@ -60,14 +25,12 @@ def fetch_current(slug: str) -> tuple[int, str | None, str | None]:
     proj_id = parts[1].strip() if len(parts) > 1 else None
     return 0, mode, proj_id
 
-
 def update_mode(slug: str, new_mode: str) -> tuple[int, str]:
     sql = (
         f"UPDATE launch_projects SET mode = {sql_literal(new_mode)}, updated_at = NOW() "
         f"WHERE launch_key = {sql_literal(slug)} RETURNING launch_key::text, mode::text;"
     )
     return run_psql(sql)
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -122,7 +85,6 @@ def main() -> int:
     print("dry_run: false")
     print(f"note: mode updated {current_mode!r} → {args.mode!r}")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

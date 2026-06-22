@@ -16,15 +16,13 @@ calls. Every change is tagged in raw_context with an `evidence_review_phase=6.6`
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import re
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.6"
 SOURCE = "internal_evidence_acceptance"
 
@@ -39,38 +37,6 @@ STATUS_TO_REVIEW = {
 }
 
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 # Evidence belonging to the profile: evidence -> gap -> brief -> building_web_profile.
 def profile_scope(slug: str) -> str:
     return (
@@ -81,13 +47,11 @@ def profile_scope(slug: str) -> str:
         f"  WHERE p.profile_slug = {sql_literal(slug)})"
     )
 
-
 # Phone-/email-like patterns in a safe summary are a hard stop.
 PII_PREDICATE = (
     "(e.safe_summary ~* '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[.][A-Za-z]{2,}' "
     "OR e.safe_summary ~ '[0-9][0-9 ()+.-]{7,}[0-9]')"
 )
-
 
 def target_cte(slug: str, args) -> str:
     """CTE `tgt(id)` listing the evidence rows this run targets."""
@@ -110,7 +74,6 @@ def target_cte(slug: str, args) -> str:
         f"  WHERE {scope} {status_filter} AND e.id IN ({ids})\n)"
     )
 
-
 def precheck_sql(slug: str, args) -> str:
     """One query returning labelled validation counts."""
     cte = target_cte(slug, args)
@@ -127,14 +90,12 @@ UNION ALL SELECT 'outside_profile', count(*)::text FROM internal_source_evidence
    WHERE e.id IN (SELECT id FROM tgt) AND NOT ({profile_scope(slug)})
 ORDER BY k;"""
 
-
 def target_list_sql(slug: str, args) -> str:
     cte = target_cte(slug, args)
     return f"""{cte}
 SELECT e.id::text, e.evidence_type, e.evidence_status
 FROM internal_source_evidence e WHERE e.id IN (SELECT id FROM tgt)
 ORDER BY e.evidence_type, e.id;"""
-
 
 def apply_sql(slug: str, args) -> str:
     cte = target_cte(slug, args)
@@ -174,7 +135,6 @@ SELECT 'evidence_updated' k, count(*)::text v FROM upd_ev
 UNION ALL SELECT 'reviews_updated', count(*)::text FROM upd_rv
 ORDER BY k;"""
 
-
 def status_counts_sql() -> str:
     return (
         "SELECT 'evidence:'||evidence_status k, count(*)::text v FROM internal_source_evidence GROUP BY 1\n"
@@ -182,7 +142,6 @@ def status_counts_sql() -> str:
         "WHERE review_type='internal_evidence_review' GROUP BY 1\n"
         "ORDER BY k;"
     )
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Review/accept internal source evidence. Dry-run by default.")
@@ -276,7 +235,6 @@ def main() -> int:
     print("evidence + internal_evidence_review status after:")
     print(after)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

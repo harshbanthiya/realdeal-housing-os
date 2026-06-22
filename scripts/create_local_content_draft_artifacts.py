@@ -17,15 +17,13 @@ private contact data. Writing requires --real-ok AND --apply. Counts only.
 """
 
 from __future__ import annotations
+from _db import jsonb_lit, read_env_value, run_psql, sql_literal
 
 import argparse
 import json
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.4"
 SOURCE = "local_content_draft_workspace"
 HEADER = "INTERNAL DRAFT — NOT FOR PUBLISHING\nHuman review required."
@@ -54,38 +52,6 @@ REQUIREMENT_TO_GAP = {
     "legal_disclaimer": "legal_disclaimer_needed",
     "owner_relationships": "owner_listing_permission_needed",
 }
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 TAG = (
     "jsonb_build_object("
     f"'phase', '{PHASE}', 'source', '{SOURCE}', "
@@ -99,7 +65,6 @@ PHASE_TABLES = [
     ("content_source_gap_items", "raw_context"),
 ]
 
-
 def counts_sql() -> str:
     parts = [
         f"SELECT '{t}' AS item, count(*)::text AS val FROM {t} "
@@ -108,10 +73,8 @@ def counts_sql() -> str:
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
 
-
 def profile_exists_sql(slug: str) -> str:
     return f"SELECT count(*) FROM building_web_profiles WHERE profile_slug = {sql_literal(slug)};"
-
 
 def outline_body(group: str, title: str, target: str) -> str:
     sections = {
@@ -152,7 +115,6 @@ def outline_body(group: str, title: str, target: str) -> str:
         "Do not invent facts. No availability promises. No contact/private data."
     )
 
-
 def notes_body(group: str, title: str) -> str:
     return (
         f"{HEADER}\n\n"
@@ -164,7 +126,6 @@ def notes_body(group: str, title: str) -> str:
         "This artifact is internal_only and not public-ready."
     )
 
-
 def meta_body(title: str, target: str) -> str:
     return (
         f"{HEADER}\n\n"
@@ -175,12 +136,6 @@ def meta_body(title: str, target: str) -> str:
         f"  h1: \"{target}\" [REVIEW]\n\n"
         "Do not publish. Human review required."
     )
-
-
-def jsonb_lit(obj) -> str:
-    return sql_literal(json.dumps(obj)) + "::jsonb"
-
-
 def artifact_insert(profile: str, group: str, artifact_type: str, title: str,
                     target: str, body: str) -> str:
     filt = BRIEFS[group][0]
@@ -197,7 +152,6 @@ SELECT cb.id,
        {sql_literal(body)}, {summary}, {flags}, {TAG}
 FROM content_briefs cb
 WHERE cb.building_web_profile_id = {profile} AND {filt};"""
-
 
 def insert_sql(slug: str) -> str:
     profile = f"(SELECT id FROM building_web_profiles WHERE profile_slug = {sql_literal(slug)})"
@@ -243,7 +197,6 @@ WHERE r.status = 'needed'
 
     body = "\n".join(stmts)
     return f"BEGIN;\n{body}\nCOMMIT;\n{counts_sql()}"
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create local internal content draft artifacts. Dry-run by default.")
@@ -293,7 +246,6 @@ def main() -> int:
     print("Local content draft workspace rows created (counts):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

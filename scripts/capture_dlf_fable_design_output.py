@@ -15,16 +15,14 @@ artifact contents are never printed or stored.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import hashlib
 import re
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 EXPORTS_ROOT = PROJECT_ROOT / "exports"
 PHASE = "7.17"
 SOURCE = "fable_gemini_design_output_capture"
@@ -173,55 +171,17 @@ PHONE_RE = re.compile(r"(?<!\w)(?:\+?91[\s-]?)?\d{10}(?!\w)")
 UUID_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 SECRET_TOKENS = ("password", "api_key", "apikey", "access_token", "secret_key", "bearer ", "-----begin")
 NEGATIONS = ("no", "not", "without", "never", "zero")
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def resolve_under_exports(path_str: str) -> Path:
     p = Path(path_str)
     if not p.is_absolute():
         p = PROJECT_ROOT / p
     return p.resolve()
 
-
 def is_under_exports(path: Path) -> bool:
     try:
         return path.is_relative_to(EXPORTS_ROOT.resolve())
     except AttributeError:  # pragma: no cover (py<3.9)
         return str(path).startswith(str(EXPORTS_ROOT.resolve()))
-
 
 def _secret_present(lower: str) -> bool:
     for tok in SECRET_TOKENS:
@@ -232,7 +192,6 @@ def _secret_present(lower: str) -> bool:
                 continue
             return True
     return False
-
 
 def scan_text_artifact(path: Path) -> dict:
     """Scan a text artifact for leakage. Returns counts only — never the matched text."""
@@ -247,13 +206,11 @@ def scan_text_artifact(path: Path) -> dict:
         "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
     }
 
-
 def rel(path: Path) -> str:
     try:
         return str(path.relative_to(PROJECT_ROOT))
     except ValueError:
         return str(path)
-
 
 def build_ctx(extra: dict | None = None) -> str:
     pairs = [
@@ -270,7 +227,6 @@ def build_ctx(extra: dict | None = None) -> str:
             pairs.append(sql_literal(k))
             pairs.append(sql_literal(v))
     return "jsonb_build_object(" + ", ".join(pairs) + ")"
-
 
 def build_apply_sql(launch_key: str, fable_path: Path, preview_path: Path | None,
                     gemini_path: Path | None, fable_scan: dict) -> str:
@@ -446,13 +402,11 @@ UNION ALL SELECT 'ready_for_wix_design_build', ready_for_wix_design_build::text 
 ORDER BY 1;
 """
 
-
 def project_exists(launch_key: str) -> bool:
     code, output = run_psql(
         f"SELECT count(*) FROM launch_projects WHERE launch_key = {sql_literal(launch_key)};"
     )
     return code == 0 and output.strip() == "1"
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -540,7 +494,6 @@ def main() -> int:
     print("Apply result:" if code == 0 else "Apply FAILED:")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

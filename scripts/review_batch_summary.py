@@ -2,31 +2,13 @@
 """Print safe count-only NocoDB review summary for one import batch."""
 
 from __future__ import annotations
+from _db import read_env_value, sql_literal
 
 import argparse
 import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
 def run_psql(sql: str) -> int:
     user = read_env_value("POSTGRES_USER")
     password = read_env_value("POSTGRES_PASSWORD")
@@ -50,7 +32,6 @@ def run_psql(sql: str) -> int:
         "ON_ERROR_STOP=1",
     ]
     return subprocess.run(command, input=sql, text=True, check=False).returncode
-
 
 def summary_sql(batch_label: str) -> str:
     label = sql_literal(batch_label)
@@ -79,7 +60,6 @@ GROUP BY review_type, status
 ORDER BY review_type, status;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Print safe count-only review summary for a batch.")
     parser.add_argument("--batch-label", required=True, help="Import batch label to summarize.")
@@ -92,7 +72,6 @@ def main() -> int:
     print("Inspect in NocoDB: http://localhost:8080")
     print("Recommended views: vw_review_dashboard_summary, vw_review_batch_sources, vw_review_business_leads, vw_review_contact_methods, vw_review_duplicate_candidates, vw_review_queue")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -21,14 +21,12 @@ with fake_batch='FAKE_PHASE_6_15_UNIT_REGISTRATION' so cleanup is exact. Writing
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.16"
 SOURCE = "fake_unit_registration"
 FAKE_BATCH = "FAKE_PHASE_6_15_UNIT_REGISTRATION"
@@ -51,34 +49,6 @@ FAKE_TABLES = [
     ("registration_party_contact_matches", "raw_context"),
     ("unit_registration_review_items", "raw_context"),
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 TAG = (
     "jsonb_build_object("
     f"'fake_batch', '{FAKE_BATCH}', 'phase', '{PHASE}', 'source', '{SOURCE}', "
@@ -86,14 +56,12 @@ TAG = (
 )
 META_TAG = TAG
 
-
 def counts_sql() -> str:
     parts = [
         f"SELECT '{t}' AS item, count(*)::text AS val FROM {t} WHERE {col}->>'fake_batch' = '{FAKE_BATCH}'"
         for t, col in FAKE_TABLES
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
-
 
 # Subqueries that resolve the fake rows by tag (no hardcoded UUIDs).
 FAKE_BUILDING = f"(SELECT id FROM buildings WHERE metadata->>'fake_batch' = '{FAKE_BATCH}' ORDER BY created_at LIMIT 1)"
@@ -125,7 +93,6 @@ FAKE_PARTY_OWNER_C = (
     "ORDER BY created_at LIMIT 1)"
 )
 FAKE_MATCH = f"(SELECT id FROM registration_party_contact_matches WHERE raw_context->>'fake_batch' = '{FAKE_BATCH}' ORDER BY created_at LIMIT 1)"
-
 
 def insert_sql() -> str:
     stmts = []
@@ -259,7 +226,6 @@ VALUES
     body = "\n".join(stmts)
     return f"BEGIN;\n{body}\nCOMMIT;\n{counts_sql()}"
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Seed FAKE unit-registration rows. Dry-run by default.")
     parser.add_argument("--apply", action="store_true")
@@ -295,7 +261,6 @@ def main() -> int:
     print("Fake unit-registration rows created (counts):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

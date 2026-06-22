@@ -23,6 +23,7 @@ Requires: pdftotext (poppler) + indic-transliteration.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
 import json
@@ -31,9 +32,7 @@ import subprocess
 import unicodedata
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.20"
 SOURCE = "igr_index2_kalpataru"
 RERA_REG = "P51800000591"
@@ -56,28 +55,6 @@ ROLE_BY_CATEGORY = {
 DEVANAGARI = re.compile(r"[ऀ-ॿ]")
 PAN_RE = re.compile(r"\b([A-Z]{5}[0-9]{4}[A-Z])\b")
 # watermark fragments pdftotext interleaves ("For Preview Only"): drop isolated 1-char latin tokens.
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    with ENV_FILE.open(encoding="utf-8") as h:
-        for line in h:
-            if line.startswith(f"{key}="):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    u, p, d = read_env_value("POSTGRES_USER"), read_env_value("POSTGRES_PASSWORD"), read_env_value("POSTGRES_DB")
-    if not (u and p and d):
-        return 1, "Missing POSTGRES_* in docker/.env."
-    cmd = ["docker", "exec", "-i", "-e", f"PGPASSWORD={p}", "realdeal-postgres", "psql",
-           "-U", u, "-d", d, "-v", "ON_ERROR_STOP=1", "-At", "-F", "|"]
-    r = subprocess.run(cmd, input=sql, text=True, capture_output=True, check=False)
-    return r.returncode, r.stdout.strip() or r.stderr.strip()
-
-
 try:
     from indic_transliteration import sanscript
     from indic_transliteration.sanscript import transliterate as _tr
@@ -85,10 +62,8 @@ try:
 except Exception:  # noqa: BLE001
     _HAVE_TR = False
 
-
 def ascii_fold(s: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
-
 
 def translit(raw: str) -> str:
     if not raw:
@@ -100,11 +75,9 @@ def translit(raw: str) -> str:
             pass
     return re.sub(r"\s+", " ", ascii_fold(raw)).strip().lower()
 
-
 def pdftext(path: Path) -> str:
     r = subprocess.run(["pdftotext", "-layout", str(path), "-"], capture_output=True, text=True, check=False)
     return r.stdout or ""
-
 
 def clean_frag(s: str) -> str:
     """Drop isolated watermark letters and collapse whitespace."""
@@ -113,11 +86,9 @@ def clean_frag(s: str) -> str:
     s = re.sub(r"(?<=\s)[a-zA-Z](?=\s)", " ", s)
     return re.sub(r"\s+", " ", s).strip()
 
-
 def num(s: str) -> str | None:
     m = re.search(r"([0-9][0-9,]*\.?[0-9]*)", s or "")
     return m.group(1).replace(",", "") if m else None
-
 
 def split_fields(text: str) -> dict:
     """Split Index II text into {field_number: content} using the (1)..(14) markers."""
@@ -133,7 +104,6 @@ def split_fields(text: str) -> dict:
     fields["_head"] = parts[0]
     return fields
 
-
 WING_CHECKS = [
     ("Wing C-Allura", ("विंग सी", "wing c", "अलोरा", "अल्लोरा", "अल्लुरा", "एल्लूरा", "allura", "allure", "alora", "allora")),
     ("Wing B-Brilliance", ("विंग बी", "wing b", "ब्रिलियन्स", "ब्रिल्लीयन्स", "ब्रिलीयन्स", "brilliance")),
@@ -142,12 +112,10 @@ WING_CHECKS = [
     ("Wing A-Ora", ("विंग ए", "wing a", "टॉवर ए", "tower a", "ए - ओरा", "ए-ओरा", "ए ओरा", "a ora", "a-ora", "tower ora", "- ओरा")),
 ]
 
-
 def skeleton(s: str) -> str:
     """Drop Devanagari marks/whitespace so pdftotext's visual-order matra reordering (विंग->िवंग)
     doesn't defeat substring matching; lowercase for Latin."""
     return "".join(c for c in s if unicodedata.category(c)[0] != "M" and not c.isspace()).lower()
-
 
 def detect_wing(prop_text: str) -> str | None:
     sk = skeleton(prop_text)
@@ -156,7 +124,6 @@ def detect_wing(prop_text: str) -> str | None:
             return label
     return None
 
-
 def classify_doctype(t: str) -> tuple[str, str]:
     sk = skeleton(t)
     for needle, et, cat in DOCTYPE_RULES:
@@ -164,7 +131,6 @@ def classify_doctype(t: str) -> tuple[str, str]:
             return et, cat
     slug = re.sub(r"[^a-z0-9]+", "_", ascii_fold(t.lower())).strip("_")[:40] or "other"
     return slug, "other"
-
 
 def parse_parties(block: str) -> list[dict]:
     """From field 7/8: entries like '1): नाव:-NAME वय:-NN पत्ता:-... पॅन नं:-PPPPP'."""
@@ -191,7 +157,6 @@ def parse_parties(block: str) -> list[dict]:
             "address": (addr.group(1).strip()[:400] if addr else None),
         })
     return out
-
 
 def parse_property(field4: str) -> dict:
     t = clean_frag(field4)
@@ -222,7 +187,6 @@ def parse_property(field4: str) -> dict:
         d["tenure_months"] = m.group(1) or m.group(2)
     return d
 
-
 def parse_index2(path: Path) -> dict | None:
     text = pdftext(path)
     if "दस्त क्रमांक" not in text and "सूची" not in text:
@@ -252,21 +216,17 @@ def parse_index2(path: Path) -> dict | None:
         "sellers": sellers, "purchasers": purchasers, **{f"prop_{k}": v for k, v in prop.items()},
     }
 
-
 def iso(d: str | None) -> str | None:
     if not d:
         return None
     m = re.match(r"([0-3]?\d)/([01]?\d)/(\d{4})", d)
     return f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}" if m else None
 
-
 def q(v) -> str:
     return "NULL" if v in (None, "") else "'" + str(v).replace("'", "''") + "'"
 
-
 def jb(d: dict) -> str:
     return "'" + json.dumps(d, ensure_ascii=False).replace("'", "''") + "'::jsonb"
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Parse IGR Index II PDFs into staging (with price). Dry-run by default.")
@@ -394,7 +354,6 @@ def main() -> int:
     code, out = run_psql("\n".join(stmts))
     print("Staged (counts):\n" + out if code == 0 else "DB error:\n" + out)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

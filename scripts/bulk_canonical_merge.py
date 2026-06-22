@@ -18,44 +18,12 @@ Creates NO outreach and sends nothing.
   Rollback:            python3 scripts/bulk_canonical_merge.py --rollback --merge-label L --real-ok --apply
 """
 from __future__ import annotations
+from _db import lit, read_env_value, run_psql
 
 import argparse
-import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def lit(value) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, int):
-        return str(value)
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user, pw, db = read_env_value("POSTGRES_USER"), read_env_value("POSTGRES_PASSWORD"), read_env_value("POSTGRES_DB")
-    if not user or not pw or not db:
-        return 1, "Missing POSTGRES_* in docker/.env."
-    cmd = ["docker", "exec", "-i", "-e", f"PGPASSWORD={pw}", "realdeal-postgres",
-           "psql", "-U", user, "-d", db, "-At", "-F", "\t", "-v", "ON_ERROR_STOP=1"]
-    res = subprocess.run(cmd, input=sql, text=True, capture_output=True, check=False)
-    return res.returncode, (res.stdout.rstrip("\n") or res.stderr.strip())
-
-
 # Eligibility: safe, non-duplicate, not-yet-merged merge candidates in REAL batches.
 ELIGIBLE_FROM = """
 FROM contact_import_rows cir
@@ -83,7 +51,6 @@ WHERE EXISTS (SELECT 1 FROM contact_duplicate_candidates dc
                 AND (dc.contact_import_row_id_1 = cir.id OR dc.contact_import_row_id_2 = cir.id))
 """
 
-
 def dry_run() -> int:
     code, out = run_psql(
         f"SELECT count(DISTINCT cir.id) {ELIGIBLE_FROM};\n")
@@ -97,7 +64,6 @@ def dry_run() -> int:
     print(f"  deferred (duplicate-involved, left for review): {deferred.strip() if code2 == 0 else '?'}")
     print("  Run with --apply --real-ok to create canonical contacts.")
     return 0
-
 
 def apply_sql(merge_label: str, limit: int | None) -> str:
     limit_sql = f"LIMIT {limit}" if limit else ""
@@ -162,7 +128,6 @@ COMMIT;
 SELECT 'canonical_contacts_created', canonical_contacts_created FROM canonical_merge_batches WHERE merge_label = {lit(merge_label)};
 """
 
-
 def rollback_sql(merge_label: str) -> str:
     sel = f"(SELECT id FROM canonical_merge_batches WHERE merge_label = {lit(merge_label)})"
     return f"""
@@ -177,7 +142,6 @@ UPDATE canonical_merge_batches SET status = 'rolled_back' WHERE merge_label = {l
 COMMIT;
 SELECT 'rolled_back', {lit(merge_label)};
 """
-
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Dedup-aware bulk canonical merge. Dry-run by default.")
@@ -209,7 +173,6 @@ def main() -> int:
     print(f"Bulk merge applied under '{args.merge_label}':")
     print(out)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

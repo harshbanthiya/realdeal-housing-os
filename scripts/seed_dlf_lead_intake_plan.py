@@ -9,17 +9,15 @@ required; --apply writes.
 """
 
 from __future__ import annotations
+from _db import jsonb_lit, read_env_value, run_psql, scalar, sql_literal
 
 import argparse
 import datetime as dt
 import json
-import subprocess
 import uuid
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.3"
 SOURCE = "dlf_lead_intake_plan_seed"
 BASE_TAG = {
@@ -77,58 +75,11 @@ READINESS_CHECKS = [
     ("lead_privacy_reviewed", "blocker", "Lead privacy and consent handling require review."),
     ("lead_duplicate_review_ready", "high", "Duplicate review queue must be ready before conversion."),
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def jsonb_lit(obj) -> str:
-    return sql_literal(json.dumps(obj, sort_keys=True)) + "::jsonb"
-
-
 def tag(extra: dict | None = None) -> str:
     obj = dict(BASE_TAG)
     if extra:
         obj.update(extra)
     return jsonb_lit(obj)
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, (result.stdout.strip() or result.stderr.strip())
-
-
-def scalar(sql: str) -> str:
-    code, out = run_psql(sql)
-    if code != 0:
-        raise RuntimeError(out)
-    return out.splitlines()[0] if out else ""
-
-
 def count_tagged(table: str, launch_key: str) -> int:
     out = scalar(
         f"SELECT count(*) FROM {table} t JOIN launch_projects p ON p.id = t.launch_project_id "
@@ -138,7 +89,6 @@ def count_tagged(table: str, launch_key: str) -> int:
     )
     return int(out or 0)
 
-
 def utm_count(launch_key: str) -> int:
     out = scalar(
         "SELECT count(*) FROM launch_utm_campaign_specs u "
@@ -146,7 +96,6 @@ def utm_count(launch_key: str) -> int:
         f"WHERE p.launch_key = {sql_literal(launch_key)};"
     )
     return int(out or 0)
-
 
 def priority_for_source(source: str) -> int:
     order = {
@@ -160,7 +109,6 @@ def priority_for_source(source: str) -> int:
         "blog": 40,
     }
     return order.get(source, 10)
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Seed DLF lead-intake plan. Counts only.")
@@ -299,7 +247,6 @@ def main() -> int:
         return 2
     print("APPLIED: Phase 7.3 lead-intake plan seeded. No inbound leads, contacts, sends, publishing, live webhooks, or external API calls.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

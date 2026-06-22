@@ -22,15 +22,13 @@ counts only (never personal names / page text).
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import json
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 REVIEW_PHASE = "6.14"
 
 # Map a matched compare (by its safe_summary) to the parsed fact_key it corroborates.
@@ -44,40 +42,6 @@ COMPARE_SUMMARY_TO_FACT_KEY = {
 }
 RISK_COMPARE_TYPES = {"risk_count_compare"}
 LEGAL_FACT_GROUP = "legal_risk_count"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, (result.stdout.strip() or result.stderr.strip())
-
-
 def resolve_profile_id(slug: str) -> str | None:
     code, out = run_psql(
         "SELECT p.id FROM rera_project_profiles p "
@@ -86,7 +50,6 @@ def resolve_profile_id(slug: str) -> str | None:
     if code != 0 or not out:
         return None
     return out.splitlines()[0]
-
 
 def fetch_queue(profile_id: str) -> list[dict]:
     """Return review items for this profile with safe linkage fields (no personal data)."""
@@ -120,7 +83,6 @@ def fetch_queue(profile_id: str) -> list[dict]:
             "compare_summary": p[11], "capture_id": p[12] or None, "profile_id": p[13] or None,
         })
     return rows
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Review RERA snapshot parser candidates (staging only).")
@@ -281,7 +243,6 @@ def main() -> int:
     print("APPLIED: review items + linked parsed-fact statuses updated (stamped review_phase=6.14).")
     print("No canonical RERA/building/content/gap rows changed. ready_* flags remain false.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

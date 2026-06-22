@@ -18,14 +18,12 @@ Writing requires BOTH --real-ok and --apply. Counts only; no raw personal values
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 
 VALID_STATUSES = {"passed", "failed", "waived", "needs_review", "pending"}
 ADVANCING_STATUSES = {"passed", "waived"}  # statuses that move a gate toward "clear"
@@ -43,40 +41,6 @@ EXTERNAL_LIVE_PASS = {
     "lead_capture_form_ready",
     "wix_form_fields_reviewed",
 }
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str | None) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def probe_sql(launch_key: str, check_type: str) -> str:
     lk = sql_literal(launch_key)
     ct = sql_literal(check_type)
@@ -86,7 +50,6 @@ SELECT
   (SELECT count(*) FROM launch_readiness_checks r JOIN launch_projects p ON p.id = r.launch_project_id
      WHERE p.launch_key = {lk} AND r.check_type = {ct});
 """
-
 
 def apply_sql(launch_key: str, check_type: str, status: str, by: str | None, notes: str | None) -> str:
     lk = sql_literal(launch_key)
@@ -140,7 +103,6 @@ UNION ALL SELECT 'safety_status', safety_status FROM vw_dlf_operator_safety_post
 UNION ALL SELECT 'ready_for_launch_push', ready_for_launch_push::text FROM vw_dlf_launch_priority_dashboard WHERE launch_key = {lk}
 ORDER BY 1;
 """
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -201,7 +163,6 @@ def main() -> int:
     print("Readiness review applied:" if code == 0 else "Readiness review FAILED (rolled back):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

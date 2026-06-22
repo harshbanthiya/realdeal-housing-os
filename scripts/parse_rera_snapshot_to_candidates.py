@@ -18,6 +18,7 @@ counts only.
 """
 
 from __future__ import annotations
+from _db import jsonb_lit, read_env_value, run_psql, sql_literal
 
 import argparse
 import json
@@ -25,9 +26,7 @@ import re
 import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 SNAPSHOT_ROOT = PROJECT_ROOT / "exports" / "rera_snapshots"
 PHASE = "6.13"
 SOURCE = "rera_snapshot_parser"
@@ -55,56 +54,15 @@ COMPANY_SUFFIX_RE = re.compile(
     r"REALTY|REALTORS?|INFRA\w*|ASSOCIATES?|CORPORATION|VENTURES?|GROUP|ESTATES?)\b",
     re.IGNORECASE)
 
-
 # --------------------------------------------------------------------------- DB helpers
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
 def num_literal(value) -> str:
     return "NULL" if value is None else str(value)
-
-
-def jsonb_lit(obj) -> str:
-    return sql_literal(json.dumps(obj)) + "::jsonb"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, (result.stdout.strip() or result.stderr.strip())
-
-
 # --------------------------------------------------------------------------- guards
 
 def is_git_ignored(path: Path) -> bool:
     res = subprocess.run(["git", "check-ignore", str(path)], cwd=str(PROJECT_ROOT),
                          capture_output=True, text=True, check=False)
     return res.returncode == 0 and bool(res.stdout.strip())
-
 
 def validate_snapshot(folder: Path) -> tuple[bool, str]:
     try:
@@ -119,7 +77,6 @@ def validate_snapshot(folder: Path) -> tuple[bool, str]:
         return False, "Refusing: visible_text.txt missing (capture may have been gated/blocked)."
     return True, "ok"
 
-
 # --------------------------------------------------------------------------- parsing
 
 def line_index_of(lines: list[str], label: str, start: int = 0) -> int:
@@ -127,7 +84,6 @@ def line_index_of(lines: list[str], label: str, start: int = 0) -> int:
         if lines[i].strip().lower() == label.lower():
             return i
     return -1
-
 
 def section_bounds_count(lines: list[str], header: str) -> int:
     """Count numbered (^N\\t...) rows after `header` until the next known section header.
@@ -148,7 +104,6 @@ def section_bounds_count(lines: list[str], header: str) -> int:
         if re.match(r"^\d+\t", lines[k]):
             count += 1
     return count
-
 
 def parse_snapshot(folder: Path) -> dict:
     text = (folder / "visible_text.txt").read_text(encoding="utf-8", errors="replace")
@@ -293,7 +248,6 @@ def parse_snapshot(folder: Path) -> dict:
         "legal_rows_skipped": sum(legal_counts.values()),
     }
 
-
 # --------------------------------------------------------------------------- DB lookups
 
 def fetch_profile(slug: str, reg: str) -> dict | None:
@@ -315,7 +269,6 @@ def fetch_profile(slug: str, reg: str) -> dict | None:
     return {"id": parts[0], "status": parts[1], "reg_date": parts[2], "reg": parts[3],
             "name_present": parts[4] == "t", "verification_status": parts[5]}
 
-
 def fetch_manual_carpet(pid: str) -> tuple[int, int]:
     code, out = run_psql(
         "SELECT count(*), coalesce(sum(apartment_count),0) "
@@ -325,7 +278,6 @@ def fetch_manual_carpet(pid: str) -> tuple[int, int]:
     a, b = out.split("|")
     return int(a), int(b)
 
-
 def fetch_manual_status_types(pid: str) -> set[str]:
     code, out = run_psql(
         "SELECT string_agg(check_type, ',') FROM rera_project_status_checks "
@@ -333,7 +285,6 @@ def fetch_manual_status_types(pid: str) -> set[str]:
     if code != 0 or not out:
         return set()
     return {x for x in out.split(",") if x}
-
 
 # --------------------------------------------------------------------------- compare
 
@@ -387,7 +338,6 @@ def build_compares(parsed: dict, profile: dict, manual_carpet: int, manual_apt: 
             f"{key}_count_vs_manual_flag")
 
     return cmps
-
 
 # --------------------------------------------------------------------------- SQL emit
 
@@ -450,7 +400,6 @@ def build_apply_sql(parsed: dict, profile_id: str, capture_meta: dict, compares:
             f"'normal', {tag});")
     out += ["END $$;", "COMMIT;"]
     return "\n".join(out)
-
 
 # --------------------------------------------------------------------------- main
 
@@ -558,7 +507,6 @@ def main() -> int:
     print("APPLIED: staging rows written in one transaction (tagged phase=6.13/source=rera_snapshot_parser).")
     print("No canonical RERA/building/content rows were updated. Outputs are untrusted + review-gated.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

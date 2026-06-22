@@ -18,59 +18,23 @@ Safety rules:
 """
 
 from __future__ import annotations
+from _db import lit, read_env_value, run_psql
 
 import argparse
 import re
-import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as fh:
-        for line in fh:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def lit(value: str) -> str:
-    """Return a safely-quoted SQL string literal (no NUL, single-quotes escaped)."""
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB in docker/.env."
-    cmd = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(cmd, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def sanitise(text: str, max_len: int) -> str:
     return text.replace("\0", "").strip()[:max_len]
-
 
 def probe_sql(contact_id: str) -> str:
     return (
         f"SELECT (c.id IS NOT NULL), mask_name(c.full_name) "
         f"FROM contacts c WHERE c.id = {lit(contact_id)};"
     )
-
 
 def insert_sql(contact_id: str, note: str, by: str) -> str:
     return f"""
@@ -82,7 +46,6 @@ VALUES
 COMMIT;
 SELECT 'note_added=true  contact_id={contact_id}';
 """
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Add a manual note to a contact. Dry-run by default.")
@@ -130,7 +93,6 @@ def main() -> int:
         print("\nNote FAILED (rolled back):")
         print(out)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

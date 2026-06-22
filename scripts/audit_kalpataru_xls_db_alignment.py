@@ -12,6 +12,7 @@ normalization.
 """
 
 from __future__ import annotations
+from _db import read_env_value
 
 import argparse
 import csv
@@ -29,8 +30,6 @@ sys.path.insert(0, str(SCRIPTS))
 
 import parse_kalpataru_radiance_xls_timeline as parser_mod  # noqa: E402
 
-
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 OUTPUT_DIR = PROJECT_ROOT / "exports" / "igr_kalpataru_timelines"
 EVENTS_CSV = OUTPUT_DIR / "kalpataru_radiance_events.csv"
 BUILDING_NAME = "Kalpataru Radiance"
@@ -47,17 +46,6 @@ DEFAULT_XLS_FILES = [
     Path("/Users/sheeed/Downloads/SearchResult4 (7).xls"),
     Path("/Users/sheeed/Downloads/SearchResult4 (8).xls"),
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
-        if line.startswith(f"{key}="):
-            return line.split("=", 1)[1]
-    return ""
-
-
 def run_psql(sql: str) -> list[list[str]]:
     user = read_env_value("POSTGRES_USER")
     password = read_env_value("POSTGRES_PASSWORD")
@@ -73,15 +61,12 @@ def run_psql(sql: str) -> list[list[str]]:
         raise RuntimeError(result.stderr or result.stdout)
     return [line.split("\t") for line in result.stdout.splitlines() if line]
 
-
 def tower_letter(wing: str | None) -> str:
     match = re.search(r"([A-Z])\s*$", (wing or "").upper())
     return match.group(1) if match else ""
 
-
 def digits(unit: str | None) -> str:
     return re.sub(r"\D", "", unit or "")
-
 
 def expected_positions() -> set[str]:
     out = set()
@@ -90,7 +75,6 @@ def expected_positions() -> set[str]:
             for pos in range(1, per_floor + 1):
                 out.add(f"{wing}-{floor}-{pos}")
     return out
-
 
 def derive_position_key(wing: str | None, unit: str | None) -> str:
     letter = tower_letter(wing)
@@ -110,12 +94,10 @@ def derive_position_key(wing: str | None, unit: str | None) -> str:
             return f"{letter}-{floor}-{pos}"
     return ""
 
-
 def raw_apartment_key(wing: str | None, unit: str | None) -> str:
     letter = tower_letter(wing)
     raw = digits(unit)
     return f"{letter}-{raw}" if letter and raw else ""
-
 
 def expected_raw_keys() -> set[str]:
     out = set()
@@ -124,7 +106,6 @@ def expected_raw_keys() -> set[str]:
             for pos in range(1, per_floor + 1):
                 out.add(f"{wing}-{floor}{pos}")
     return out
-
 
 def classify_xls_row(row: dict[str, str]) -> dict[str, Any]:
     desc = row.get("propertydescription", "")
@@ -163,7 +144,6 @@ def classify_xls_row(row: dict[str, str]) -> dict[str, Any]:
         "property_description": desc,
     }
 
-
 def write_csv(path: Path, rows: Iterable[dict], fields: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -171,7 +151,6 @@ def write_csv(path: Path, rows: Iterable[dict], fields: list[str]) -> None:
         writer.writeheader()
         for row in rows:
             writer.writerow({field: row.get(field) for field in fields})
-
 
 def load_xls_classifications(files: list[Path]) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
     classified = []
@@ -190,7 +169,6 @@ def load_xls_classifications(files: list[Path]) -> tuple[list[dict[str, Any]], d
             if item["internal_document_number"]:
                 by_internal[item["internal_document_number"]] = item
     return classified, by_internal
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Audit XLS/parser/Cockpit alignment for Kalpataru.")
@@ -403,7 +381,6 @@ def main() -> int:
     print(f"reverse_trace: {reverse_csv}")
     print(f"xls_classification: {xls_class_csv}")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

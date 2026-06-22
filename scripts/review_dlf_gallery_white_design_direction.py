@@ -27,14 +27,12 @@ Writing requires BOTH --real-ok and --apply. Counts only; never prints raw artif
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.18"
 CAPTURE_PHASE = "7.17"
 CAPTURE_SOURCE = "fable_gemini_design_output_capture"
@@ -53,48 +51,12 @@ CORE_REFINEMENTS = (
     "logo_brand_grounding",
     "warmth_against_cold_minimalism",
 )
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def refinements_sql() -> str:
     return ", ".join(sql_literal(k) for k in CORE_REFINEMENTS)
-
 
 def capture_filter(alias: str) -> str:
     return (f"{alias}.raw_context->>'phase' = '{CAPTURE_PHASE}' "
             f"AND {alias}.raw_context->>'source' = '{CAPTURE_SOURCE}'")
-
 
 def probe_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
@@ -116,7 +78,6 @@ SELECT
   (SELECT count(*) FROM fable_design_review_items ri WHERE ri.launch_project_id IN (SELECT id FROM proj) AND {capture_filter('ri')} AND ri.review_type = 'refinement_action_review' AND ri.status = 'pending'),
   COALESCE((SELECT ready_for_wix_design_build::text FROM vw_dlf_design_output_readiness WHERE launch_key = {lk}), 'false');
 """
-
 
 def apply_sql(launch_key, reviewed_by, decision_notes, do_output, do_gemini, do_refine, build_ack):
     lk = sql_literal(launch_key)
@@ -229,7 +190,6 @@ ORDER BY 1;
 """)
     return "\n".join(blocks)
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Approve DLF Westpark Gallery White design direction. Dry-run by default.")
     parser.add_argument("--launch-key", default="dlf-westpark-andheri-west")
@@ -322,7 +282,6 @@ def main() -> int:
     print("Design-direction review applied:" if code == 0 else "Design-direction review FAILED (rolled back):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

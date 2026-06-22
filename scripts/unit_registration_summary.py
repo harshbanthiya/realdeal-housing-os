@@ -7,41 +7,11 @@ any external API, never browses the web, and never prints party/contact names.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 SUMMARY_SQL = """
 SELECT 'building_tower_structure' AS item, count(*)::text AS val FROM building_tower_structure
 UNION ALL SELECT 'building_property_identifiers', count(*)::text FROM building_property_identifiers
@@ -71,7 +41,6 @@ SELECT 'imperial_heights:' || building_name
        || ' blocked_reason=' || blocked_reason
 FROM vw_imperial_heights_registration_readiness;"""
 
-
 def main() -> int:
     print("Unit-registration summary (counts only; read-only; no IGR/MahaRERA/external calls; no names).")
     code, table_counts = run_psql(SUMMARY_SQL)
@@ -88,7 +57,6 @@ def main() -> int:
     print("Imperial Heights registration readiness:")
     print(readiness or "(no Imperial Heights building found)")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

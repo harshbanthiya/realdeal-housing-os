@@ -8,46 +8,12 @@ addresses (building/unit/property names are business data and may appear).
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def rel_filter(building_name, relationship_status, relationship_type, contact_id, alias="cpr") -> str:
     conds = []
     if relationship_status:
@@ -63,7 +29,6 @@ def rel_filter(building_name, relationship_status, relationship_type, contact_id
             f" OR EXISTS (SELECT 1 FROM building_units bu WHERE bu.id = {alias}.building_unit_id AND bu.building_name ILIKE {lit}))"
         )
     return (" AND " + " AND ".join(conds)) if conds else ""
-
 
 def summary_sql(building_name, relationship_status, relationship_type, contact_id) -> str:
     rf = rel_filter(building_name, relationship_status, relationship_type, contact_id)
@@ -86,7 +51,6 @@ UNION ALL SELECT 'revert_ready_count', count(*)::text FROM vw_property_relations
 ORDER BY item;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Owner/building/unit dashboard summary. Counts only; no DB writes.")
     parser.add_argument("--building-name")
@@ -104,7 +68,6 @@ def main() -> int:
     code, output = run_psql(summary_sql(args.building_name, args.relationship_status, args.relationship_type, args.contact_id))
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

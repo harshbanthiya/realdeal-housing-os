@@ -17,14 +17,12 @@ requires --real-ok AND --apply. Counts only; no personal values are printed.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.7"
 SOURCE = "building_dedupe_planning"
 
@@ -32,45 +30,12 @@ PHASE_TABLES = [
     ("building_duplicate_candidates", "raw_context"),
     ("building_dedupe_review_items", "raw_context"),
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 TAG = (
     "jsonb_build_object("
     f"'phase', '{PHASE}', 'source', '{SOURCE}', "
     "'merged', false, 'external_calls_made', false, 'published', false, "
     "'communication_sent', false, 'is_real', true)"
 )
-
 
 def counts_sql() -> str:
     parts = [
@@ -80,16 +45,13 @@ def counts_sql() -> str:
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
 
-
 # Buildings matching the name (case-insensitive substring).
 def name_filter(name: str) -> str:
     return f"lower(b.name) LIKE lower('%' || {sql_literal(name)} || '%')"
 
-
 def building_code_expr(alias: str) -> str:
     return (f"(SELECT u.building_code FROM building_units u "
             f"WHERE u.building_id = {alias}.id AND u.building_code IS NOT NULL ORDER BY u.created_at LIMIT 1)")
-
 
 # Canonical anchor: profile-slug match > any profile > most active rels > earliest.
 def canonical_id_sql(name: str, slug: str) -> str:
@@ -104,7 +66,6 @@ def canonical_id_sql(name: str, slug: str) -> str:
   LIMIT 1
 )"""
 
-
 def summary_sql(name: str) -> str:
     """Pre-write summary: building anchors + counts (safe), and chosen canonical."""
     return f"""
@@ -112,7 +73,6 @@ SELECT 'matching_anchors' k, count(*)::text v FROM buildings b WHERE {name_filte
 UNION ALL SELECT 'active_rel_total', count(*)::text FROM contact_property_relationships r
   WHERE r.building_id IN (SELECT b.id FROM buildings b WHERE {name_filter(name)}) AND r.relationship_status = 'active'
 ORDER BY k;"""
-
 
 def insert_sql(name: str, slug: str) -> str:
     canonical = canonical_id_sql(name, slug)
@@ -156,7 +116,6 @@ WHERE c.raw_context->>'phase' = '{PHASE}' AND c.raw_context->>'source' = '{SOURC
 
     body = "\n".join(stmts)
     return f"BEGIN;\n{body}\nCOMMIT;\n{counts_sql()}"
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Plan Imperial Heights building dedupe. Dry-run by default.")
@@ -210,7 +169,6 @@ def main() -> int:
     print("Building dedupe planning rows created (counts):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -13,51 +13,17 @@ Reverting requires --apply AND --real-ok. Counts only; no raw personal values pr
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import re
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.6"
 MARK = "raw_context->>'evidence_review_phase' = '6.6'"
 STRIP = "- 'evidence_review_phase' - 'evidence_review_source' - 'evidence_review_prev_status' - 'evidence_reviewed_by'"
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def evidence_scope(slug: str, evidence_ids: list[str]) -> str:
     scope = (
         "e.content_source_gap_item_id IN ("
@@ -71,7 +37,6 @@ def evidence_scope(slug: str, evidence_ids: list[str]) -> str:
         scope += f" AND e.id IN ({ids})"
     return scope
 
-
 def counts_sql(slug: str, evidence_ids: list[str]) -> str:
     scope = evidence_scope(slug, evidence_ids)
     return f"""
@@ -81,14 +46,12 @@ UNION ALL SELECT 'reviews_marked_6.6', count(*)::text FROM source_gap_review_ite
      SELECT e.content_source_gap_item_id FROM internal_source_evidence e WHERE {MARK} AND {scope})
 ORDER BY k;"""
 
-
 def guard_sql(slug: str) -> str:
     return f"""
 SELECT 'gaps_resolved' k, count(*)::text v FROM content_source_gap_items WHERE status <> 'open'
 UNION ALL SELECT 'briefs_ready_for_ai_draft', count(*)::text
    FROM vw_imperial_heights_source_gap_status WHERE ready_for_ai_draft
 ORDER BY k;"""
-
 
 def revert_sql(slug: str, evidence_ids: list[str], reviewer: str, notes: str) -> str:
     scope = evidence_scope(slug, evidence_ids)
@@ -117,7 +80,6 @@ UNION ALL SELECT 'reviews_reverted', count(*)::text FROM rev_rv
 ORDER BY k;
 COMMIT;
 {counts_sql(slug, evidence_ids)}"""
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Revert Phase 6.6 internal-evidence review changes. Dry-run by default.")
@@ -166,7 +128,6 @@ def main() -> int:
     print("Reverted; remaining 6.6-marked rows after (expect 0):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

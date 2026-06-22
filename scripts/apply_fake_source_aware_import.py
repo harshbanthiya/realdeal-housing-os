@@ -2,11 +2,11 @@
 """Apply fake source-aware import rows for Phase 3.4 testing only."""
 
 from __future__ import annotations
+from _db import psql, read_env_value, sql_literal
 
 import argparse
 import csv
 import json
-import subprocess
 import sys
 import uuid
 from pathlib import Path
@@ -15,38 +15,21 @@ from typing import Dict, Iterable, List
 from duplicate_utils import duplicate_summary, parse_json_list
 from plan_source_aware_import import is_inventory_row, is_lead_requirement, row_has_property_hint, summarize_rows
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 BATCH_LABEL = "FAKE_PHASE_3_4_TEST"
 FAKE_SOURCE_MARKER = "FAKE_EXAMPLE_ONLY"
 BLOCKED_INPUT_PARTS = {
     ("imports", "contacts", "raw_samples"),
     ("imports", "contacts", "raw_archives"),
 }
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
 def read_rows(path: Path) -> List[Dict[str, str]]:
     with path.open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
-
 
 def path_has_parts(path: Path, parts: Iterable[str]) -> bool:
     path_parts = tuple(path.parts)
     needle = tuple(parts)
     return any(path_parts[index : index + len(needle)] == needle for index in range(len(path_parts) - len(needle) + 1))
-
 
 def validate_fake_input(path: Path, rows: List[Dict[str, str]]) -> List[str]:
     errors: List[str] = []
@@ -67,18 +50,8 @@ def validate_fake_input(path: Path, rows: List[Dict[str, str]]) -> List[str]:
         if unsafe_sources:
             errors.append("source_rows_do_not_look_like_fake_example_data")
     return errors
-
-
-def sql_literal(value: object) -> str:
-    if value is None:
-        return "NULL"
-    text = str(value)
-    return "'" + text.replace("'", "''") + "'"
-
-
 def sql_bool(value: bool) -> str:
     return "true" if value else "false"
-
 
 def sql_numeric(value: str) -> str:
     text = str(value or "").strip()
@@ -90,7 +63,6 @@ def sql_numeric(value: str) -> str:
         return "NULL"
     return text
 
-
 def json_value(value: str, default: object) -> object:
     if not value:
         return default
@@ -100,51 +72,20 @@ def json_value(value: str, default: object) -> object:
     except Exception:
         return default
 
-
 def json_sql(value: object) -> str:
     return sql_literal(json.dumps(value, ensure_ascii=True, sort_keys=True)) + "::jsonb"
-
 
 def allowed_value(value: object, allowed: set[str], default: str) -> str:
     cleaned = str(value or "").strip().lower().replace(" ", "_")
     return cleaned if cleaned in allowed else default
-
 
 def array_sql(values: Iterable[str]) -> str:
     items = [str(value).strip() for value in values if str(value).strip()]
     if not items:
         return "'{}'::text[]"
     return "ARRAY[" + ",".join(sql_literal(item) for item in items) + "]::text[]"
-
-
-def psql(sql: str) -> int:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        print("Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env.")
-        return 1
-    command = [
-        "docker",
-        "exec",
-        "-i",
-        "-e",
-        f"PGPASSWORD={password}",
-        "realdeal-postgres",
-        "psql",
-        "-U",
-        user,
-        "-d",
-        db_name,
-        "-v",
-        "ON_ERROR_STOP=1",
-    ]
-    return subprocess.run(command, input=sql, text=True, check=False).returncode
-
-
 def source_key(row: Dict[str, str]) -> tuple[str, str, str]:
     return (row.get("source_file", ""), row.get("source_sheet", ""), row.get("source_format", ""))
-
 
 def method_rows(row: Dict[str, str], import_row_id: str, source_file_id: str) -> List[Dict[str, object]]:
     output: List[Dict[str, object]] = []
@@ -202,7 +143,6 @@ def method_rows(row: Dict[str, str], import_row_id: str, source_file_id: str) ->
             )
     return output
 
-
 def review_types(row: Dict[str, str]) -> List[str]:
     types = []
     if row.get("cleaned_display_name") or row.get("raw_name"):
@@ -224,7 +164,6 @@ def review_types(row: Dict[str, str]) -> List[str]:
     if row.get("source_format") in {"unknown_contact_csv", "unknown"}:
         types.append("source_format_unknown")
     return sorted(set(types))
-
 
 def build_sql(cleaned_csv: Path, rows: List[Dict[str, str]]) -> tuple[str, Dict[str, int]]:
     batch_id = str(uuid.uuid4())
@@ -551,7 +490,6 @@ INSERT INTO import_review_items (
     statements.append("COMMIT;")
     return "\n".join(statements), counts
 
-
 def print_counts(prefix: str, counts: Dict[str, int]) -> None:
     print(prefix)
     for key in [
@@ -567,7 +505,6 @@ def print_counts(prefix: str, counts: Dict[str, int]) -> None:
         "import_review_items",
     ]:
         print(f"{key}: {counts.get(key, 0)}")
-
 
 def main() -> int:
     global BATCH_LABEL
@@ -614,7 +551,6 @@ def main() -> int:
     print("Fake apply completed. No canonical contacts were created.")
     print_counts("Applied fake source-aware rows:", counts)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -171,7 +171,7 @@ export function statusLabel(s: string): string {
 
 /**
  * Friendly name for an internal batch label, e.g.
- * "REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001" -> "Imperial Unit Audit".
+ * "REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001" -> "Imperial Unit".
  * Strips REAL_/FAKE_/PHASE_n_n prefixes and trailing run numbers.
  */
 export function batchLabelHuman(label: string): string {
@@ -182,7 +182,8 @@ export function batchLabelHuman(label: string): string {
     .replace(/_\d+$/i, "")
     .replace(/_(TEST|AUDIT)$/i, "")
     .replace(/_/g, " ")
-    .trim();
+    .trim()
+    .toLowerCase();
   const titled = words.replace(/\b\w/g, (c) => c.toUpperCase());
   return titled || "Import";
 }

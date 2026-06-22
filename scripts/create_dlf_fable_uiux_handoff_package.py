@@ -14,17 +14,15 @@ git-ignored exports/fable_handoffs/ directory only. Counts only, plus paths.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import hashlib
 import json
 import re
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.16"
 SOURCE = "dlf_fable_uiux_handoff_package"
 PACKAGE_KEY = "dlf-westpark-fable-uiux-handoff"
@@ -101,40 +99,6 @@ REVIEWS = (
 
 # Concise prompt token-efficiency budget (characters).
 CONCISE_CHAR_BUDGET = 4500
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def fetch_strategy(launch_key: str) -> dict | None:
     """Pull the approved Phase 7.15 design strategy (public design content only).
 
@@ -181,7 +145,6 @@ WHERE p.launch_key = {lk};
         return None
     return data
 
-
 def build_concise_prompt(strategy: dict) -> str:
     name = strategy.get("display_name") or "DLF Westpark"
     pages = strategy.get("pages") or []
@@ -224,7 +187,6 @@ def build_concise_prompt(strategy: dict) -> str:
         "behavior for the pages above. Design only — no backend, no live integrations.",
     ]
     return "\n".join(lines) + "\n"
-
 
 def build_detailed_brief(strategy: dict) -> str:
     name = strategy.get("display_name") or "DLF Westpark"
@@ -327,7 +289,6 @@ def build_detailed_brief(strategy: dict) -> str:
     ]
     return "\n".join(lines) + "\n"
 
-
 def _forbidden_affirmative_present(lower: str) -> bool:
     for phrase in FORBIDDEN_PHRASES:
         for match in re.finditer(re.escape(phrase), lower):
@@ -337,7 +298,6 @@ def _forbidden_affirmative_present(lower: str) -> bool:
                 continue
             return True
     return False
-
 
 def _secret_token_present(lower: str) -> bool:
     """True only for un-negated secret tokens.
@@ -353,7 +313,6 @@ def _secret_token_present(lower: str) -> bool:
                 continue
             return True
     return False
-
 
 def validate_artifacts(concise: str, detailed: str) -> dict[str, str]:
     combined = concise + "\n" + detailed
@@ -376,13 +335,11 @@ def validate_artifacts(concise: str, detailed: str) -> dict[str, str]:
         "fable_token_efficiency": "passed" if len(concise) <= CONCISE_CHAR_BUDGET else "failed",
     }
 
-
 def artifact_paths(output_dir: str) -> tuple[Path, Path]:
     out = Path(output_dir)
     if not out.is_absolute():
         out = PROJECT_ROOT / out
     return out / CONCISE_NAME, out / DETAILED_NAME
-
 
 def apply_sql(launch_key: str, concise_path: Path, detailed_path: Path,
               digest: str, checks: dict[str, str]) -> str:
@@ -516,7 +473,6 @@ UNION ALL SELECT 'ready_for_fable_use', ready_for_fable_use::text FROM vw_dlf_fa
 ORDER BY 1;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create DLF Westpark Fable UI/UX handoff package. Dry-run by default.")
     parser.add_argument("--launch-key", default="dlf-westpark-andheri-west")
@@ -571,7 +527,6 @@ def main() -> int:
     print("Apply result:" if code == 0 else "Apply FAILED:")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

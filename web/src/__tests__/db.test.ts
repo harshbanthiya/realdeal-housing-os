@@ -1299,3 +1299,250 @@ describe("taskTone", () => {
     expect(taskTone("")).toBe("neutral");
   });
 });
+
+// ---------------------------------------------------------------------------
+// createContactGroup input validation (pure-logic, mirrors guard in actions.ts)
+// ---------------------------------------------------------------------------
+
+describe("createContactGroup name validation", () => {
+  function validateGroupName(name: string): { ok: boolean; message?: string } {
+    const n = (name || "").trim();
+    if (n.length < 2 || n.length > 64) return { ok: false, message: "Group name must be 2–64 characters." };
+    return { ok: true };
+  }
+
+  it("accepts a 2-character name (minimum)", () => {
+    expect(validateGroupName("AB").ok).toBe(true);
+  });
+
+  it("accepts a 64-character name (maximum)", () => {
+    expect(validateGroupName("A".repeat(64)).ok).toBe(true);
+  });
+
+  it("rejects empty string", () => {
+    const r = validateGroupName("");
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/2.64 characters/);
+  });
+
+  it("rejects single character (below minimum)", () => {
+    const r = validateGroupName("A");
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects 65-character name (above maximum)", () => {
+    const r = validateGroupName("A".repeat(65));
+    expect(r.ok).toBe(false);
+  });
+
+  it("trims whitespace before checking length", () => {
+    // '  A  ' trims to 'A' (length 1) → rejected
+    const r = validateGroupName("  A  ");
+    expect(r.ok).toBe(false);
+  });
+
+  it("accepts name with spaces and unicode", () => {
+    expect(validateGroupName("Windsor Grande Owners").ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// addContactsToGroup input validation (pure-logic, mirrors guard in actions.ts)
+// ---------------------------------------------------------------------------
+
+describe("addContactsToGroup input validation", () => {
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const GROUP_SLUG_RE = /^[a-z0-9-]{1,64}$/;
+
+  function validate(groupSlug: string, contactIds: string[]): { ok: boolean; message?: string; ids?: string[] } {
+    if (!GROUP_SLUG_RE.test(groupSlug || "")) return { ok: false, message: "Invalid group slug." };
+    const ids = (contactIds || []).filter((i) => UUID_RE.test(i));
+    if (ids.length === 0) return { ok: false, message: "No valid contact ids." };
+    return { ok: true, ids };
+  }
+
+  it("accepts valid slug and UUID list", () => {
+    const r = validate("windsor-grande", ["bf4827de-29fa-4ca4-a5da-d924e2b157a3"]);
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects empty slug", () => {
+    const r = validate("", ["bf4827de-29fa-4ca4-a5da-d924e2b157a3"]);
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/invalid group slug/i);
+  });
+
+  it("rejects slug with uppercase letters", () => {
+    const r = validate("Windsor-Grande", ["bf4827de-29fa-4ca4-a5da-d924e2b157a3"]);
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects slug with spaces", () => {
+    const r = validate("windsor grande", ["bf4827de-29fa-4ca4-a5da-d924e2b157a3"]);
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects 65-character slug (above max)", () => {
+    const r = validate("a".repeat(65), ["bf4827de-29fa-4ca4-a5da-d924e2b157a3"]);
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects empty contactIds array", () => {
+    const r = validate("windsor-grande", []);
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/no valid contact ids/i);
+  });
+
+  it("filters out non-UUID strings and rejects if nothing remains", () => {
+    const r = validate("windsor-grande", ["not-a-uuid", "also-not", "123"]);
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/no valid contact ids/i);
+  });
+
+  it("filters non-UUIDs from mixed list, keeps valid ones", () => {
+    const validId = "bf4827de-29fa-4ca4-a5da-d924e2b157a3";
+    const r = validate("windsor-grande", ["not-a-uuid", validId]);
+    expect(r.ok).toBe(true);
+    expect(r.ids).toEqual([validId]);
+  });
+
+  it("accepts multiple valid UUIDs", () => {
+    const ids = [
+      "bf4827de-29fa-4ca4-a5da-d924e2b157a3",
+      "41dd825b-b881-48e5-a216-a74928438579",
+    ];
+    const r = validate("test-group", ids);
+    expect(r.ok).toBe(true);
+    expect(r.ids).toHaveLength(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// batchLabelHuman — contacts-types.ts batch label formatter
+// ---------------------------------------------------------------------------
+
+describe("batchLabelHuman", () => {
+  let batchLabelHuman: typeof import("@/lib/cockpit/contacts-types").batchLabelHuman;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ batchLabelHuman } = await import("@/lib/cockpit/contacts-types"));
+  });
+
+  // .toLowerCase() is applied before title-casing — all-caps inputs → Title Case.
+
+  it("strips REAL_ prefix and title-cases the result", () => {
+    expect(batchLabelHuman("REAL_IMPERIAL_HEIGHTS_OWNERS")).toBe("Imperial Heights Owners");
+  });
+
+  it("strips FAKE_ prefix and title-cases", () => {
+    expect(batchLabelHuman("FAKE_TEST_IMPORT")).toBe("Test Import");
+  });
+
+  it("strips PHASE_N_ prefix and _AUDIT suffix, title-cases result", () => {
+    // REAL_PHASE_5_KALPATARU_AUDIT → KALPATARU_AUDIT → strip _AUDIT → KALPATARU → "Kalpataru"
+    expect(batchLabelHuman("REAL_PHASE_5_KALPATARU_AUDIT")).toBe("Kalpataru");
+  });
+
+  it("strips PHASE_N_N_ prefix, trailing run, and _AUDIT suffix — title-cases", () => {
+    // → IMPERIAL_UNIT_AUDIT_001 → strip _001 → IMPERIAL_UNIT_AUDIT → strip _AUDIT → IMPERIAL_UNIT
+    expect(batchLabelHuman("REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001")).toBe("Imperial Unit");
+  });
+
+  it("strips trailing run number (lowercase → title-cased)", () => {
+    expect(batchLabelHuman("real_owners_import_003")).toBe("Owners Import");
+  });
+
+  it("empty string falls back to 'Import'", () => {
+    expect(batchLabelHuman("")).toBe("Import");
+  });
+
+  it("plain label without prefix (lowercase → title-cased)", () => {
+    expect(batchLabelHuman("kalpataru_wing_a_tenants")).toBe("Kalpataru Wing A Tenants");
+  });
+});
+
+// ---- parseLabeledOutput logic mirror ----
+// Private helper in actions.ts ("use server") — tested here as a pure function mirror.
+// Regex: /^([a-z_]+):\s(.*)$/ — lowercase keys only, space after colon required.
+function parseLabeledOutput_mirror(out: string): Record<string, string> {
+  const fields: Record<string, string> = {};
+  for (const line of out.split("\n")) {
+    const m = line.match(/^([a-z_]+):\s(.*)$/);
+    if (m) fields[m[1]] = m[2];
+  }
+  return fields;
+}
+
+describe("parseLabeledOutput (actions.ts mirror)", () => {
+  it("parses a single key: value line", () => {
+    expect(parseLabeledOutput_mirror("status: ok")).toEqual({ status: "ok" });
+  });
+
+  it("parses multiple lines", () => {
+    expect(parseLabeledOutput_mirror("dry_run: true\nrows_affected: 3")).toEqual({
+      dry_run: "true",
+      rows_affected: "3",
+    });
+  });
+
+  it("ignores lines with uppercase keys (SQL noise)", () => {
+    expect(parseLabeledOutput_mirror("INSERT 0 1\nrows_affected: 5")).toEqual({ rows_affected: "5" });
+  });
+
+  it("ignores lines without colon+space separator", () => {
+    expect(parseLabeledOutput_mirror("nocoapshere")).toEqual({});
+  });
+
+  it("captures value with spaces in it", () => {
+    expect(parseLabeledOutput_mirror("message: hello world")).toEqual({ message: "hello world" });
+  });
+
+  it("returns empty object for empty string", () => {
+    expect(parseLabeledOutput_mirror("")).toEqual({});
+  });
+
+  it("last duplicate key wins", () => {
+    expect(parseLabeledOutput_mirror("status: ok\nstatus: done")).toEqual({ status: "done" });
+  });
+});
+
+// ---- headline logic mirror ----
+// Private helper in actions.ts — returns first non-SQL-keyword line.
+const SQL_SKIP = /^(BEGIN|COMMIT|INSERT|UPDATE|DELETE|DO|ROLLBACK)\b/;
+function headline_mirror(out: string): string {
+  for (const line of out.split("\n").map((l) => l.trim())) {
+    if (line && !SQL_SKIP.test(line)) return line;
+  }
+  return out.split("\n")[0] || "";
+}
+
+describe("headline (actions.ts mirror)", () => {
+  it("returns first non-SQL line", () => {
+    expect(headline_mirror("Merged 2 contacts")).toBe("Merged 2 contacts");
+  });
+
+  it("skips INSERT prefix and returns next line", () => {
+    expect(headline_mirror("INSERT 0 1\nDone: 1 row merged")).toBe("Done: 1 row merged");
+  });
+
+  it("skips all SQL noise lines", () => {
+    expect(headline_mirror("BEGIN\nCOMMIT\nDELETE 3\nOK: applied")).toBe("OK: applied");
+  });
+
+  it("falls back to first line when all lines are SQL noise", () => {
+    expect(headline_mirror("BEGIN\nCOMMIT")).toBe("BEGIN");
+  });
+
+  it("returns first line on plain output (no SQL noise)", () => {
+    expect(headline_mirror("dry_run: true\nrows: 0")).toBe("dry_run: true");
+  });
+
+  it("trims leading/trailing whitespace from lines", () => {
+    expect(headline_mirror("  INSERT 0 1  \n  Result line  ")).toBe("Result line");
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(headline_mirror("")).toBe("");
+  });
+});

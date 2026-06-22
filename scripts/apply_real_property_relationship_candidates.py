@@ -15,50 +15,14 @@ person names, phones, emails, websites, or addresses. No communications are sent
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import re
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 DEFAULT_REL_LABEL = "REAL_PHASE_5_8_OWNER_UNIT_RELATIONSHIP_001"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str | None) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def resolve_phase(rel_label: str, phase: str | None) -> str:
     """Explicit --phase wins; otherwise infer from a REAL_PHASE_<maj>_<min> rel_label;
     otherwise fall back to '5.8' for backward compatibility."""
@@ -69,14 +33,12 @@ def resolve_phase(rel_label: str, phase: str | None) -> str:
         return f"{match.group(1)}.{match.group(2)}"
     return "5.8"
 
-
 def tag(rel_label: str, phase: str, extra: str = "") -> str:
     base = (
         "jsonb_build_object('phase'," + sql_literal(phase) + ",'rel_label'," + sql_literal(rel_label)
         + ",'source','real_property_relationship_candidate'"
     )
     return base + (extra + ")" if extra else ")")
-
 
 def probe_sql(contact_id: str, rel_label: str) -> str:
     cid = sql_literal(contact_id)
@@ -114,7 +76,6 @@ SELECT
   COALESCE((SELECT building_name FROM sig), ''),
   COALESCE((SELECT unit_number FROM sig), '');
 """
-
 
 def apply_sql(contact_id: str, rel_label: str, review_item_id: str | None, phase: str) -> str:
     cid = sql_literal(contact_id)
@@ -204,7 +165,6 @@ UNION ALL SELECT 'property_relationship_review_items', count(*)::text FROM prope
 ORDER BY item;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Apply ONE real owner/unit relationship candidate (review-gated). Dry-run by default.")
     parser.add_argument("--contact-id", required=True)
@@ -275,7 +235,6 @@ def main() -> int:
     print("Phase 5.8 candidate chain created (all review-gated):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -25,10 +25,10 @@ Revert: --revert (dry-run) or --revert --apply --real-ok.
 """
 
 from __future__ import annotations
+from _db import psql
 
 import argparse
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -43,7 +43,6 @@ DUPLICATE_NAMES = ("Kalpataru Radiance New Parser", "Kalpataru Radiance A")
 CANONICAL_ID: str = ""
 DUPLICATE_IDS: list[str] = []
 
-
 def read_env(key: str) -> str:
     if not ENV_FILE.exists():
         return ""
@@ -51,27 +50,10 @@ def read_env(key: str) -> str:
         if line.startswith(f"{key}="):
             return line.split("=", 1)[1]
     return ""
-
-
-def psql(sql: str, *, fetch: bool = False) -> tuple[int, str]:
-    u = read_env("POSTGRES_USER")
-    pw = read_env("POSTGRES_PASSWORD")
-    db = read_env("POSTGRES_DB")
-    if not (u and pw and db):
-        return 1, "Missing POSTGRES_* env vars in docker/.env"
-    cmd = ["docker", "exec", "-i", "-e", f"PGPASSWORD={pw}", "realdeal-postgres",
-           "psql", "-U", u, "-d", db, "-v", "ON_ERROR_STOP=1", "-At", "-F", "|"]
-    r = subprocess.run(cmd, input=sql, text=True, capture_output=True)
-    out = r.stdout.strip()
-    err = r.stderr.strip()
-    return r.returncode, (out if r.returncode == 0 else err or out)
-
-
 def q(v) -> str:
     if v is None:
         return "NULL"
     return "'" + str(v).replace("'", "''") + "'"
-
 
 def load_ids() -> bool:
     global CANONICAL_ID, DUPLICATE_IDS
@@ -90,7 +72,6 @@ def load_ids() -> bool:
         print(f"ERROR: canonical building {CANONICAL_NAME!r} not found.")
         return False
     return True
-
 
 def preview(apply: bool) -> None:
     """Print a dry-run summary of what will change."""
@@ -136,7 +117,6 @@ def preview(apply: bool) -> None:
     print()
     if not apply:
         print("DRY RUN — no changes made. Pass --apply --real-ok to execute.")
-
 
 def merge_sql() -> str:
     """Build the single-transaction SQL that does the full merge."""
@@ -231,7 +211,6 @@ UPDATE buildings
 COMMIT;
 """
 
-
 def counts_sql() -> str:
     return f"""
 SELECT 'rera_project_profiles' t,    count(*) FROM rera_project_profiles    WHERE building_id = {q(CANONICAL_ID)}
@@ -248,7 +227,6 @@ SELECT 'dup_units_still_active',     count(*) FROM building_units WHERE building
 UNION ALL
 SELECT 'dup_rera_still_in_dups',     count(*) FROM rera_project_profiles WHERE building_id IN ({",".join(q(d) for d in DUPLICATE_IDS if d)});
 """
-
 
 def revert_sql() -> str:
     dup_ids_sql = "(" + ",".join(q(d) for d in DUPLICATE_IDS if d) + ")"
@@ -303,7 +281,6 @@ UPDATE buildings
 COMMIT;
 """
 
-
 def main() -> int:
     ap = argparse.ArgumentParser(description="Merge Kalpataru Radiance building variants into one canonical record.")
     ap.add_argument("--apply", action="store_true", help="Write changes (also needs --real-ok)")
@@ -352,7 +329,6 @@ def main() -> int:
     print("\nDone. The two duplicate buildings remain in the buildings table (annotated in metadata)")
     print("but all their data has been consolidated into 'Kalpataru Radiance'.")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

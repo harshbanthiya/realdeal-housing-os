@@ -18,13 +18,12 @@ deletes exactly those. Creates NO outreach.
   Rollback:  python3 scripts/bulk_attach_to_buildings.py --rollback --rel-label REAL_ATTACH_REAL_EKTA_TRIPOLIS_001 --apply --real-ok
 """
 from __future__ import annotations
+from _db import lit, read_env_value, run_psql
 
 import argparse
-import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 
 # One file per building; explicit so resolution never guesses.
 BATCH_BUILDING = {
@@ -36,40 +35,6 @@ BATCH_BUILDING = {
 }
 # Reuse the canonical Imperial Heights (has the web profile) — never create a 3rd.
 BUILDING_ID_OVERRIDE = {"Imperial Heights": "0e72db71-8b93-4ecd-879c-17d8d8f2b206"}
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def lit(value) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, int):
-        return str(value)
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user, pw, db = read_env_value("POSTGRES_USER"), read_env_value("POSTGRES_PASSWORD"), read_env_value("POSTGRES_DB")
-    if not user or not pw or not db:
-        return 1, "Missing POSTGRES_* in docker/.env."
-    cmd = ["docker", "exec", "-i", "-e", f"PGPASSWORD={pw}", "realdeal-postgres",
-           "psql", "-U", user, "-d", db, "-At", "-F", "\t", "-v", "ON_ERROR_STOP=1"]
-    res = subprocess.run(cmd, input=sql, text=True, capture_output=True, check=False)
-    if res.returncode != 0:
-        # Surface the actual error (psql prints it to stderr; stdout may just be "BEGIN").
-        return res.returncode, (res.stderr.strip() or res.stdout.strip())
-    return res.returncode, (res.stdout.rstrip("\n") or res.stderr.strip())
-
-
 def resolve_building_id(name: str, merge_label: str) -> str | None:
     if name in BUILDING_ID_OVERRIDE:
         return BUILDING_ID_OVERRIDE[name]
@@ -82,10 +47,8 @@ def resolve_building_id(name: str, merge_label: str) -> str | None:
         f"jsonb_build_object('created_by','bulk_attach','merge_label',{lit(merge_label)})) RETURNING id;")
     return out.strip().split("\t")[0] if code == 0 else None
 
-
 ROLE_CASE = ("CASE c.contact_type WHEN 'owner' THEN 'owner' WHEN 'tenant' THEN 'tenant' "
              "WHEN 'agent' THEN 'broker' WHEN 'buyer' THEN 'buyer' WHEN 'seller' THEN 'seller' ELSE 'unknown' END")
-
 
 def target_select_sql(batch_label: str, merge_label: str) -> str:
     # One row per merged canonical contact in this batch, with its best unit hint.
@@ -99,7 +62,6 @@ JOIN canonical_merge_batches cmb ON cmb.id = cml.merge_batch_id AND cmb.merge_la
 JOIN import_batches ib ON ib.id = c.import_batch_id AND ib.metadata->>'batch_label' = {lit(batch_label)}
 LEFT JOIN contact_property_hints cph ON cph.contact_import_row_id = cml.contact_import_row_id
 ORDER BY c.id, (cph.unit_number IS NULL), cph.created_at"""
-
 
 def dry_run(batch_label: str, building_name: str, merge_label: str) -> int:
     sql = f"WITH target AS ({target_select_sql(batch_label, merge_label)})\n" + """
@@ -117,7 +79,6 @@ FROM target;"""
     print(f"  with a unit hint:   {u}  (distinct units: {du})")
     print("  Run with --apply --real-ok to create the building/units/relationships.")
     return 0
-
 
 def apply(batch_label: str, building_name: str, merge_label: str, rel_label: str) -> int:
     bid = resolve_building_id(building_name, merge_label)
@@ -170,13 +131,11 @@ WHERE raw_context->>'rel_label' = {lit(rel_label)};
     print(out)
     return 0
 
-
 def rollback(rel_label: str) -> int:
     code, out = run_psql(
         f"DELETE FROM contact_property_relationships WHERE raw_context->>'rel_label' = {lit(rel_label)};")
     print(out if code == 0 else f"Rollback failed: {out}")
     return code
-
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Dedup-aware bulk attach to buildings. Dry-run by default.")
@@ -213,7 +172,6 @@ def main() -> int:
         print("Refusing real attach without --real-ok.")
         return 1
     return apply(args.batch_label, building, args.merge_label, rel_label)
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

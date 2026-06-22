@@ -14,14 +14,12 @@ Counts only; no raw personal values are printed.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.1"
 SOURCE = "real_building_seo_plan"
 
@@ -54,38 +52,6 @@ BRIEFS = [
      "imperial-heights-resale-guide",
      "Imperial Heights resale", "buy"),
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def tag_expr(building_name: str) -> str:
     """jsonb tag written to every row's raw_context."""
     return (
@@ -99,7 +65,6 @@ def tag_expr(building_name: str) -> str:
         "'is_real', true)"
     )
 
-
 # (table, jsonb column) for counting/this phase's rows.
 PHASE_TABLES = [
     ("building_web_profiles", "raw_context"),
@@ -108,7 +73,6 @@ PHASE_TABLES = [
     ("content_publishing_queue", "raw_context"),
     ("ai_agent_tasks", "raw_input"),
 ]
-
 
 def counts_sql(building_name: str) -> str:
     bn = sql_literal(building_name)
@@ -120,10 +84,8 @@ def counts_sql(building_name: str) -> str:
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
 
-
 def exists_sql(building_id: str) -> str:
     return f"SELECT count(*) FROM buildings WHERE id = {sql_literal(building_id)}::uuid;"
-
 
 def existing_profile_sql(building_id: str, slug: str) -> str:
     return (
@@ -131,7 +93,6 @@ def existing_profile_sql(building_id: str, slug: str) -> str:
         f"WHERE building_id = {sql_literal(building_id)}::uuid "
         f"OR profile_slug = {sql_literal(slug)};"
     )
-
 
 def insert_sql(building_id: str, name: str, area: str, city: str,
                developer: str, slug: str) -> str:
@@ -219,7 +180,6 @@ COMMIT;
 {counts_sql(name)}
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Apply a REAL building SEO/content plan. Dry-run by default.")
     parser.add_argument("--building-id", required=True)
@@ -292,7 +252,6 @@ def main() -> int:
     print("Real SEO plan rows created (counts):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

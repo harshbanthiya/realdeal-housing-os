@@ -23,11 +23,11 @@ Dry-run by default. Writing requires --apply AND --real-ok. NO external/IGR/scra
 """
 
 from __future__ import annotations
+from _db import psql
 
 import argparse
 import json
 import re
-import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -44,29 +44,15 @@ MAX_FLOOR = 31                                    # per building_tower_structure
 FK_TABLES = ["unit_registration_records", "contact_property_relationships",
              "registration_party_contact_matches", "property_relationship_review_items"]
 
-
 def env(key: str) -> str:
     if ENV_FILE.exists():
         for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
             if line.startswith(f"{key}="):
                 return line.split("=", 1)[1]
     return ""
-
-
-def psql(sql: str) -> tuple[int, str]:
-    u, p, d = env("POSTGRES_USER"), env("POSTGRES_PASSWORD"), env("POSTGRES_DB")
-    if not (u and p and d):
-        return 1, "Missing POSTGRES_* in docker/.env."
-    cmd = ["docker", "exec", "-i", "-e", f"PGPASSWORD={p}", "realdeal-postgres", "psql",
-           "-U", u, "-d", d, "-v", "ON_ERROR_STOP=1", "-At", "-F", "|"]
-    r = subprocess.run(cmd, input=sql, text=True, capture_output=True, check=False)
-    return r.returncode, (r.stderr.strip() or r.stdout.strip()) if r.returncode else (r.stdout.strip() or r.stderr.strip())
-
-
 def tower_of(wing: str) -> str:
     m = re.search(r"([A-Za-z])\s*$", wing or "")
     return m.group(1).upper() if m else ""
-
 
 def derive_cell(unit: str, per_floor: int) -> tuple[int, int] | None:
     """flat-number string -> (floor, pos) for this tower, or None (off-grid).
@@ -91,10 +77,8 @@ def derive_cell(unit: str, per_floor: int) -> tuple[int, int] | None:
             return fl, pos
     return None
 
-
 def q(v) -> str:
     return "NULL" if v in (None, "") else "'" + str(v).replace("'", "''") + "'"
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Rebuild canonical Kalpataru unit grid (dry-run default).")
@@ -222,7 +206,6 @@ def main() -> int:
         f"and canonical_status='active' group by 1 order by 1;")
     print("Applied. Active units per wing now:\n" + after)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

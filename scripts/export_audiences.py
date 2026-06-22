@@ -16,40 +16,16 @@ responsibly. This script only writes FILES — it sends nothing.
   Write:    python3 scripts/export_audiences.py --apply [--building NAME] [--role owner]
 """
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
 import csv
 import hashlib
 import re
-import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 OUT_DIR = PROJECT_ROOT / "exports" / "audiences"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user, pw, db = read_env_value("POSTGRES_USER"), read_env_value("POSTGRES_PASSWORD"), read_env_value("POSTGRES_DB")
-    if not user or not pw or not db:
-        return 1, "Missing POSTGRES_* in docker/.env."
-    cmd = ["docker", "exec", "-i", "-e", f"PGPASSWORD={pw}", "realdeal-postgres",
-           "psql", "-U", user, "-d", db, "-At", "-F", "\t", "-v", "ON_ERROR_STOP=1"]
-    res = subprocess.run(cmd, input=sql, text=True, capture_output=True, check=False)
-    return res.returncode, (res.stderr.strip() if res.returncode else res.stdout.rstrip("\n"))
-
-
 def e164_in(phone: str) -> str:
     """Normalize an Indian-leaning phone to E.164 (+91XXXXXXXXXX). '' if unusable."""
     d = re.sub(r"\D", "", phone or "")
@@ -63,10 +39,8 @@ def e164_in(phone: str) -> str:
         return ""  # leave malformed numbers out rather than guess
     return "+" + d
 
-
 def sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest() if value else ""
-
 
 def fetch_rows(building: str | None, role: str | None, limit: int | None) -> list[dict]:
     where = ["r.raw_context->>'bulk_attach' = 'true'", "r.relationship_status = 'active'"]
@@ -110,7 +84,6 @@ ORDER BY c.id
         rows.append({"id": parts[0], "name": parts[1], "phone": parts[2],
                      "email": parts[3], "building": parts[4], "role": parts[5], "consent": parts[6]})
     return rows
-
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Export attached contacts to Meta + WhatsApp audience CSVs.")
@@ -163,7 +136,6 @@ def main() -> int:
     print(f"  wrote {wa_path.relative_to(PROJECT_ROOT)} ({len(with_phone)} real numbers)")
     print("  NOTE: WhatsApp messaging requires recipient opt-in; consent_status flags who is cleared.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -3,8 +3,6 @@
  * Client components import from here; server data getters live in data.ts.
  */
 import type { Tone } from "@/components/ui/primitives";
-export type { Listing } from "@/lib/site";
-
 export type Mode = "prospecting" | "active" | "launch" | "post_launch";
 
 export interface Building {

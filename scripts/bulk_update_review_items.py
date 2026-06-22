@@ -2,58 +2,13 @@
 """Carefully scoped bulk updates for import review item statuses."""
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 ALLOWED_STATUSES = {"pending", "approved", "rejected", "skipped", "needs_more_info", "merged_later"}
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker",
-        "exec",
-        "-i",
-        "-e",
-        f"PGPASSWORD={password}",
-        "realdeal-postgres",
-        "psql",
-        "-U",
-        user,
-        "-d",
-        db_name,
-        "-At",
-        "-v",
-        "ON_ERROR_STOP=1",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def target_sql(batch_label: str, review_type: str, from_status: str, limit: int | None) -> str:
     limit_sql = f"LIMIT {limit}" if limit is not None else ""
     return f"""
@@ -69,7 +24,6 @@ FROM (
   {limit_sql}
 ) target;
 """
-
 
 def update_sql(batch_label: str, review_type: str, from_status: str, to_status: str, reviewed_by: str, decision_notes: str, limit: int | None) -> str:
     limit_sql = f"LIMIT {limit}" if limit is not None else ""
@@ -107,7 +61,6 @@ logged AS (
 )
 SELECT count(*) FROM updated;
 """
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Bulk update review item statuses. Dry-run by default.")
@@ -150,7 +103,6 @@ def main() -> int:
         return code
     print(f"updated_rows: {updated_count or '0'}")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

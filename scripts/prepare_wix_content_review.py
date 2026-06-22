@@ -15,14 +15,12 @@ communication_sent=false. Writing requires --real-ok AND --apply. Counts only.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.2"
 SOURCE = "wix_content_review_prep"
 
@@ -53,38 +51,6 @@ CHECK_TYPES = [
     "cms_mapping", "title_present", "slug_present", "meta_present",
     "human_approved", "no_external_call_required", "no_outreach", "wix_ready",
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 TAG = (
     "jsonb_build_object("
     f"'phase', '{PHASE}', 'source', '{SOURCE}', "
@@ -99,7 +65,6 @@ PHASE_TABLES = [
     ("publishing_readiness_checks", "raw_context"),
 ]
 
-
 def counts_sql() -> str:
     parts = [
         f"SELECT '{t}' AS item, count(*)::text AS val FROM {t} "
@@ -108,10 +73,8 @@ def counts_sql() -> str:
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
 
-
 def profile_id_sql(slug: str) -> str:
     return f"SELECT count(*) FROM building_web_profiles WHERE profile_slug = {sql_literal(slug)};"
-
 
 def insert_sql(slug: str) -> str:
     s = sql_literal(slug)
@@ -170,7 +133,6 @@ COMMIT;
 {counts_sql()}
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Prepare Wix CMS mapping + content review rows. Dry-run by default.")
     parser.add_argument("--profile-slug", default="imperial-heights-goregaon-west")
@@ -222,7 +184,6 @@ def main() -> int:
     print("Wix content-review prep rows created (counts):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -7,14 +7,12 @@ any inbound lead exists from the seed tag, or any contact appears tagged to this
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, scalar, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.3"
 SOURCE = "dlf_lead_intake_plan_seed"
 
@@ -26,48 +24,6 @@ DELETE_ORDER = [
     "launch_lead_intake_endpoints",
     "launch_readiness_checks",
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, (result.stdout.strip() or result.stderr.strip())
-
-
-def scalar(sql: str) -> int:
-    code, out = run_psql(sql)
-    if code != 0:
-        raise RuntimeError(out)
-    try:
-        return int((out or "0").splitlines()[0])
-    except ValueError:
-        return 0
-
-
 def where_clause(alias: str = "") -> str:
     prefix = f"{alias}." if alias else ""
     return (
@@ -75,13 +31,11 @@ def where_clause(alias: str = "") -> str:
         f"AND {prefix}raw_context->>'source' = {sql_literal(SOURCE)}"
     )
 
-
 def launch_filter(table_alias: str, launch_key: str) -> str:
     return (
         f"{table_alias}.launch_project_id IN (SELECT id FROM launch_projects "
         f"WHERE launch_key = {sql_literal(launch_key)})"
     )
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Cleanup DLF lead-intake planning rows. Counts only.")
@@ -165,7 +119,6 @@ def main() -> int:
         return 2
     print(f"DELETED {total} tagged Phase 7.3 row(s). No launch project, contacts, inbound leads, or earlier phase rows touched.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -15,48 +15,12 @@ Writing requires BOTH --real-ok and --apply. Counts only; never prints contact v
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str | None) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def probe_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
     return f"""
@@ -68,7 +32,6 @@ SELECT
   (SELECT count(*) FROM launch_contact_permission_decision_log l JOIN launch_projects p ON p.id = l.launch_project_id WHERE p.launch_key = {lk} AND l.raw_context->>'phase' = '7.9'),
   (SELECT safety_status FROM vw_dlf_operator_safety_posture WHERE launch_key = {lk});
 """
-
 
 def apply_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
@@ -128,7 +91,6 @@ UNION ALL SELECT 'safety_status', safety_status FROM vw_dlf_operator_safety_post
 ORDER BY 1;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Revert Phase 7.9 contact permission evidence review. Dry-run by default.")
     parser.add_argument("--launch-key", default="dlf-westpark-andheri-west")
@@ -174,7 +136,6 @@ def main() -> int:
     print("Revert applied:" if code == 0 else "Revert FAILED (rolled back):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

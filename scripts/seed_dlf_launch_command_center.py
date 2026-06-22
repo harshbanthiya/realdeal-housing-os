@@ -18,17 +18,15 @@ Dry-run by default; --real-ok required; --apply to write. Prints counts only.
 """
 
 from __future__ import annotations
+from _db import jsonb_lit, read_env_value, run_psql, sql_literal
 
 import argparse
 import json
-import subprocess
 import uuid
 from datetime import date, timedelta
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.0"
 SOURCE = "dlf_launch_command_center_seed"
 BASE_TAG = {
@@ -91,50 +89,11 @@ CALENDAR_PATTERN = [
     ("instagram", "story", "Story — countdown"),
     ("wix", "lead_capture", "Landing-page push (draft) — lead form"),
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def jsonb_lit(obj) -> str:
-    return sql_literal(json.dumps(obj)) + "::jsonb"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, (result.stdout.strip() or result.stderr.strip())
-
-
 def tag(extra: dict | None = None) -> str:
     obj = dict(BASE_TAG)
     if extra:
         obj.update(extra)
     return jsonb_lit(obj)
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Seed a DLF launch command center (review-gated).")
@@ -286,7 +245,6 @@ def main() -> int:
     print(f"APPLIED: launch_project {args.launch_key} seeded (tagged phase=7.0). "
           "send/publish disabled; no contacts selected; no messages sent; no external calls.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
