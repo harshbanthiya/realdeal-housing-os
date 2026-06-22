@@ -11,13 +11,12 @@ settings exist. Writing requires BOTH --real-ok and --apply. Idempotent on seque
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 
 SEQUENCE_NAME = "Warm Owner Greeting"
 
@@ -33,40 +32,6 @@ STEP_2 = (
     "{{building}}-style homes, reply YES. If not, no problem at all — reply STOP and I won't "
     "reach out again. {{link}}"
 )
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str | None) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def build_sql(director: str, link_base: str, activate: bool, created_by: str) -> str:
     name = sql_literal(SEQUENCE_NAME)
     status = sql_literal("active" if activate else "draft")
@@ -117,7 +82,6 @@ FROM outreach_sequences s LEFT JOIN outreach_sequence_steps st ON st.sequence_id
 WHERE s.name = {name} GROUP BY s.status;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Seed the Warm Owner Greeting assisted sequence. Dry-run by default.")
     parser.add_argument("--director", default="[DIRECTOR_NAME]",
@@ -143,7 +107,6 @@ def main() -> int:
     print("\nSequence seeded:" if code == 0 else "Seed FAILED (rolled back):")
     print(out)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -13,14 +13,12 @@ exact. Writing requires --apply AND --fake-ok. Counts only.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.8"
 SOURCE = "fake_rera_verification"
 FAKE_BATCH = "FAKE_PHASE_6_8_RERA_VERIFICATION"
@@ -37,34 +35,6 @@ FAKE_TABLES = [
     ("rera_area_mismatch_candidates", "raw_context"),
     ("rera_verification_review_items", "raw_context"),
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 TAG = (
     "jsonb_build_object("
     f"'fake_batch', '{FAKE_BATCH}', 'phase', '{PHASE}', 'source', '{SOURCE}', "
@@ -73,7 +43,6 @@ TAG = (
 # Tag for the buildings.metadata column (same keys; standalone so it reads naturally).
 META_TAG = TAG
 
-
 def counts_sql() -> str:
     parts = [
         f"SELECT '{t}' AS item, count(*)::text AS val FROM {t} WHERE {col}->>'fake_batch' = '{FAKE_BATCH}'"
@@ -81,14 +50,12 @@ def counts_sql() -> str:
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
 
-
 # Subqueries that resolve the fake rows by tag (no hardcoded UUIDs).
 FAKE_BUILDING = f"(SELECT id FROM buildings WHERE metadata->>'fake_batch' = '{FAKE_BATCH}' ORDER BY created_at LIMIT 1)"
 FAKE_PROFILE = f"(SELECT id FROM rera_project_profiles WHERE raw_context->>'fake_batch' = '{FAKE_BATCH}' ORDER BY created_at LIMIT 1)"
 FAKE_MATCH = f"(SELECT id FROM rera_building_match_candidates WHERE raw_context->>'fake_batch' = '{FAKE_BATCH}' ORDER BY created_at LIMIT 1)"
 FAKE_CARPET = f"(SELECT id FROM rera_carpet_area_records WHERE raw_context->>'fake_batch' = '{FAKE_BATCH}' ORDER BY created_at LIMIT 1)"
 FAKE_MISMATCH = f"(SELECT id FROM rera_area_mismatch_candidates WHERE raw_context->>'fake_batch' = '{FAKE_BATCH}' ORDER BY created_at LIMIT 1)"
-
 
 def insert_sql() -> str:
     stmts = []
@@ -160,7 +127,6 @@ VALUES
     body = "\n".join(stmts)
     return f"BEGIN;\n{body}\nCOMMIT;\n{counts_sql()}"
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Seed FAKE RERA verification rows. Dry-run by default.")
     parser.add_argument("--apply", action="store_true")
@@ -194,7 +160,6 @@ def main() -> int:
     print("Fake RERA verification rows created (counts):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

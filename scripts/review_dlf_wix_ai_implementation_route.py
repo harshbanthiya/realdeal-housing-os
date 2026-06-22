@@ -8,17 +8,15 @@ inbound leads/contacts/messages. It never prints the staging URL or artifact con
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import json
 import re
-import subprocess
 import uuid
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.24"
 SOURCE = "dlf_wix_ai_implementation_route_review"
 ALLOWED_ROUTES = ("auto", "wix_git_cli", "wix_custom_element_velo", "wix_code_snippet")
@@ -35,46 +33,8 @@ EXPECTED_ARTIFACTS = {
     "gallery_white_static_preview": "gallery-white-static-preview.html",
     "gallery_white_static_preview_css": "gallery-white-static-preview.css",
 }
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
 def json_literal(value) -> str:
     return sql_literal(json.dumps(value, sort_keys=True))
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def probe_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
     return f"""
@@ -103,7 +63,6 @@ SELECT
   (SELECT ready_for_production_publish::text FROM vw_dlf_wix_staging_readiness WHERE launch_key = {lk});
 """
 
-
 def metadata_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
     return f"""
@@ -123,7 +82,6 @@ FROM wix_ai_build_artifacts a
 WHERE a.execution_plan_id IN (SELECT id FROM plan_pick)
 ORDER BY 1, 4, 5;
 """
-
 
 def scan_artifact(path: Path, artifact_type: str) -> dict:
     exists = path.exists()
@@ -162,7 +120,6 @@ def scan_artifact(path: Path, artifact_type: str) -> dict:
         "phone_hits": len(phone.findall(text)),
         "staging_url_hits": len(staging_url.findall(text)),
     }
-
 
 def route_payload(selected_route: str, artifact_count: int) -> tuple[str, str, str, list[dict], list[dict]]:
     route = "wix_git_cli" if selected_route == "auto" else selected_route
@@ -218,7 +175,6 @@ def route_payload(selected_route: str, artifact_count: int) -> tuple[str, str, s
     ], [
         {"key": k, "type": t, "owner": o, "instruction": i} for k, t, o, i in execution_steps
     ]
-
 
 def insert_sql(args, metadata: dict, artifact_reviews: list[dict], operator_tasks: list[dict], execution_steps: list[dict], route: str, fallback: str, status: str) -> str:
     route_id = str(uuid.uuid4())
@@ -328,7 +284,6 @@ INSERT INTO wix_ai_implementation_review_items (
     statements.append(counts_sql(args.launch_key))
     return "\n".join(statements)
 
-
 def counts_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
     return f"""
@@ -367,7 +322,6 @@ WHERE p.launch_key = {lk} AND rd.raw_context->>'phase' = '{PHASE}'
 GROUP BY review_type, status
 ORDER BY 1, 2, 3;
 """
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Review DLF Wix AI implementation route. Dry-run by default.")
@@ -480,7 +434,6 @@ def main() -> int:
         return code
     print(output)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

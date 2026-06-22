@@ -2,31 +2,13 @@
 """Print safe count-only summaries for review queues."""
 
 from __future__ import annotations
+from _db import read_env_value, sql_literal
 
 import argparse
 import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
 def run_psql(sql: str) -> int:
     user = read_env_value("POSTGRES_USER")
     password = read_env_value("POSTGRES_PASSWORD")
@@ -51,7 +33,6 @@ def run_psql(sql: str) -> int:
     ]
     return subprocess.run(command, input=sql, text=True, check=False).returncode
 
-
 def where_clause(batch_label: str, status: str, review_type: str) -> str:
     filters = []
     if batch_label:
@@ -61,7 +42,6 @@ def where_clause(batch_label: str, status: str, review_type: str) -> str:
     if review_type:
         filters.append(f"iri.review_type = {sql_literal(review_type)}")
     return " AND ".join(filters) if filters else "true"
-
 
 def summary_sql(batch_label: str, status: str, review_type: str) -> str:
     where = where_clause(batch_label, status, review_type)
@@ -107,7 +87,6 @@ JOIN import_batches ib ON ib.id = cir.import_batch_id
 WHERE {batch_filter} AND cir.needs_review = true;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Print review queue counts only.")
     parser.add_argument("--batch-label", default="")
@@ -123,7 +102,6 @@ def main() -> int:
     if args.review_type:
         print(f"review_type_filter: {args.review_type}")
     return run_psql(summary_sql(args.batch_label, args.status, args.review_type))
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

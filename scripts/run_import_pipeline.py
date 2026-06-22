@@ -17,6 +17,7 @@ Usage:
     --batch-label <LABEL> --mode {fake,real} --output-dir <dir> --apply
 """
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import re
@@ -24,57 +25,20 @@ import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 SCRIPTS = PROJECT_ROOT / "scripts"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, int):
-        return str(value)
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_* in docker/.env."
-    cmd = ["docker", "exec", "-i", "-e", f"PGPASSWORD={password}", "realdeal-postgres",
-           "psql", "-U", user, "-d", db_name, "-At", "-F", "\t", "-v", "ON_ERROR_STOP=1"]
-    res = subprocess.run(cmd, input=sql, text=True, capture_output=True, check=False)
-    return res.returncode, (res.stdout.rstrip("\n") or res.stderr.strip())
-
-
 def job_update(job_id: str, **fields) -> None:
     if not fields:
         return
     sets = ", ".join(f"{k} = {sql_literal(v)}" for k, v in fields.items())
     run_psql(f"UPDATE import_jobs SET {sets}, updated_at = now() WHERE id = {sql_literal(job_id)};")
 
-
 def run_step(argv: list[str]) -> tuple[int, str]:
     res = subprocess.run(["python3", *argv], cwd=str(PROJECT_ROOT), text=True, capture_output=True, check=False)
     return res.returncode, (res.stdout or "") + (res.stderr or "")
 
-
 def grep1(pattern: str, text: str, default: str = "") -> str:
     m = re.search(pattern, text)
     return m.group(1).strip() if m else default
-
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Run the contact-import pipeline for one uploaded file.")
@@ -149,7 +113,6 @@ def main() -> int:
         job_update(job, status="failed", stage="error", error_summary=str(exc)[:500])
         print(f"Pipeline failed: {exc}")
         return 1
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

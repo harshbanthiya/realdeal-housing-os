@@ -7,6 +7,7 @@ has in `building_units` and `unit_registration_records`, then compares that to
 """
 
 from __future__ import annotations
+from _db import read_env_value
 
 import argparse
 import csv
@@ -17,24 +18,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 DEFAULT_EVENTS_CSV = PROJECT_ROOT / "exports" / "igr_kalpataru_timelines" / "kalpataru_radiance_events.csv"
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "exports" / "igr_kalpataru_timelines"
 BUILDING_NAME = "Kalpataru Radiance"
 EXPECTED_PER_FLOOR = {"A": 5, "B": 6, "C": 6, "D": 6}
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
-        if line.startswith(f"{key}="):
-            return line.split("=", 1)[1]
-    return ""
-
-
 def run_psql(sql: str) -> list[list[str]]:
     user = read_env_value("POSTGRES_USER")
     password = read_env_value("POSTGRES_PASSWORD")
@@ -50,19 +38,15 @@ def run_psql(sql: str) -> list[list[str]]:
         raise RuntimeError(result.stderr or result.stdout)
     return [line.split("\t") for line in result.stdout.splitlines() if line]
 
-
 def tower_letter(wing: str | None) -> str:
     match = re.search(r"([A-Z])\s*$", (wing or "").upper())
     return match.group(1) if match else ""
 
-
 def digits(unit: str | None) -> str:
     return re.sub(r"\D", "", unit or "")
 
-
 def unit_key(wing: str | None, unit: str | None) -> str:
     return f"{tower_letter(wing)}-{digits(unit)}"
-
 
 def expected_units() -> set[str]:
     out = set()
@@ -72,7 +56,6 @@ def expected_units() -> set[str]:
                 out.add(f"{wing}-{floor}{pos}")
     return out
 
-
 def write_csv(path: Path, rows: Iterable[dict], fieldnames: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -80,7 +63,6 @@ def write_csv(path: Path, rows: Iterable[dict], fieldnames: list[str]) -> None:
         writer.writeheader()
         for row in rows:
             writer.writerow({field: row.get(field) for field in fieldnames})
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Compare parsed Kalpataru events with Cockpit DB state.")
@@ -225,7 +207,6 @@ def main() -> int:
 
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

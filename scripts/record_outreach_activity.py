@@ -20,57 +20,20 @@ This NEVER sends a message and never flips send_enabled. Writing requires BOTH -
 """
 
 from __future__ import annotations
+from _db import lit, read_env_value, run_psql
 
 import argparse
-import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def lit(value: str | None) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 GUARD = ("DO $$ DECLARE se text; BEGIN SELECT setting_value INTO se FROM outreach_settings "
          "WHERE setting_key='send_enabled'; IF se='true' THEN "
          "RAISE EXCEPTION 'Refusing: send_enabled must stay false.'; END IF; END $$;")
-
 
 def probe(qid: str) -> str:
     return (f"SELECT (q.id IS NOT NULL), q.status, q.sequence_step, mask_name(c.full_name) "
             f"FROM whatsapp_assisted_queue q LEFT JOIN contacts c ON c.id=q.contact_id "
             f"WHERE q.id={lit(qid)};")
-
 
 def action_sql(action: str, qid: str, by: str, note: str | None) -> str:
     q = lit(qid)
@@ -186,7 +149,6 @@ SELECT 'opted_out recorded; suppression + channel_permissions opted_out written'
 
     return "SELECT 'unknown action';"
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Record a human-in-loop outreach activity. Dry-run by default.")
     parser.add_argument("--queue-id", required=True)
@@ -230,7 +192,6 @@ def main() -> int:
     print("\nActivity recorded:" if code == 0 else "Record FAILED (rolled back):")
     print(out)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

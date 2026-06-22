@@ -7,14 +7,12 @@ test case executed, or any inbound lead exists from this blueprint source.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, scalar, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.4"
 SOURCE = "dlf_n8n_workflow_blueprint_seed"
 
@@ -25,55 +23,12 @@ DELETE_ORDER = [
     "launch_n8n_workflow_nodes",
     "launch_n8n_workflow_blueprints",
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, (result.stdout.strip() or result.stderr.strip())
-
-
-def scalar(sql: str) -> int:
-    code, out = run_psql(sql)
-    if code != 0:
-        raise RuntimeError(out)
-    try:
-        return int((out or "0").splitlines()[0])
-    except ValueError:
-        return 0
-
-
 def raw_where(alias: str = "") -> str:
     prefix = f"{alias}." if alias else ""
     return (
         f"{prefix}raw_context->>'phase' = {sql_literal(PHASE)} "
         f"AND {prefix}raw_context->>'source' = {sql_literal(SOURCE)}"
     )
-
 
 def table_scope(table: str, alias: str, launch_key: str) -> str:
     if table in ("launch_n8n_workflow_blueprints", "launch_n8n_review_items"):
@@ -87,7 +42,6 @@ def table_scope(table: str, alias: str, launch_key: str) -> str:
         f"JOIN launch_projects p ON p.id = b.launch_project_id WHERE p.launch_key = {sql_literal(launch_key)} "
         f"AND {raw_where('b')}) AND {raw_where(alias)}"
     )
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Cleanup DLF n8n workflow blueprint rows. Counts only.")
@@ -178,7 +132,6 @@ def main() -> int:
         return 2
     print(f"DELETED {total} tagged Phase 7.4 row(s). No earlier phase rows, inbound leads, contacts, or n8n workflows touched.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

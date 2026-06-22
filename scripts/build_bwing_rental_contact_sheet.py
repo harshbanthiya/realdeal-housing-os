@@ -15,10 +15,10 @@ Read-only on the data folder; queries local Postgres for registration names. NO 
 """
 
 from __future__ import annotations
+from _db import psql
 
 import csv
 import re
-import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -35,22 +35,12 @@ BUILDING_ID = "f63d75ab-2ef9-48a9-afe2-cab3c4283283"
 # O[K]R[I] <wing A-E> <flat 1-4 digits> <name...>
 OKR_RE = re.compile(r"\bO?KRI?\s+([A-Ea-e])\s+(\d{1,4})\s+(.+)$", re.I)
 
-
 def env(key: str) -> str:
     if ENV_FILE.exists():
         for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
             if line.startswith(f"{key}="):
                 return line.split("=", 1)[1]
     return ""
-
-
-def psql(sql: str) -> str:
-    u, p, d = env("POSTGRES_USER"), env("POSTGRES_PASSWORD"), env("POSTGRES_DB")
-    r = subprocess.run(["docker", "exec", "-i", "-e", f"PGPASSWORD={p}", "realdeal-postgres", "psql",
-                        "-U", u, "-d", d, "-At", "-F", "|", "-c", sql], capture_output=True, text=True)
-    return r.stdout
-
-
 def norm_phone(raw: str) -> str | None:
     s = str(raw or "").strip()
     intl = s.startswith("+") and not s.startswith("+91")
@@ -67,11 +57,9 @@ def norm_phone(raw: str) -> str | None:
         return d
     return None  # landline / malformed -> drop
 
-
 def clean_name(nm: str) -> str:
     nm = re.sub(r"kalpataru\s+radiance|radiance", "", nm, flags=re.I)
     return re.sub(r"\s+", " ", nm).strip(" -,")
-
 
 def discover_files() -> list[Path]:
     pats = ("kalpataru", "kalptaru", "okr", "owners", "tenant", "tentant", "radiance", "owners_tenants")
@@ -84,7 +72,6 @@ def discover_files() -> list[Path]:
         if any(k in p.name.lower() for k in pats):
             out.append(p)
     return sorted(out)
-
 
 def rows_of(path: Path):
     """Yield list-of-cells rows from csv/xlsx."""
@@ -104,7 +91,6 @@ def rows_of(path: Path):
                     yield [("" if c is None else str(c)) for c in r]
         except Exception:  # noqa: BLE001
             return
-
 
 def extract(files: list[Path]) -> dict[str, list[dict]]:
     """flat_key 'B-224' -> [{name, phone, source, role_hint}]"""
@@ -143,7 +129,6 @@ def extract(files: list[Path]) -> dict[str, list[dict]]:
                         by_flat[key].append({"name": name, "phone": ph, "source": src + " (2nd col)", "role": "owner"})
     return by_flat
 
-
 def reg_bwing() -> dict[str, dict]:
     """flat unit_number -> {lessors:set, lessees:set} from IGR tenancy registrations (B-wing)."""
     out: dict[str, dict] = defaultdict(lambda: {"lessor": set(), "lessee": set()})
@@ -157,7 +142,6 @@ def reg_bwing() -> dict[str, dict]:
         if role in ("lessor", "lessee") and name:
             out[unum][role].add(name.strip())
     return out
-
 
 def main() -> int:
     if not TENANCY_CSV.exists():
@@ -248,7 +232,6 @@ def main() -> int:
     print(f"Per-flat CSV:  {flat_csv}  ({len(csv_rows)} flats)")
     print(f"Call-list CSV: {call_csv}  ({len(call_rows)} phone rows)")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

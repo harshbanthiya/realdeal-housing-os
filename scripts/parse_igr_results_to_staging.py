@@ -20,17 +20,15 @@ Requires: pip install indic-transliteration  (offline at runtime).
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
 import re
-import subprocess
 import unicodedata
 from html import unescape
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.19"
 SOURCE = "igr_parse_kalpataru_2026"
 RERA_REG = "P51800000591"
@@ -74,34 +72,6 @@ WING_RULES = [
     (("patra", "पत्रा चाळ", "पत्रा"), "Patra Chawl (MHADA rehab)"),
 ]
 TARGET_WING = "Wing A-Ora"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 # ---- transliteration (offline) ----
 try:
     from indic_transliteration import sanscript
@@ -112,10 +82,8 @@ except Exception:  # noqa: BLE001
 
 DEVANAGARI = re.compile(r"[ऀ-ॿ]")
 
-
 def ascii_fold(s: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
-
 
 def translit_name(raw: str) -> str:
     """Latin transliteration of a (possibly Devanagari) name, ASCII-folded & lowercased for matching."""
@@ -129,7 +97,6 @@ def translit_name(raw: str) -> str:
     else:
         out = raw
     return re.sub(r"\s+", " ", ascii_fold(out)).strip().lower()
-
 
 # ---- HTML grid parsing ----
 def parse_grid(html_text: str) -> list[list[str]]:
@@ -149,7 +116,6 @@ def parse_grid(html_text: str) -> list[list[str]]:
         out.append(clean)
     return out
 
-
 def parse_name_array(cell: str) -> list[str]:
     """{"a, b","c"} or {a,b} -> ['a, b','c'] honoring quotes."""
     s = cell.strip()
@@ -168,7 +134,6 @@ def parse_name_array(cell: str) -> list[str]:
         names.append("".join(buf).strip().strip('"').strip())
     return [n for n in names if n]
 
-
 def classify_doctype(dname: str) -> tuple[str, str]:
     low = dname.lower()
     for needle, etype, cat in DOCTYPE_RULES:
@@ -177,14 +142,12 @@ def classify_doctype(dname: str) -> tuple[str, str]:
     slug = re.sub(r"[^a-z0-9]+", "_", ascii_fold(low)).strip("_")[:40] or "other"
     return slug, "other"
 
-
 def detect_wing(text: str) -> str | None:
     low = text.lower()
     for needles, label in WING_RULES:
         if any(n.lower() in low for n in needles):
             return label
     return None
-
 
 def parse_property(desc: str) -> dict:
     """Best-effort flat/floor/area/rent extraction from EN-structured or Marathi free text."""
@@ -228,24 +191,20 @@ def parse_property(desc: str) -> dict:
         d["tenure_months"] = m.group(1)
     return d
 
-
 def to_iso_date(d: str) -> str | None:
     m = re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})", d.strip())
     if not m:
         return None
     return f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
 
-
 def q(v) -> str:
     if v is None or v == "":
         return "NULL"
     return "'" + str(v).replace("'", "''") + "'"
 
-
 def jb(d: dict) -> str:
     import json
     return "'" + json.dumps(d, ensure_ascii=False).replace("'", "''") + "'::jsonb"
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Parse IGR results-list snapshots into staging. Dry-run by default.")
@@ -414,7 +373,6 @@ def main() -> int:
     print("Staged rows (counts):")
     print(out)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

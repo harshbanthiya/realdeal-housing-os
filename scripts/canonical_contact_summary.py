@@ -8,46 +8,12 @@ Prints, for an optional --merge-label and/or --contact-id scope:
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def summary_sql(merge_label: str | None, contact_id: str | None) -> str:
     conds = []
     if merge_label:
@@ -69,7 +35,6 @@ UNION ALL SELECT 'merge_links', count(*) FROM canonical_merge_links WHERE canoni
 UNION ALL SELECT 'source_trace_rows', count(*) FROM vw_canonical_source_trace WHERE contact_id IN (SELECT id FROM scope_contacts)
 ORDER BY item;
 """
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Canonical contact summary. Counts only; no DB writes.")
@@ -93,7 +58,6 @@ def main() -> int:
         f"--merge-label {label} --real-ok --confirm-real-rollback"
     )
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

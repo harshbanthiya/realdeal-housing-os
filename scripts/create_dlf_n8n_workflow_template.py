@@ -9,16 +9,14 @@ Writing requires BOTH --real-ok and --apply. Counts only, plus artifact path.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
 import hashlib
 import json
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.11"
 SOURCE = "dlf_n8n_build_package"
 PACKAGE_KEY = "dlf-westpark-lead-intake-inactive-template"
@@ -39,40 +37,6 @@ REVIEWS = (
     ("manual_import_review", "normal"),
     ("activation_blocker_review", "blocker"),
 )
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def workflow_template() -> dict:
     nodes = [
         {
@@ -230,7 +194,6 @@ def workflow_template() -> dict:
         },
     }
 
-
 def artifact_paths(output_dir: str, allow_repo_template: bool) -> tuple[Path, Path | None]:
     out = Path(output_dir)
     if not out.is_absolute():
@@ -240,7 +203,6 @@ def artifact_paths(output_dir: str, allow_repo_template: bool) -> tuple[Path, Pa
     if allow_repo_template:
         repo_copy = PROJECT_ROOT / "docs" / "examples" / f"{PACKAGE_KEY}.json"
     return artifact, repo_copy
-
 
 def validate_template(template: dict) -> tuple[dict[str, str], str]:
     rendered = json.dumps(template, sort_keys=True)
@@ -264,7 +226,6 @@ def validate_template(template: dict) -> tuple[dict[str, str], str]:
     }
     digest = hashlib.sha256(rendered.encode("utf-8")).hexdigest()
     return checks, digest
-
 
 def apply_sql(launch_key: str, artifact_path: Path, digest: str, checks: dict[str, str]) -> str:
     lk = sql_literal(launch_key)
@@ -393,7 +354,6 @@ UNION ALL SELECT 'ready_to_activate', ready_to_activate::text FROM vw_dlf_n8n_bu
 ORDER BY 1;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create inactive DLF n8n workflow template package. Dry-run by default.")
     parser.add_argument("--launch-key", default="dlf-westpark-andheri-west")
@@ -439,7 +399,6 @@ def main() -> int:
     print("Apply result:" if code == 0 else "Apply FAILED:")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

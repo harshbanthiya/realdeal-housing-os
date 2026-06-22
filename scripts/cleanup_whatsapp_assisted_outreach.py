@@ -14,41 +14,12 @@ Counts only. Deleting requires BOTH --real-ok and --apply.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
-import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def counts_sql(include_events: bool, include_consent: bool) -> str:
     rows = [
         ("whatsapp_assisted_queue", "SELECT count(*) FROM whatsapp_assisted_queue"),
@@ -67,7 +38,6 @@ def counts_sql(include_events: bool, include_consent: bool) -> str:
                      "SELECT count(*) FROM outreach_suppression_list WHERE reason='opted_out_via_assisted_whatsapp'"))
     return " UNION ALL ".join(f"SELECT '{name}' AS t, ({q})::text AS n" for name, q in rows) + " ORDER BY t;"
 
-
 def delete_sql(include_events: bool, include_consent: bool) -> str:
     stmts = [
         "DELETE FROM whatsapp_assisted_queue;",
@@ -85,7 +55,6 @@ def delete_sql(include_events: bool, include_consent: bool) -> str:
              "WHERE setting_key='send_enabled'; IF se='true' THEN "
              "RAISE EXCEPTION 'Refusing: send_enabled must stay false.'; END IF; END $$;")
     return "BEGIN;\n" + "\n".join(stmts) + "\n" + guard + "\nCOMMIT;\nSELECT 'cleanup committed';"
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Reversible teardown of assisted-outreach data. Dry-run by default.")
@@ -112,7 +81,6 @@ def main() -> int:
     print("\nCleanup done:" if code == 0 else "Cleanup FAILED (rolled back):")
     print(out)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

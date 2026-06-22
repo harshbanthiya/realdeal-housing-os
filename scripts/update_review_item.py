@@ -2,62 +2,13 @@
 """Safely update one import review item status."""
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 ALLOWED_STATUSES = {"pending", "approved", "rejected", "skipped", "needs_more_info", "merged_later"}
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str | None) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker",
-        "exec",
-        "-i",
-        "-e",
-        f"PGPASSWORD={password}",
-        "realdeal-postgres",
-        "psql",
-        "-U",
-        user,
-        "-d",
-        db_name,
-        "-At",
-        "-F",
-        "\t",
-        "-v",
-        "ON_ERROR_STOP=1",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.rstrip("\n") or result.stderr.strip()
-
-
 def item_query(review_item_id: str) -> str:
     return f"""
 SELECT
@@ -71,7 +22,6 @@ FROM import_review_items iri
 JOIN import_batches ib ON ib.id = iri.import_batch_id
 WHERE iri.id = {sql_literal(review_item_id)};
 """
-
 
 def update_sql(review_item_id: str, status: str, reviewed_by: str, decision_notes: str) -> str:
     return f"""
@@ -100,7 +50,6 @@ SELECT
 FROM updated;
 """
 
-
 def print_item(prefix: str, row_text: str, new_status: str | None = None, reviewed_at_override: str | None = None) -> None:
     fields = row_text.split("\t")
     while len(fields) < 6:
@@ -117,7 +66,6 @@ def print_item(prefix: str, row_text: str, new_status: str | None = None, review
     print(f"batch_label: {fields[3]}")
     print(f"created_at: {fields[4]}")
     print(f"reviewed_at: {reviewed_at_override if reviewed_at_override is not None else fields[5]}")
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Update one import_review_items status. Dry-run by default.")
@@ -159,7 +107,6 @@ def main() -> int:
     reviewed_at = updated_fields[5] if len(updated_fields) > 5 else ""
     print_item("Review item updated.", old_row, args.status, reviewed_at)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

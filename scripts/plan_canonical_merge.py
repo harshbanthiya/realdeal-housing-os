@@ -2,32 +2,14 @@
 """Plan review-to-canonical merge without writing to the database."""
 
 from __future__ import annotations
+from _db import read_env_value, sql_literal
 
 import argparse
 import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 OWNER_UNIT_REAL_BATCH = "REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
 def run_psql(sql: str) -> int:
     user = read_env_value("POSTGRES_USER")
     password = read_env_value("POSTGRES_PASSWORD")
@@ -51,7 +33,6 @@ def run_psql(sql: str) -> int:
         "ON_ERROR_STOP=1",
     ]
     return subprocess.run(command, input=sql, text=True, check=False).returncode
-
 
 def run_psql_capture(sql: str) -> tuple[int, str]:
     user = read_env_value("POSTGRES_USER")
@@ -80,7 +61,6 @@ def run_psql_capture(sql: str) -> tuple[int, str]:
     result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
     return result.returncode, result.stdout.strip() or result.stderr.strip()
 
-
 def review_item_guard_sql(batch_label: str, review_item_id: str) -> str:
     label = sql_literal(batch_label)
     rid = sql_literal(review_item_id)
@@ -101,7 +81,6 @@ SELECT
   COALESCE((SELECT status FROM ri), ''),
   COALESCE((SELECT (ri.import_batch_id IN (SELECT id FROM b))::text FROM ri), 'false');
 """
-
 
 def plan_sql(batch_label: str, approved_only: bool, limit: int | None, review_item_id: str | None) -> str:
     label = sql_literal(batch_label)
@@ -168,7 +147,6 @@ UNION ALL SELECT 'skip_reason_' || reason, count(*) FROM skips GROUP BY reason
 ORDER BY item;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Plan canonical merge. No database writes.")
     parser.add_argument("--batch-label", required=True)
@@ -209,7 +187,6 @@ def main() -> int:
     if args.review_item_id:
         print(f"review_item_id: {args.review_item_id} (single-item scope)")
     return run_psql(plan_sql(args.batch_label, approved_only, args.limit, args.review_item_id))
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

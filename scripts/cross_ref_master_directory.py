@@ -14,11 +14,11 @@ lookup, then `--ingest <filled.csv>` writes the verified names/emails back. Read
 """
 
 from __future__ import annotations
+from _db import psql
 
 import argparse
 import csv
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -28,22 +28,12 @@ OUT_DIR = PROJECT_ROOT / "exports" / "master_directory"
 MASTER_XLSX = Path.home() / "Downloads" / "Kalpataru_Master_Contact_Directory.xlsx"
 CALL_LIST = PROJECT_ROOT / "exports" / "rental_all_wings" / "rental_call_list_all_wings.csv"
 
-
 def env(key: str) -> str:
     if ENV_FILE.exists():
         for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
             if line.startswith(f"{key}="):
                 return line.split("=", 1)[1]
     return ""
-
-
-def psql(sql: str) -> str:
-    u, p, d = env("POSTGRES_USER"), env("POSTGRES_PASSWORD"), env("POSTGRES_DB")
-    r = subprocess.run(["docker", "exec", "-i", "-e", f"PGPASSWORD={p}", "realdeal-postgres", "psql",
-                        "-U", u, "-d", d, "-At", "-F", "|", "-c", sql], capture_output=True, text=True)
-    return r.stdout
-
-
 def norm(raw: str) -> str | None:
     s = str(raw or "").strip()
     d = re.sub(r"\D", "", s)
@@ -61,7 +51,6 @@ def norm(raw: str) -> str | None:
         return "+" + d
     return None
 
-
 def read_master() -> list[dict]:
     import openpyxl
     wb = openpyxl.load_workbook(MASTER_XLSX, read_only=True, data_only=True)
@@ -75,7 +64,6 @@ def read_master() -> list[dict]:
                         "region": str(r[3]) if len(r) > 3 and r[3] else "",
                         "source": str(r[2]) if len(r) > 2 and r[2] else ""})
     return out
-
 
 def load_known() -> tuple[dict, dict]:
     flat_map: dict[str, dict] = {}
@@ -93,7 +81,6 @@ def load_known() -> tuple[dict, dict]:
         if n and n not in contact_map:
             contact_map[n] = name
     return flat_map, contact_map
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Cross-ref master directory; build Truecaller worklist.")
@@ -145,7 +132,6 @@ def main() -> int:
     print(f"Truecaller worklist:  {wl}  ({len(worklist)} numbers to look up manually in the app)")
     return 0
 
-
 def ingest(path: Path, write: bool) -> int:
     if not path.exists():
         print(f"Not found: {path}"); return 1
@@ -159,7 +145,6 @@ def ingest(path: Path, write: bool) -> int:
         return 0
     print("Apply path intentionally not auto-wired yet — confirm the contact-upsert target first.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

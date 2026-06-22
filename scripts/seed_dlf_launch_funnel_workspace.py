@@ -19,16 +19,14 @@ Dry-run by default; --real-ok required; --apply to write. Prints counts only.
 """
 
 from __future__ import annotations
+from _db import jsonb_lit, read_env_value, run_psql, sql_literal
 
 import argparse
 import json
-import subprocess
 import uuid
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.1"
 SOURCE = "dlf_launch_funnel_workspace_seed"
 BASE_TAG = {
@@ -43,54 +41,13 @@ PHASE_TABLES = [
     "launch_content_pillars", "launch_message_templates", "launch_social_content_drafts",
     "launch_lead_scoring_rules", "launch_draft_review_items",
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
 def num(value) -> str:
     return "NULL" if value is None else str(value)
-
-
-def jsonb_lit(obj) -> str:
-    return sql_literal(json.dumps(obj)) + "::jsonb"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, (result.stdout.strip() or result.stderr.strip())
-
-
 def tag(extra: dict | None = None) -> str:
     obj = dict(BASE_TAG)
     if extra:
         obj.update(extra)
     return jsonb_lit(obj)
-
 
 # ----------------------------------------------------------------- content data
 
@@ -214,7 +171,6 @@ EXTRA_CHECKS = [
     ("lead_scoring_reviewed", "normal"),
     ("utm_tracking_ready", "normal"),
 ]
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Seed the DLF launch funnel workspace (review-gated).")
@@ -397,7 +353,6 @@ def main() -> int:
     print(f"APPLIED: funnel workspace seeded for {args.launch_key} (tagged phase=7.1). "
           "send/publish disabled; no contacts selected; no messages sent; no external calls.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

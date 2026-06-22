@@ -10,47 +10,17 @@ placeholders). Prints counts only; never prints artifact bodies to stdout.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
 import base64
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 EXPORT_DIR = PROJECT_ROOT / "exports" / "content"
 PHASE = "6.4"
 SOURCE = "local_content_draft_workspace"
 HEADER = "INTERNAL DRAFT — NOT FOR PUBLISHING\n"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def fetch_sql(slug: str) -> str:
     # body base64-encoded (newlines stripped) so each row stays on one line.
     return (
@@ -63,7 +33,6 @@ def fetch_sql(slug: str) -> str:
         f"(SELECT id FROM building_web_profiles WHERE profile_slug = '" + slug.replace("'", "''") + "')) "
         "ORDER BY a.created_at;"
     )
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Export internal content draft artifacts. Dry-run by default.")
@@ -98,7 +67,6 @@ def main() -> int:
     print(f"files written: {written} under {EXPORT_DIR}")
     print("Reminder: exports/content/ is git-ignored; do not commit exported drafts.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

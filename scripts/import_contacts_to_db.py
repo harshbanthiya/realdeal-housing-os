@@ -2,6 +2,7 @@
 """Dry-run contact import planning for Real Deal Housing OS."""
 
 from __future__ import annotations
+from _db import read_env_value
 
 import argparse
 import csv
@@ -11,26 +12,10 @@ from typing import Dict, List
 from duplicate_utils import duplicate_summary, parse_json_list
 from plan_source_aware_import import summarize_rows
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
 def read_rows(path: Path) -> List[Dict[str, str]]:
     with path.open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
-
 
 def dry_run(cleaned_csv: Path) -> int:
     postgres_user = read_env_value("POSTGRES_USER")
@@ -94,7 +79,6 @@ def dry_run(cleaned_csv: Path) -> int:
     print(f"Would insert {planned_counts['import_review_items']} import_review_items rows.")
     return 0
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Plan contact import into Postgres. Dry-run by default.")
     parser.add_argument("cleaned_csv", help="Cleaned CSV path.")
@@ -108,7 +92,6 @@ def main() -> int:
         print("Apply mode for source-aware import is not implemented yet. Dry-run first, review duplicates and source-aware plans, then implement inserts with explicit approval.")
         return 1
     return dry_run(cleaned_csv)
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

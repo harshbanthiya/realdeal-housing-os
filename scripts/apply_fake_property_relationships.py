@@ -9,43 +9,13 @@ Never touches real canonical contacts or real buildings.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 FAKE_BATCH = "FAKE_PHASE_5_1_REL_001"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 FAKE_COUNTS_SQL = f"""
 SELECT 'fake_buildings' AS item, count(*)::text AS val FROM buildings WHERE metadata->>'fake_batch' = '{FAKE_BATCH}'
 UNION ALL SELECT 'fake_contacts', count(*)::text FROM contacts WHERE metadata->>'fake_batch' = '{FAKE_BATCH}'
@@ -55,7 +25,6 @@ UNION ALL SELECT 'fake_relationships', count(*)::text FROM contact_property_rela
 UNION ALL SELECT 'fake_review_items', count(*)::text FROM property_relationship_review_items WHERE raw_context->>'fake_batch' = '{FAKE_BATCH}'
 ORDER BY item;
 """
-
 
 def insert_sql() -> str:
     tag = (
@@ -111,7 +80,6 @@ COMMIT;
 {FAKE_COUNTS_SQL}
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create FAKE Phase 5.1 property relationships. Dry-run by default.")
     parser.add_argument("--apply", action="store_true")
@@ -147,7 +115,6 @@ def main() -> int:
     print("Fake rows created. Resulting fake counts:")
     print(output)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

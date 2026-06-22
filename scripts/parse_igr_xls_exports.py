@@ -21,13 +21,13 @@ Requires: indic-transliteration.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
 import csv
 import html
 import json
 import re
-import subprocess
 import sys
 import unicodedata
 from pathlib import Path
@@ -35,7 +35,6 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
 PROJECT_ROOT = SCRIPTS.parent
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 REVIEW_DIR = PROJECT_ROOT / "exports" / "igr_review"
 
 from parse_igr_results_to_staging import parse_name_array, parse_property as list_prop  # noqa: E402
@@ -57,29 +56,6 @@ NEIGH = re.compile(r"260\s*[/\-]?\s*(?:4|6|5\s*(?:b|ब))", re.I)
 OTHERB = re.compile(r"एस्क्वायर|एस्क्वा|एक्सवायर|esquire|ओबेरॉय|oberoi|शीतल|एलिसियन|elysian|एकता|ekta|"
                     r"म्हाडा|mhada|अनमोल|anmol|34 पार्क|park estate|वूड्स|woods|एक्सक्यू|एक्सक्झ|exquisite|एक्क्झ|"
                     r"यश एन्क्लेव|सद्गुरू|ओशिवरा|क्रिथार्थ|कृतार्थ", re.I)
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    with ENV_FILE.open(encoding="utf-8") as h:
-        for line in h:
-            if line.startswith(f"{key}="):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    u, p, d = read_env_value("POSTGRES_USER"), read_env_value("POSTGRES_PASSWORD"), read_env_value("POSTGRES_DB")
-    if not (u and p and d):
-        return 1, "Missing POSTGRES_* in docker/.env."
-    cmd = ["docker", "exec", "-i", "-e", f"PGPASSWORD={p}", "realdeal-postgres", "psql",
-           "-U", u, "-d", d, "-v", "ON_ERROR_STOP=1", "-At", "-F", "|"]
-    r = subprocess.run(cmd, input=sql, text=True, capture_output=True, check=False)
-    out, err = r.stdout.strip(), r.stderr.strip()
-    return r.returncode, (err or out) if r.returncode else (out or err)
-
-
 def load(f: Path) -> str:
     raw = f.read_bytes()
     for enc in ("utf-16", "utf-8", "latin-1"):
@@ -89,10 +65,8 @@ def load(f: Path) -> str:
             pass
     return raw.decode("utf-8", "replace")
 
-
 def tcells(r: str) -> list[str]:
     return [html.unescape(re.sub(r"<[^>]+>", " ", c)).strip() for c in re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", r, re.S)]
-
 
 def to_english(raw: str) -> str:
     if not raw:
@@ -100,7 +74,6 @@ def to_english(raw: str) -> str:
     s = iast(raw)
     s = re.sub(r"[^a-z0-9 .&/-]", "", s)
     return re.sub(r"\s+", " ", s).strip().title()
-
 
 def to_int(v: str | None) -> int | None:
     if not v:
@@ -111,18 +84,15 @@ def to_int(v: str | None) -> int | None:
     except (TypeError, ValueError):
         return None
 
-
 def iso(d: str | None) -> str | None:
     if not d:
         return None
     m = re.search(r"([0-3]?\d)[/\-]([01]?\d)[/\-](\d{4})", d)
     return f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}" if m else None
 
-
 # Skeleton needles (Devanagari marks/spaces stripped) so spelling variants match:
 # कल्पतर/कल्पतारु -> कलपतर ; रेडियंस/रेडियँस/रेिडयंस -> रडयस ; latin kept.
 KALP_SK = ("कलपतर", "रडयस", "kalpataru", "radiance")
-
 
 def classify(desc: str) -> str:
     sk = skeleton(desc)
@@ -136,14 +106,11 @@ def classify(desc: str) -> str:
         return "other"
     return "uncertain"
 
-
 def q(v) -> str:
     return "NULL" if v in (None, "") else "'" + str(v).replace("'", "''") + "'"
 
-
 def jb(d: dict) -> str:
     return "'" + json.dumps(d, ensure_ascii=False).replace("'", "''") + "'::jsonb"
-
 
 def counts_sql() -> str:
     return (f"SELECT 'records', count(*)::text FROM unit_registration_records WHERE raw_context->>'source'='{SOURCE}'"
@@ -151,7 +118,6 @@ def counts_sql() -> str:
             f"\nUNION ALL SELECT 'priced', count(*)::text FROM unit_registration_records WHERE raw_context->>'source'='{SOURCE}' AND consideration_amount IS NOT NULL"
             f"\nUNION ALL SELECT 'units_created', count(*)::text FROM building_units WHERE metadata->>'source'='{SOURCE}'"
             f"\nUNION ALL SELECT 'linked_records', count(*)::text FROM unit_registration_records WHERE raw_context->>'source'='{SOURCE}' AND building_unit_id IS NOT NULL\nORDER BY 1;")
-
 
 def revert_sql() -> str:
     srcs = "', '".join((SOURCE,) + OLD_SOURCES)
@@ -161,7 +127,6 @@ def revert_sql() -> str:
             f"DELETE FROM unit_registration_parties WHERE raw_context->>'source' IN ('{srcs}');\n"
             f"DELETE FROM unit_registration_records WHERE raw_context->>'source' IN ('{srcs}');\n"
             f"DELETE FROM building_units WHERE metadata->>'source' IN ('{srcs}');\nCOMMIT;\n" + counts_sql())
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Parse IGR .xls exports -> Kalpataru staging. Dry-run by default.")
@@ -313,7 +278,6 @@ def main() -> int:
     code, out = run_psql(counts_sql())
     print("Final (counts):\n" + out)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

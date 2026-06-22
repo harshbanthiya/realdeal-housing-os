@@ -21,47 +21,13 @@ Nothing is auto-approved; every candidate is review-gated.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 BUILDING_LEVEL_TYPES = "('business_lead', 'interested_buyer', 'interested_tenant')"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 PROPERTY_HINTS_SRC = """
 SELECT 'property_hint' AS kind,
   COALESCE(cph.contact_id, cir.matched_contact_id, linked.canonical_contact_id) AS contact_id,
@@ -177,7 +143,6 @@ LEFT JOIN LATERAL (
 LEFT JOIN contacts c ON c.id = COALESCE(lr.contact_id, linked.canonical_contact_id)
 """
 
-
 def plan_sql(sources: list[str], batch_label, source_format, fake_only, limit) -> str:
     union = "\nUNION ALL\n".join(f"({s})" for s in sources)
     conds = []
@@ -223,7 +188,6 @@ UNION ALL SELECT 'rows_considered', count(*)::text FROM classified
 ORDER BY item;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Plan property relationship candidates. Read-only; counts only.")
     parser.add_argument("--batch-label")
@@ -263,7 +227,6 @@ def main() -> int:
     code, output = run_psql(plan_sql(sources, args.batch_label, args.source_format, args.fake_only, args.limit))
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -19,11 +19,11 @@ Requires: pdftotext (poppler) + indic-transliteration.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
 import json
 import re
-import subprocess
 import sys
 import unicodedata
 from pathlib import Path
@@ -31,7 +31,6 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
 PROJECT_ROOT = SCRIPTS.parent
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 
 from parse_igr_results_to_staging import parse_grid, parse_name_array, to_iso_date, parse_property as list_prop  # noqa: E402
 from parse_igr_index2_pdfs import parse_index2, classify_doctype, detect_wing, translit as iast  # noqa: E402
@@ -45,28 +44,6 @@ TOWER_OF = {"Wing A-Ora": "A", "Wing B-Brilliance": "B", "Wing C-Allura": "C", "
 ROLE_BY_CATEGORY = {"ownership": ("seller", "purchaser"), "tenancy": ("lessor", "lessee"),
                     "encumbrance": ("mortgagee", "mortgagor"), "other": ("seller", "purchaser")}
 DEV = re.compile(r"[ऀ-ॿ]")
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    with ENV_FILE.open(encoding="utf-8") as h:
-        for line in h:
-            if line.startswith(f"{key}="):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    u, p, d = read_env_value("POSTGRES_USER"), read_env_value("POSTGRES_PASSWORD"), read_env_value("POSTGRES_DB")
-    if not (u and p and d):
-        return 1, "Missing POSTGRES_* in docker/.env."
-    cmd = ["docker", "exec", "-i", "-e", f"PGPASSWORD={p}", "realdeal-postgres", "psql",
-           "-U", u, "-d", d, "-v", "ON_ERROR_STOP=1", "-At", "-F", "|"]
-    r = subprocess.run(cmd, input=sql, text=True, capture_output=True, check=False)
-    return r.returncode, r.stdout.strip() or r.stderr.strip()
-
-
 def to_english(raw: str) -> str:
     if not raw:
         return ""
@@ -75,10 +52,8 @@ def to_english(raw: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s.title()
 
-
 def q(v) -> str:
     return "NULL" if v in (None, "") else "'" + str(v).replace("'", "''") + "'"
-
 
 def qn(v) -> str:
     if v in (None, ""):
@@ -88,10 +63,8 @@ def qn(v) -> str:
     except (TypeError, ValueError):
         return "NULL"
 
-
 def jb(d: dict) -> str:
     return "'" + json.dumps(d, ensure_ascii=False).replace("'", "''") + "'::jsonb"
-
 
 def counts_sql() -> str:
     return (f"SELECT 'records', count(*)::text FROM unit_registration_records WHERE raw_context->>'source'='{SOURCE}'"
@@ -99,7 +72,6 @@ def counts_sql() -> str:
             f"\nUNION ALL SELECT 'parties_with_pan', count(*)::text FROM unit_registration_parties WHERE raw_context->>'source'='{SOURCE}' AND party_pan IS NOT NULL"
             f"\nUNION ALL SELECT 'units_created', count(*)::text FROM building_units WHERE metadata->>'source'='{SOURCE}'"
             f"\nUNION ALL SELECT 'priced_records', count(*)::text FROM unit_registration_records WHERE raw_context->>'source'='{SOURCE}' AND consideration_amount IS NOT NULL\nORDER BY 1;")
-
 
 def revert_sql() -> str:
     srcs = "', '".join((SOURCE,) + OLD_SOURCES)
@@ -111,7 +83,6 @@ def revert_sql() -> str:
         f"DELETE FROM unit_registration_records WHERE raw_context->>'source' IN ('{srcs}');\n"
         f"DELETE FROM building_units WHERE metadata->>'source' IN ('{srcs}');\n"
         f"COMMIT;\n" + counts_sql())
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Consolidate Kalpataru registrations onto the canonical building. Dry-run by default.")
@@ -259,7 +230,6 @@ def main() -> int:
     code, out = run_psql("\n".join(stmts))
     print("Staged (counts):\n" + out if code == 0 else "DB error:\n" + out)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

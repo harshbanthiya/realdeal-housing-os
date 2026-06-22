@@ -12,47 +12,13 @@ Writing requires --apply, --real-ok, and --confirm-real-rollback. Counts only.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 DEFAULT_REL_LABEL = "REAL_PHASE_5_8_OWNER_UNIT_RELATIONSHIP_001"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def counts_sql(rl: str) -> str:
     b = sql_literal(rl)
     return f"""
@@ -71,7 +37,6 @@ UNION ALL SELECT 'buildings', count(*)::text FROM buildings
   WHERE metadata->>'phase' = '5.8' AND metadata->>'rel_label' = {b}
 ORDER BY item;
 """
-
 
 def delete_sql(rl: str) -> str:
     b = sql_literal(rl)
@@ -95,7 +60,6 @@ DELETE FROM buildings WHERE metadata->>'phase' = '5.8' AND metadata->>'rel_label
 COMMIT;
 {counts_sql(rl)}
 """
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Rollback Phase 5.8 real relationship candidates. Dry-run by default.")
@@ -135,7 +99,6 @@ def main() -> int:
     print("Phase 5.8 candidate rows deleted. Remaining (should all be 0):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

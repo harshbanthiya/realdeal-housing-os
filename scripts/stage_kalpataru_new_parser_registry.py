@@ -12,17 +12,15 @@ reversible. Dry-run by default; writing requires --apply.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
 import json
-import subprocess
 import uuid
 from pathlib import Path
 from typing import Any
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 TIMELINE_JSON = PROJECT_ROOT / "exports" / "igr_kalpataru_timelines" / "kalpataru_radiance_timelines.json"
 INDEX22_MAPPING_JSON = PROJECT_ROOT / "exports" / "igr_kalpataru_timelines" / "kalpataru_page1_index22_mapping.json"
 
@@ -38,39 +36,10 @@ ROLE_BY_CATEGORY = {
     "encumbrance": ("mortgagee", "mortgagor"),
     "other": ("seller", "purchaser"),
 }
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def q(value: Any) -> str:
     if value in (None, ""):
         return "NULL"
     return "'" + str(value).replace("'", "''") + "'"
-
 
 def qn(value: Any) -> str:
     if value in (None, ""):
@@ -80,7 +49,6 @@ def qn(value: Any) -> str:
     except (TypeError, ValueError):
         return "NULL"
 
-
 def qi(value: Any) -> str:
     if value in (None, ""):
         return "NULL"
@@ -89,14 +57,11 @@ def qi(value: Any) -> str:
     except (TypeError, ValueError):
         return "NULL"
 
-
 def jb(value: dict[str, Any]) -> str:
     return "'" + json.dumps(value, ensure_ascii=False, separators=(",", ":")).replace("'", "''") + "'::jsonb"
 
-
 def row_id() -> str:
     return str(uuid.uuid4())
-
 
 def load_events() -> list[dict[str, Any]]:
     with TIMELINE_JSON.open(encoding="utf-8") as handle:
@@ -106,7 +71,6 @@ def load_events() -> list[dict[str, Any]]:
         events.extend(unit["events"])
     return sorted(events, key=lambda e: (e.get("registration_date") or "", e.get("wing") or "", e.get("unit_number") or "", e.get("doc_number") or ""))
 
-
 def load_index22_details() -> dict[str, dict[str, Any]]:
     if not INDEX22_MAPPING_JSON.exists():
         return {}
@@ -114,10 +78,8 @@ def load_index22_details() -> dict[str, dict[str, Any]]:
         payload = json.load(handle)
     return {str(row.get("doc_number")): row for row in payload.get("rows", []) if row.get("doc_number")}
 
-
 def unit_number(floor: int, stack: int) -> str:
     return f"{floor}{stack}"
-
 
 def base_tag(extra: dict[str, Any] | None = None) -> dict[str, Any]:
     tag = {
@@ -132,7 +94,6 @@ def base_tag(extra: dict[str, Any] | None = None) -> dict[str, Any]:
     if extra:
         tag.update(extra)
     return tag
-
 
 DELETE_ORDER = [
     ("unit_registration_review_items", "raw_context"),
@@ -149,7 +110,6 @@ DELETE_ORDER = [
     ("buildings", "metadata"),
 ]
 
-
 def counts_sql() -> str:
     parts = [
         f"SELECT '{table}' AS item, count(*)::text AS val FROM {table} WHERE {column}->>'source' = '{SOURCE}'"
@@ -157,11 +117,9 @@ def counts_sql() -> str:
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
 
-
 def delete_sql() -> str:
     deletes = "\n".join(f"DELETE FROM {table} WHERE {column}->>'source' = '{SOURCE}';" for table, column in DELETE_ORDER)
     return f"BEGIN;\n{deletes}\nCOMMIT;\n{counts_sql()}"
-
 
 def build_insert_sql(events: list[dict[str, Any]]) -> str:
     index22_details = load_index22_details()
@@ -379,7 +337,6 @@ VALUES
     statements.append(counts_sql())
     return "\n".join(statements)
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Stage Kalpataru Radiance New Parser comparison building. Dry-run by default.")
     parser.add_argument("--apply", action="store_true", help="Write tagged rows to Postgres.")
@@ -424,7 +381,6 @@ def main() -> int:
     print("Staged tagged rows:")
     print(output)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

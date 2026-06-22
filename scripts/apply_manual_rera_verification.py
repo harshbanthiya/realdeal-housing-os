@@ -19,15 +19,13 @@ sections are intentionally NOT stored. Writing requires --real-ok AND --apply. C
 """
 
 from __future__ import annotations
+from _db import jsonb_lit, read_env_value, run_psql, sql_literal
 
 import argparse
 import json
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.9"
 SOURCE = "manual_rera_verification_entry"
 SQM_TO_SQFT = 10.76391041671
@@ -142,45 +140,8 @@ PHASE_TABLES = [
     "rera_area_mismatch_candidates",
     "rera_verification_review_items",
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def jsonb_lit(obj) -> str:
-    return sql_literal(json.dumps(obj)) + "::jsonb"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def tag_jsonb() -> str:
     return jsonb_lit(BASE_TAG)
-
 
 def counts_sql() -> str:
     parts = [
@@ -189,7 +150,6 @@ def counts_sql() -> str:
         for t in PHASE_TABLES
     ]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
-
 
 def precheck_sql(args) -> str:
     return f"""
@@ -200,7 +160,6 @@ UNION ALL SELECT 'duplicate_anchor_found', count(*)::text FROM buildings
 UNION ALL SELECT 'registration_exists', count(*)::text FROM rera_project_profiles
    WHERE rera_registration_number = {sql_literal(args.rera_registration_number)}
 ORDER BY k;"""
-
 
 def insert_sql(args) -> str:
     bid = sql_literal(args.building_id)
@@ -276,7 +235,6 @@ VALUES
     body = "\n".join(stmts)
     return f"BEGIN;\n{body}\nCOMMIT;\n{counts_sql()}"
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Manual MahaRERA verification entry. Dry-run by default.")
     parser.add_argument("--building-id", required=True)
@@ -346,7 +304,6 @@ def main() -> int:
     print("Manual RERA verification rows created (counts):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

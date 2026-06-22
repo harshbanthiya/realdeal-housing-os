@@ -12,14 +12,12 @@ false. Writing requires BOTH --real-ok and --apply. Counts only; never prints co
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.19"
 SOURCE = "dlf_wix_staging_site_plan_seed"
 STAGING_KEY = "dlf-westpark-gallery-white-staging"
@@ -114,46 +112,9 @@ REVIEW_ITEMS = [
     ("domain_review", "blocker"),
     ("publish_blocker_review", "blocker"),
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def project_exists(launch_key: str) -> bool:
     code, output = run_psql(f"SELECT count(*) FROM launch_projects WHERE launch_key = {sql_literal(launch_key)};")
     return code == 0 and output.strip() == "1"
-
 
 def existing_count(launch_key: str) -> int:
     code, output = run_psql(f"""
@@ -167,7 +128,6 @@ WHERE p.launch_key = {sql_literal(launch_key)}
         return int(output.strip())
     except ValueError:
         return -1
-
 
 def ctx(extra: dict | None = None) -> str:
     pairs = [
@@ -183,7 +143,6 @@ def ctx(extra: dict | None = None) -> str:
             pairs.append(sql_literal(k))
             pairs.append(sql_literal(v))
     return "jsonb_build_object(" + ", ".join(pairs) + ")"
-
 
 def apply_sql(launch_key: str) -> str:
     lk = sql_literal(launch_key)
@@ -298,7 +257,6 @@ UNION ALL SELECT 'ready_for_production_publish', ready_for_production_publish::t
 ORDER BY 1;
 """
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Seed DLF Westpark Wix staging-site plan. Dry-run by default.")
     parser.add_argument("--launch-key", default="dlf-westpark-andheri-west")
@@ -340,7 +298,6 @@ def main() -> int:
     print("Staging-site plan seeded:" if code == 0 else "Seed FAILED (rolled back):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

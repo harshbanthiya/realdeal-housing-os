@@ -11,14 +11,12 @@ source gap has been resolved. Deleting requires --apply AND --real-ok. Counts on
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.9"
 SOURCE = "manual_rera_verification_entry"
 
@@ -31,42 +29,12 @@ DELETE_ORDER = [
     "rera_building_match_candidates",
     "rera_project_profiles",
 ]
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def tag() -> str:
     return f"raw_context->>'phase' = '{PHASE}' AND raw_context->>'source' = '{SOURCE}'"
-
 
 def counts_sql() -> str:
     parts = [f"SELECT '{t}' AS item, count(*)::text AS val FROM {t} WHERE {tag()}" for t in DELETE_ORDER]
     return "\nUNION ALL ".join(parts) + "\nORDER BY item;"
-
 
 def guard_sql() -> str:
     return f"""
@@ -76,11 +44,9 @@ UNION ALL SELECT 'mismatch_corrected', count(*)::text FROM rera_area_mismatch_ca
 UNION ALL SELECT 'content_gaps_resolved', count(*)::text FROM content_source_gap_items WHERE status <> 'open'
 ORDER BY k;"""
 
-
 def delete_sql() -> str:
     stmts = "\n".join(f"DELETE FROM {t} WHERE {tag()};" for t in DELETE_ORDER)
     return f"BEGIN;\n{stmts}\nCOMMIT;\n{counts_sql()}"
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Cleanup Phase 6.9 manual RERA verification rows. Dry-run by default.")
@@ -121,7 +87,6 @@ def main() -> int:
     print("Remaining phase-6.9 rows after cleanup (expect all 0):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

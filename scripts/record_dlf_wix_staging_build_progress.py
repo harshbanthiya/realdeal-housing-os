@@ -15,14 +15,12 @@ Writing requires BOTH --real-ok and --apply. Counts only; never prints secrets o
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "7.20"
 SOURCE = "dlf_wix_staging_build_tracking"
 PLAN_PHASE = "7.19"  # the seeded staging plan rows we advance
@@ -31,50 +29,12 @@ SETUP_CATEGORIES = ("setup",)
 SHELL_CATEGORIES = ("hero", "navigation", "content_sections")
 SAFETY_CHECKLIST_CATEGORIES = ("safety",)
 SAFETY_QA_TYPES = ("domain_not_connected", "noindex", "webhook_disabled", "tracking_disabled")
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def project_exists(launch_key: str) -> bool:
     code, output = run_psql(f"SELECT count(*) FROM launch_projects WHERE launch_key = {sql_literal(launch_key)};")
     return code == 0 and output.strip() == "1"
 
-
 def in_list(col: str, values) -> str:
     return f"{col} IN (" + ", ".join(sql_literal(v) for v in values) + ")"
-
 
 def ctx(extra: dict | None = None) -> str:
     pairs = [
@@ -91,7 +51,6 @@ def ctx(extra: dict | None = None) -> str:
             pairs.append(sql_literal(k))
             pairs.append(sql_literal(v))
     return "jsonb_build_object(" + ", ".join(pairs) + ")"
-
 
 def apply_sql(args, do_site: bool) -> str:
     lk = sql_literal(args.launch_key)
@@ -250,7 +209,6 @@ ORDER BY 1;
 """)
     return "\n".join(blocks)
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Record manual Wix staging build progress. Dry-run by default.")
     parser.add_argument("--launch-key", default="dlf-westpark-andheri-west")
@@ -355,7 +313,6 @@ def main() -> int:
     print("Staging build progress recorded:" if code == 0 else "Record FAILED (rolled back):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

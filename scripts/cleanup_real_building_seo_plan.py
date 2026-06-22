@@ -14,53 +14,18 @@ personal values are printed.
 """
 
 from __future__ import annotations
+from _db import read_env_value, run_psql, sql_literal
 
 import argparse
-import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = PROJECT_ROOT / "docker" / ".env"
 PHASE = "6.1"
 SOURCE = "real_building_seo_plan"
 BUILDING_NAME = "Imperial Heights"
-
-
-def read_env_value(key: str) -> str:
-    if not ENV_FILE.exists():
-        return ""
-    prefix = f"{key}="
-    with ENV_FILE.open(encoding="utf-8") as handle:
-        for line in handle:
-            if line.startswith(prefix):
-                return line.rstrip("\n").split("=", 1)[1]
-    return ""
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_psql(sql: str) -> tuple[int, str]:
-    user = read_env_value("POSTGRES_USER")
-    password = read_env_value("POSTGRES_PASSWORD")
-    db_name = read_env_value("POSTGRES_DB")
-    if not user or not password or not db_name:
-        return 1, "Missing POSTGRES_USER, POSTGRES_PASSWORD, or POSTGRES_DB in docker/.env."
-    command = [
-        "docker", "exec", "-i", "-e", f"PGPASSWORD={password}",
-        "realdeal-postgres", "psql", "-U", user, "-d", db_name,
-        "-v", "ON_ERROR_STOP=1", "-At", "-F", "|",
-    ]
-    result = subprocess.run(command, input=sql, text=True, capture_output=True, check=False)
-    return result.returncode, result.stdout.strip() or result.stderr.strip()
-
-
 def tag_match(col: str) -> str:
     return (f"{col}->>'phase' = '{PHASE}' AND {col}->>'source' = '{SOURCE}' "
             f"AND {col}->>'building_name' = {sql_literal(BUILDING_NAME)}")
-
 
 def profile_filter(building_id: str, slug: str) -> str:
     """Which building_web_profiles rows are in scope (tag + optional narrowing)."""
@@ -71,10 +36,8 @@ def profile_filter(building_id: str, slug: str) -> str:
         clauses.append(f"profile_slug = {sql_literal(slug)}")
     return " AND ".join(clauses)
 
-
 def target_profiles_sql(building_id: str, slug: str) -> str:
     return f"SELECT id, building_id FROM building_web_profiles WHERE {profile_filter(building_id, slug)}"
-
 
 def counts_sql(building_id: str, slug: str) -> str:
     tp = target_profiles_sql(building_id, slug)
@@ -93,7 +56,6 @@ UNION ALL SELECT 'ai_agent_tasks', count(*)::text FROM ai_agent_tasks
 ORDER BY item;
 """
 
-
 def guard_sql(building_id: str, slug: str) -> str:
     """published rows | send_enabled campaigns | external_calls_made=true among targets."""
     tp = target_profiles_sql(building_id, slug)
@@ -107,7 +69,6 @@ SELECT
   ((SELECT count(*) FROM building_web_profiles WHERE id IN (SELECT id FROM tp) AND raw_context->>'external_calls_made' = 'true')
    + (SELECT count(*) FROM ai_agent_tasks WHERE {tag_match('raw_input')} AND raw_input->>'external_calls_made' = 'true'))::text;
 """
-
 
 def delete_sql(building_id: str, slug: str) -> str:
     tp = target_profiles_sql(building_id, slug)
@@ -132,7 +93,6 @@ DELETE FROM building_web_profiles WHERE {profile_filter(building_id, slug)};
 COMMIT;
 {counts_sql(building_id, slug)}
 """
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Cleanup a REAL Phase 6.1 building SEO plan. Dry-run by default.")
@@ -173,7 +133,6 @@ def main() -> int:
     print("Remaining phase-6.1 rows after cleanup (expect all 0):")
     print(output)
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
