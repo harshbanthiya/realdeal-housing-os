@@ -987,3 +987,117 @@ describe("listings stat tile reflects data.listings.length", () => {
     expect(actual.length).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// e164Indian — phone normalisation for Meta audience CSV hashing
+// ---------------------------------------------------------------------------
+
+describe("e164Indian phone normalisation", () => {
+  let e164Indian: typeof import("@/lib/cockpit/audiences").e164Indian;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ e164Indian } = await import("@/lib/cockpit/audiences"));
+  });
+
+  it("null → empty string", () => expect(e164Indian(null)).toBe(""));
+  it("undefined → empty string", () => expect(e164Indian(undefined)).toBe(""));
+  it("empty string → empty string", () => expect(e164Indian("")).toBe(""));
+
+  it("10-digit mobile → +91 prefix", () =>
+    expect(e164Indian("9876543210")).toBe("+919876543210"));
+
+  it("12-digit with 91 prefix already present → unchanged (no double-prefix)", () =>
+    expect(e164Indian("919876543210")).toBe("+919876543210"));
+
+  it("11-digit starting with 0 (STD) → +91 prefix", () =>
+    expect(e164Indian("09876543210")).toBe("+919876543210"));
+
+  it("00-prefixed international (IDD) → +91 prefix", () =>
+    expect(e164Indian("00919876543210")).toBe("+919876543210"));
+
+  it("+91 formatted string → normalised (strips + and spaces)", () =>
+    expect(e164Indian("+91 98765 43210")).toBe("+919876543210"));
+
+  it("spaces and dashes in number → stripped", () =>
+    expect(e164Indian("98-765-43210")).toBe("+919876543210"));
+
+  it("non-Indian 11-digit (US 1xxx) → empty string", () =>
+    expect(e164Indian("19876543210")).toBe(""));
+
+  it("non-Indian 12-digit (UK +44) → empty string", () =>
+    expect(e164Indian("442071234567")).toBe(""));
+
+  it("too-short number → empty string", () =>
+    expect(e164Indian("12345")).toBe(""));
+
+  it("13+ digit → empty string (rejects over-long numbers)", () =>
+    expect(e164Indian("9198765432101")).toBe(""));
+});
+
+// ---------------------------------------------------------------------------
+// metaCsvFromRows — Meta audience CSV generation
+// ---------------------------------------------------------------------------
+
+describe("metaCsvFromRows CSV generation", () => {
+  let metaCsvFromRows: typeof import("@/lib/cockpit/audiences").metaCsvFromRows;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ metaCsvFromRows } = await import("@/lib/cockpit/audiences"));
+  });
+
+  // Local SHA-256 to verify hashes independently of the function under test
+  function sha256(v: string): string {
+    const { createHash } = require("node:crypto");
+    return createHash("sha256").update(v).digest("hex");
+  }
+
+  it("empty rows → header-only CSV (email,phone\\n)", () => {
+    expect(metaCsvFromRows([])).toBe("email,phone\n");
+  });
+
+  it("CSV first line is always 'email,phone'", () => {
+    const csv = metaCsvFromRows([{ contact_id: "1", phone: null, email: "t@x.com" }]);
+    expect(csv.split("\n")[0]).toBe("email,phone");
+  });
+
+  it("row with email only → SHA-256(email), empty phone column", () => {
+    const email = "test@example.com";
+    const csv = metaCsvFromRows([{ contact_id: "1", phone: null, email }]);
+    expect(csv.split("\n")[1]).toBe(`${sha256(email)},`);
+  });
+
+  it("email is lowercased before hashing", () => {
+    const csv = metaCsvFromRows([{ contact_id: "1", phone: null, email: "TEST@EXAMPLE.COM" }]);
+    expect(csv.split("\n")[1]).toBe(`${sha256("test@example.com")},`);
+  });
+
+  it("row with phone only → empty email column, SHA-256(normalized phone without +)", () => {
+    // e164Indian("9876543210") → "+919876543210"; strip + → "919876543210"
+    const csv = metaCsvFromRows([{ contact_id: "1", phone: "9876543210", email: null }]);
+    expect(csv.split("\n")[1]).toBe(`,${sha256("919876543210")}`);
+  });
+
+  it("row with both email and phone → both hashed", () => {
+    const email = "hello@example.com";
+    const phone = "9876543210";
+    const csv = metaCsvFromRows([{ contact_id: "1", phone, email }]);
+    expect(csv.split("\n")[1]).toBe(`${sha256(email)},${sha256("919876543210")}`);
+  });
+
+  it("row with neither email nor phone → skipped (no data line emitted)", () => {
+    const csv = metaCsvFromRows([{ contact_id: "1", phone: null, email: null }]);
+    const nonEmptyLines = csv.split("\n").filter(Boolean);
+    expect(nonEmptyLines).toHaveLength(1); // header only
+  });
+
+  it("multiple rows produce multiple data lines (header + N rows)", () => {
+    const rows = [
+      { contact_id: "1", phone: "9876543210", email: null },
+      { contact_id: "2", phone: null, email: "a@b.com" },
+    ];
+    const lines = metaCsvFromRows(rows).split("\n").filter(Boolean);
+    expect(lines).toHaveLength(3); // header + 2 data rows
+  });
+});

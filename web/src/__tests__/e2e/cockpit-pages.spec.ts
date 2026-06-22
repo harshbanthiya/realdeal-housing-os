@@ -857,6 +857,36 @@ test.describe("Audiences page", () => {
     await page.goto("/cockpit/audiences");
     await expect(page.getByText("not connected")).toBeVisible();
   });
+
+  test("Update preview with role selection carries role= param in URL", async ({ page }) => {
+    await page.goto("/cockpit/audiences");
+    // Select first real role option (index 1 = first after "All roles")
+    await page.selectOption("select[name='role']", { index: 1 });
+    await page.getByRole("button", { name: /update preview/i }).click();
+    await page.waitForURL("**/audiences**");
+    // The GET form must include role= in the query string
+    expect(page.url()).toMatch(/role=/);
+  });
+
+  test("Meta CSV route returns 200 with text/csv content-type", async ({ context }) => {
+    // Request the CSV endpoint directly — auth cookie is set by beforeEach
+    const response = await context.request.get("/cockpit/audiences/meta");
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toContain("text/csv");
+  });
+
+  test("Meta CSV response body starts with 'email,phone' header line", async ({ context }) => {
+    const response = await context.request.get("/cockpit/audiences/meta");
+    const body = await response.text();
+    const firstLine = body.split("\n")[0];
+    expect(firstLine).toBe("email,phone");
+  });
+
+  test("Meta CSV Content-Disposition suggests a .csv filename", async ({ context }) => {
+    const response = await context.request.get("/cockpit/audiences/meta");
+    const disposition = response.headers()["content-disposition"] ?? "";
+    expect(disposition).toMatch(/filename=.*\.csv/);
+  });
 });
 
 // ---------------------------------------------------------------------------
