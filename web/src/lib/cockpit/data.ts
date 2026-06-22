@@ -264,17 +264,31 @@ export async function getReraFacts(slug: string): Promise<Fact[]> {
     return dlfFacts.map((f) => ({ label: f.label, value: f.value, status: f.status === "operator_confirmed" ? "ready" : f.status === "pending_review" ? "review" : "blocked" }));
   }
   if (!live()) return [{ label: "RERA Registration", value: "Verified", status: "ready" }];
+  // Match building slug exactly OR as a hyphen-prefix variant (e.g. kalpataru-radiance-a).
+  // slugify(b.name) = lower(regexp_replace(b.name, '[^a-z0-9]+', '-', 'gi'))
   const rows = await readQuery<{ official_project_name: string; rera_registration_number: string; registration_status: string; verification_status: string; district: string; locality: string }>(
-    `select official_project_name, rera_registration_number, registration_status, verification_status, district, locality from rera_project_profiles limit 1`);
+    `select rp.official_project_name, rp.rera_registration_number, rp.registration_status,
+            rp.verification_status, rp.district, rp.locality
+       from rera_project_profiles rp
+       join buildings b on b.id = rp.building_id
+      where lower(regexp_replace(b.name, '[^a-z0-9]+', '-', 'gi')) = $1
+         or lower(regexp_replace(b.name, '[^a-z0-9]+', '-', 'gi')) like $1 || '-%'
+      order by rp.created_at
+      limit 5`,
+    [slug]
+  );
   if (!rows.length) return [{ label: "RERA", value: "No profile captured yet", status: "review" }];
-  const r = rows[0];
-  const vtone: Tone = r.verification_status === "verified" ? "ready" : "review";
-  return [
-    { label: "Official project name", value: r.official_project_name || "—", status: vtone },
-    { label: "RERA registration", value: r.rera_registration_number || "RERA_VERIFY", status: r.registration_status?.includes("registered") ? "ready" : "review" },
-    { label: "Verification status", value: r.verification_status || "—", status: vtone },
-    { label: "Location", value: [r.locality, r.district].filter(Boolean).join(", ") || "—", status: "review" },
-  ];
+  const facts: Fact[] = [];
+  for (const r of rows) {
+    const vtone: Tone = r.verification_status === "verified" ? "ready" : "review";
+    facts.push(
+      { label: "Official project name", value: r.official_project_name || "—", status: vtone },
+      { label: "RERA registration", value: r.rera_registration_number || "RERA_VERIFY", status: r.registration_status?.includes("registered") ? "ready" : "review" },
+      { label: "Verification status", value: r.verification_status || "—", status: vtone },
+      { label: "Location", value: [r.locality, r.district].filter(Boolean).join(", ") || "—", status: "review" },
+    );
+  }
+  return facts;
 }
 function stagingTone(status: string): Tone {
   if (status === "created_manually" || status === "live") return "ready";
@@ -334,21 +348,10 @@ function formatAge(ts: string | null | undefined): string {
 export async function getBuildingReviews(slug: string): Promise<ReviewItem[]> {
   const b = await getBuilding(slug);
   if (!b) return [];
-  const derived = (await getGlobalReviewQueue()).filter((r) => r.building === b.name);
-  if (!live()) return derived;
-  const ir = await readQuery<{ id: string; title: string; review_type: string; created_at: string }>(
-    `select id::text, coalesce(title, review_type) title, review_type, created_at::text
-       from import_review_items where status = 'pending'
-      order by created_at desc limit 10`).catch(() => []);
-  const imported: ReviewItem[] = ir.map((r) => ({
-    domain: r.review_type || "import",
-    title: r.title || r.review_type,
-    building: b.name,
-    age: formatAge(r.created_at),
-    tone: "review" as Tone,
-    reviewItemId: r.id,
-  }));
-  return [...derived, ...imported];
+  // derived: launch_readiness_checks / rera_profiles filtered by building name (see getGlobalReviewQueue)
+  // import_review_items excluded: contact-pipeline rows have no building_id link and would
+  // flood every building's Reviews tab with 4000+ unrelated inventory/duplicate review items.
+  return (await getGlobalReviewQueue()).filter((r) => r.building === b.name);
 }
 export async function getAgentTasks(slug: string): Promise<AgentTask[]> {
   const fallback: AgentTask[] = [

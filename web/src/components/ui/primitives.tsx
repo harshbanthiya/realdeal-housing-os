@@ -33,8 +33,8 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
   return <div className={`rounded-xl border border-mist-deep bg-white ${className}`}>{children}</div>;
 }
 
-export function Mono({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <span className={`font-mono text-ink/55 ${className}`}>{children}</span>;
+export function Mono({ children, className = "", title }: { children: ReactNode; className?: string; title?: string }) {
+  return <span className={`font-mono text-ink/55 ${className}`} title={title}>{children}</span>;
 }
 
 export function PanelTitle({ children, hint }: { children: ReactNode; hint?: string }) {

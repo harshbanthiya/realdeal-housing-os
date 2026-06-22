@@ -755,3 +755,47 @@ describe("slugify parity with SQL regexp_replace", () => {
     expect(slugify("Tower 12B")).toBe("tower-12b");
   });
 });
+
+// ---------------------------------------------------------------------------
+// RERA slug prefix-match logic (mirrors SQL pattern in getReraFacts)
+// SQL: slug = $1 OR slug LIKE $1 || '-%'
+// ---------------------------------------------------------------------------
+
+describe("RERA slug prefix-match (getReraFacts variant filter)", () => {
+  function slugify(name: string): string {
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  }
+  function matchesSlug(buildingName: string, routeSlug: string): boolean {
+    const bs = slugify(buildingName);
+    return bs === routeSlug || bs.startsWith(routeSlug + "-");
+  }
+
+  it("exact match: 'Kalpataru Radiance' matches kalpataru-radiance", () => {
+    expect(matchesSlug("Kalpataru Radiance", "kalpataru-radiance")).toBe(true);
+  });
+
+  it("prefix match: 'Kalpataru Radiance A' matches kalpataru-radiance", () => {
+    expect(matchesSlug("Kalpataru Radiance A", "kalpataru-radiance")).toBe(true);
+  });
+
+  it("prefix match: 'Kalpataru Radiance New Parser' matches kalpataru-radiance", () => {
+    expect(matchesSlug("Kalpataru Radiance New Parser", "kalpataru-radiance")).toBe(true);
+  });
+
+  it("prefix match: 'Imperial Heights Wing C and D' matches imperial-heights", () => {
+    expect(matchesSlug("Imperial Heights Wing C and D", "imperial-heights")).toBe(true);
+  });
+
+  it("non-match: 'Kalpataru Radiance A' does NOT match imperial-heights", () => {
+    expect(matchesSlug("Kalpataru Radiance A", "imperial-heights")).toBe(false);
+  });
+
+  it("non-match: 'Oberoi Esquire' does NOT match kalpataru-radiance", () => {
+    expect(matchesSlug("Oberoi Esquire", "kalpataru-radiance")).toBe(false);
+  });
+
+  it("no false partial prefix: 'kalpataru-radicand' does NOT match kalpataru-radiance", () => {
+    // hyphen boundary prevents false prefix — 'kalpataru-radicand' doesn't start with 'kalpataru-radiance-'
+    expect(matchesSlug("Kalpataru Radicand", "kalpataru-radiance")).toBe(false);
+  });
+});

@@ -1130,3 +1130,54 @@ test.describe("Buildings workspace — SEO tab slug isolation", () => {
     await expect(header).toBeHidden({ timeout: 5000 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Buildings workspace — RERA tab (reads rera_project_profiles filtered by slug)
+// ---------------------------------------------------------------------------
+
+test.describe("Buildings workspace — RERA tab", () => {
+  test.skip(!TOKEN, "COCKPIT_AUTH_TOKEN required");
+  test.beforeEach(async ({ context }) => { await authedContext(context); });
+
+  test("RERA tab button exists in workspace tab bar", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    await expect(page.getByRole("button", { name: /rera/i })).toBeVisible({ timeout: 8000 });
+  });
+
+  test("RERA tab on kalpataru-radiance shows real registration numbers", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    await page.getByRole("button", { name: /rera/i }).click();
+    // Kalpataru Radiance A + New Parser both have P51800000591 — use .first() to avoid strict-mode
+    await expect(page.getByText(/P51800000591/).first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test("RERA tab on kalpataru-radiance shows both variants (A + New Parser)", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    await page.getByRole("button", { name: /rera/i }).click();
+    // Both variants link to same registration P51800000591 — check for at least 2 fact rows
+    const factRows = page.locator("main [class*='grid']").filter({ has: page.getByText(/P51800000591/) });
+    await expect(factRows.first()).toBeVisible({ timeout: 5000 });
+    // Two RERA profiles = 8 fact rows (4 per profile) — check count ≥ 2
+    const allFacts = page.locator("main").getByText("RERA registration");
+    await expect(allFacts).toHaveCount(2, { timeout: 5000 });
+  });
+
+  test("RERA tab on DLF shows hardcoded DLF facts (not Kalpataru data)", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.getByRole("button", { name: /rera/i }).click();
+    // DLF uses dlfFacts from content — should NOT show Kalpataru RERA numbers
+    await expect(page.getByText(/P51800000591/)).toBeHidden({ timeout: 5000 });
+    // Should show some fact rows (DLF hardcoded facts)
+    const factRows = page.locator("main [class*='grid']");
+    await expect(factRows.first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Reviews tab on kalpataru-radiance does not show import_review_items", async ({ page }) => {
+    await page.goto(`/cockpit/buildings/${REAL_BUILDING_SLUG}`);
+    await page.getByRole("button", { name: "Reviews" }).click();
+    // import_review_items are contact-pipeline rows (types: inventory_match_review, property_hint_review)
+    // They MUST NOT appear on any building's Reviews tab
+    await expect(page.getByText(/inventory_match_review/i)).toBeHidden({ timeout: 5000 });
+    await expect(page.getByText(/property_hint_review/i)).toBeHidden({ timeout: 5000 });
+  });
+});
