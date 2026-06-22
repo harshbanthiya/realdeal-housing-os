@@ -972,13 +972,15 @@ test.describe("Buildings workspace — Leads tab", () => {
   test.beforeEach(async ({ context }) => { await authedContext(context); });
 
   test("Leads tab on launch building shows pre-launch interest message when count=0", async ({ page }) => {
+    test.setTimeout(30000); // DLF page runs 11 parallel SSR queries; allow extra render time
     // DLF is launch mode — empty state must mention 'pre-launch' or 'consent'
     await page.goto(`/cockpit/buildings/${DLF_SLUG}`);
+    await page.waitForLoadState("networkidle", { timeout: 20000 });
     await page.getByRole("button", { name: "Leads" }).click();
     // When leads=0 and launch=true: "Pre-launch interest list is preview-only — lead intake opens after consent + go-live review."
     await expect(
       page.getByText(/pre-launch interest list|lead intake opens|consent.*go-live/i)
-    ).toBeVisible({ timeout: 15000 });
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("Leads tab on active building shows campaign empty-state when count=0", async ({ page }) => {

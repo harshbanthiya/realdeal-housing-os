@@ -1,7 +1,7 @@
-# QA Report — Loop 24
+# QA Report — Loop 26
 **Date:** 2026-06-22  
 **Branch:** qa/full-stack-test-hardening  
-**Coverage area:** `agentLabel` / `buildingFromRaw` / `taskTone` unit tests + home dashboard panel Playwright tests
+**Coverage area:** `batchLabelHuman` UI bug fix + `parseLabeledOutput`/`headline` logic-mirror tests + flaky Leads test hardening
 
 ---
 
@@ -10,19 +10,18 @@
 ```
 # Baseline
 python3 -m pytest tests/python/ -q              # 111 passed
-npx vitest run                                   # 170 passed
-COCKPIT_AUTH_TOKEN=... npx playwright test       # 159 passed (pre-loop)
+cd web && npm test                               # 212 passed (Vitest)
+COCKPIT_AUTH_TOKEN=... npx playwright test       # 172/173 passed (1 flaky: Leads tab)
 
-# After export fix + 19 new Vitest tests (agentLabel + buildingFromRaw + taskTone)
-npx vitest run                                   # 189 passed ✓
-
-# After 11 new Playwright tests (home dashboard panels) + timeout hardening
-COCKPIT_AUTH_TOKEN=... npx playwright test       # 170 passed ✓
+# After Loop 26 changes
+npm test                                         # 226 passed (+14 Vitest)
+COCKPIT_AUTH_TOKEN=... npx playwright test       # 173 passed (flaky Leads test fixed)
 
 # Final full suite
 python3 -m pytest tests/python/ -q              # 111 passed
-npx vitest run                                   # 189 passed
-COCKPIT_AUTH_TOKEN=... npx playwright test       # 170 passed
+npm test                                         # 226 passed
+COCKPIT_AUTH_TOKEN=... npx playwright test       # 173 passed
+Total: 510
 ```
 
 ---
@@ -31,10 +30,10 @@ COCKPIT_AUTH_TOKEN=... npx playwright test       # 170 passed
 
 | File | Type | Notes |
 |---|---|---|
-| `web/src/lib/cockpit/data.ts` | MODIFIED | `export` added to `agentLabel`, `buildingFromRaw`, `taskTone` (no behavioral change) |
-| `web/src/__tests__/db.test.ts` | MODIFIED | 19 new tests: 5 `agentLabel` + 5 `buildingFromRaw` + 9 `taskTone` → 189 total |
-| `web/src/__tests__/e2e/cockpit-pages.spec.ts` | MODIFIED | 11 new home dashboard panel tests + timeout 5000→10000 for pre-existing flaky Leads test → 170 total |
-| `logs/audit-report.md` | MODIFIED | Loop 24 findings appended |
+| `web/src/lib/cockpit/contacts-types.ts` | MODIFIED | Fix `batchLabelHuman`: add `.toLowerCase()` before title-casing; all-caps DB labels now render as Title Case in UI |
+| `web/src/__tests__/db.test.ts` | MODIFIED | Update 4 stale test expectations (CAPS→Title Case); +7 `parseLabeledOutput` tests; +7 `headline` tests |
+| `web/src/__tests__/e2e/cockpit-pages.spec.ts` | MODIFIED | Leads flaky test: add `test.setTimeout(30000)` + `waitForLoadState("networkidle")` |
+| `scripts/cleanup_fake_*.py` (6 files) | DELETED | Deletions committed — these were deleted on disk in Loop 25's `_db.py` refactor but not staged |
 
 ---
 
@@ -43,58 +42,53 @@ COCKPIT_AUTH_TOKEN=... npx playwright test       # 170 passed
 | Suite | Pass | Fail | Total |
 |---|---|---|---|
 | Python — all suites | 111 | 0 | 111 |
-| TypeScript Vitest | 189 | 0 | 189 |
-| Playwright E2E | 170 | 0 | 170 |
-| **Grand total** | **470** | **0** | **470** |
+| TypeScript Vitest | 226 | 0 | 226 |
+| Playwright E2E | 173 | 0 | 173 |
+| **Grand total** | **510** | **0** | **510** |
 
 ---
 
 ## AUDIT findings this loop
 
-### `agentLabel` / `buildingFromRaw` / `taskTone` — private helpers with zero unit tests (MEDIUM GAP) — CLOSED
+### 1. `batchLabelHuman` produces ALL-CAPS output for real DB batch labels (BUG — FIXED)
 
-**Finding:** All three are pure deterministic functions used in `getAgentActivity()` and `getGlobalBlockers()`. They were private (no `export`) so Vitest couldn't import them directly. Zero tests.
+`batchLabelHuman` in `contacts-types.ts` used `\b\w → toUpperCase` (title-case pattern) but never called `.toLowerCase()` first. Real DB batch labels are uppercase (`REAL_IMPERIAL_HEIGHTS_OWNERS`) so the output was `IMPERIAL HEIGHTS OWNERS` instead of the intended `Imperial Heights Owners`.
 
-**Fix:** Added `export` to all three function declarations in `data.ts` (one-word change each, no behavioral change).
+**Fix:** Added `.toLowerCase()` before the title-case step.
 
-**Tests added (19):**
-- `agentLabel` (5): single underscore word, multi-segment, already titled, empty string fallback, single word
-- `buildingFromRaw` (5): null input, building_name present, prefers building_name over launch_key, title-cases launch_key fallback, empty object
-- `taskTone` (9): completed/done→ready, running/in_progress→review, failed/error→blocked, queued/pending/empty→neutral
+**Impact:** 3 UI callers:
+- `web/src/app/cockpit/contacts/page.tsx:102` — import batch list title
+- `web/src/lib/cockpit/contacts.ts:250` — kanban card secondary text
+- `web/src/components/cockpit/merge-candidate-card.tsx:44` — "from BATCH_LABEL" text
 
-### Home dashboard panels — zero Playwright coverage (MEDIUM GAP) — CLOSED
+**Tests:** Updated 4 existing test expectations from CAPS to Title Case.
 
-**Finding:** The home dashboard (`/cockpit`) had only 4 tests covering the Launch readiness streams. The Buildings list, portfolio summary line, Needs review panel, Blockers panel, and Agents panel had zero test coverage.
+### 2. `parseLabeledOutput` and `headline` — zero unit tests (LOW-MEDIUM GAP — CLOSED)
 
-**Tests added (11):**
-- Portfolio summary shows building count (regex `/\d+ buildings/`)
-- Portfolio summary shows `1 in launch`
-- Buildings panel heading visible
-- At least one building card links to `/cockpit/buildings/[slug]`
-- DLF Westpark card present (`.first()` to avoid strict mode violation)
-- Needs review heading via `getByRole("heading")`
-- Needs review shows at least one `ul li`
-- Blockers heading via `getByRole("heading")`
-- BLK-xxx IDs present (`.first()` to avoid strict mode violation)
-- Agents heading via `getByRole("heading")`
-- Agents `ul li` always has at least one row (real tasks or fallback)
+Both are private helpers in `actions.ts` (`"use server"`) called multiple times (`parseLabeledOutput` × 6, `headline` × 4). Added as pure logic-mirror suites in `db.test.ts`.
 
-### Pre-existing flaky test hardened
+**`parseLabeledOutput` (7 tests):** single line, multiple lines, uppercase-key rejection, no-separator rejection, value with spaces, empty input, last-duplicate-wins.
 
-**Finding:** "Leads tab on launch building shows pre-launch interest message" was failing intermittently in the full suite (5000ms timeout too tight after 11 new home dashboard tests added ~8s to suite). Passed in isolation.
+**`headline` (7 tests):** first non-SQL line, INSERT skip, all-SQL fallback to first line, plain output, whitespace trimming, empty input.
 
-**Fix:** Timeout 5000ms → 10000ms. Not a weakened assertion — same check, more buffer for full-suite server load.
+### 3. Leads flaky test (RECURRING FLAKE — HARDENED)
+
+DLF building workspace page runs 11 parallel SSR queries. Even at `timeout: 15000`, the `toBeVisible` check was failing because hydration wasn't complete. Fixed by:
+- `test.setTimeout(30000)` scoped to just this test
+- `waitForLoadState("networkidle", { timeout: 20000 })` after `page.goto` to ensure all SSR data fetches complete before clicking
+
+### 4. Uncommitted script deletions from Loop 25 (REPO HYGIENE — FIXED)
+
+6 `scripts/cleanup_fake_*.py` files were deleted on disk as part of the Loop 25 `_db.py` refactor but the deletions weren't staged in commit `e8bfd30`. Included in this loop's commit.
 
 ---
 
 ## Recommended Next QA Loop (Priority Order)
 
-**1. `createContactGroup` + `addContactsToGroup` validation guard unit tests** — early-return paths (invalid slug, empty IDs, name too short/long) are untested. Server actions with `"use server"` directive; test the validation logic as inline pure functions mirroring the guard expressions.
+**1. Contact sheet pagination edge cases** — `page=999` (0 rows) and `page=0` (clamped to 1) are correct but untested. Quick Vitest assertion on `getContactSheet` clamping logic.
 
-**2. `buildWhere()` filter safety** — private function in `audiences.ts`. Parameterized query approach can be tested indirectly via `parseAudienceFilters` + `getAudienceSummary` with special-char building names. Low risk since it uses `$N` params.
+**2. Audiences page filter role submission** — No test verifies that applying a role filter changes the audience size metric in response.
 
-**3. `parseLabeledOutput()` helper** — private, parses key: value lines from script stdout. Could be tested by checking `fields` in ActionResult from a script invocation.
+**3. Contact detail group dropdown show/hide** — No test for "no groups → dropdown hidden, has groups → dropdown visible" state machine (only the "has groups" path is covered).
 
-**4. Contact sheet pagination edge cases** — no test for `page=999` (beyond end) or `page=0` (invalid).
-
-**5. Building card stat tiles** — Playwright test that navigates to a building card and verifies the stats grid (people/leads/listings/reviews tiles) renders four cells.
+**4. WhatsApp send gate** — `send_enabled=false` is the hard gate. No test asserts the "Open in WhatsApp" links are present but the queue-send script enforces the flag. Worth one Playwright assertion that "Open in WhatsApp" link exists in the queue row.

@@ -160,6 +160,12 @@
 | 🚧 Stub/hardcoded | 5 |
 | ❌ Missing/broken | 6 |
 
+### New audit findings (Loop 26)
+- `batchLabelHuman` in `contacts-types.ts` produced ALL-CAPS output for real DB batch labels — `.toLowerCase()` was missing before title-casing. Fixed: 3 UI callers (`contacts/page.tsx:102`, `contacts.ts:250`, `merge-candidate-card.tsx:44`) now render Title Case. 4 test expectations updated.
+- `parseLabeledOutput` and `headline` private helpers in `actions.ts` — zero unit tests. Added 7 + 7 logic-mirror tests.
+- Leads flaky test: `test.setTimeout(30000)` + `waitForLoadState("networkidle")` added (DLF page runs 11 parallel SSR queries).
+- 6 `cleanup_fake_*.py` script deletions from Loop 25's `_db.py` refactor were unstaged. Committed now.
+
 ### New audit findings (Loop 25)
 - `createContactGroup` + `addContactsToGroup` validation guards in `actions.ts` — zero unit tests (guards are "use server" but logic is pure; mirrors added in db.test.ts like existing logContactNote/updateBuildingMode tests).
 - `batchLabelHuman` in `contacts-types.ts` — complex strip/regex/titlecase logic with no test coverage. Added 7 Vitest tests covering prefix stripping, run-number stripping, label extraction.

@@ -1429,25 +1429,24 @@ describe("batchLabelHuman", () => {
     ({ batchLabelHuman } = await import("@/lib/cockpit/contacts-types"));
   });
 
-  // \b\w uppercases first letter only — does NOT lowercase the rest.
-  // All-uppercase inputs stay uppercase; lowercase inputs become Title Case.
+  // .toLowerCase() is applied before title-casing — all-caps inputs → Title Case.
 
-  it("strips REAL_ prefix (uppercase input → uppercase words)", () => {
-    expect(batchLabelHuman("REAL_IMPERIAL_HEIGHTS_OWNERS")).toBe("IMPERIAL HEIGHTS OWNERS");
+  it("strips REAL_ prefix and title-cases the result", () => {
+    expect(batchLabelHuman("REAL_IMPERIAL_HEIGHTS_OWNERS")).toBe("Imperial Heights Owners");
   });
 
-  it("strips FAKE_ prefix (uppercase input)", () => {
-    expect(batchLabelHuman("FAKE_TEST_IMPORT")).toBe("TEST IMPORT");
+  it("strips FAKE_ prefix and title-cases", () => {
+    expect(batchLabelHuman("FAKE_TEST_IMPORT")).toBe("Test Import");
   });
 
-  it("strips PHASE_N_ prefix and _AUDIT suffix (uppercase)", () => {
-    // REAL_PHASE_5_ stripped → KALPATARU_AUDIT → _AUDIT stripped → KALPATARU
-    expect(batchLabelHuman("REAL_PHASE_5_KALPATARU_AUDIT")).toBe("KALPATARU");
+  it("strips PHASE_N_ prefix and _AUDIT suffix, title-cases result", () => {
+    // REAL_PHASE_5_KALPATARU_AUDIT → KALPATARU_AUDIT → strip _AUDIT → KALPATARU → "Kalpataru"
+    expect(batchLabelHuman("REAL_PHASE_5_KALPATARU_AUDIT")).toBe("Kalpataru");
   });
 
-  it("strips PHASE_N_N_ prefix, trailing run, and _AUDIT suffix", () => {
+  it("strips PHASE_N_N_ prefix, trailing run, and _AUDIT suffix — title-cases", () => {
     // → IMPERIAL_UNIT_AUDIT_001 → strip _001 → IMPERIAL_UNIT_AUDIT → strip _AUDIT → IMPERIAL_UNIT
-    expect(batchLabelHuman("REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001")).toBe("IMPERIAL UNIT");
+    expect(batchLabelHuman("REAL_PHASE_5_4_IMPERIAL_UNIT_AUDIT_001")).toBe("Imperial Unit");
   });
 
   it("strips trailing run number (lowercase → title-cased)", () => {
@@ -1460,5 +1459,90 @@ describe("batchLabelHuman", () => {
 
   it("plain label without prefix (lowercase → title-cased)", () => {
     expect(batchLabelHuman("kalpataru_wing_a_tenants")).toBe("Kalpataru Wing A Tenants");
+  });
+});
+
+// ---- parseLabeledOutput logic mirror ----
+// Private helper in actions.ts ("use server") — tested here as a pure function mirror.
+// Regex: /^([a-z_]+):\s(.*)$/ — lowercase keys only, space after colon required.
+function parseLabeledOutput_mirror(out: string): Record<string, string> {
+  const fields: Record<string, string> = {};
+  for (const line of out.split("\n")) {
+    const m = line.match(/^([a-z_]+):\s(.*)$/);
+    if (m) fields[m[1]] = m[2];
+  }
+  return fields;
+}
+
+describe("parseLabeledOutput (actions.ts mirror)", () => {
+  it("parses a single key: value line", () => {
+    expect(parseLabeledOutput_mirror("status: ok")).toEqual({ status: "ok" });
+  });
+
+  it("parses multiple lines", () => {
+    expect(parseLabeledOutput_mirror("dry_run: true\nrows_affected: 3")).toEqual({
+      dry_run: "true",
+      rows_affected: "3",
+    });
+  });
+
+  it("ignores lines with uppercase keys (SQL noise)", () => {
+    expect(parseLabeledOutput_mirror("INSERT 0 1\nrows_affected: 5")).toEqual({ rows_affected: "5" });
+  });
+
+  it("ignores lines without colon+space separator", () => {
+    expect(parseLabeledOutput_mirror("nocoapshere")).toEqual({});
+  });
+
+  it("captures value with spaces in it", () => {
+    expect(parseLabeledOutput_mirror("message: hello world")).toEqual({ message: "hello world" });
+  });
+
+  it("returns empty object for empty string", () => {
+    expect(parseLabeledOutput_mirror("")).toEqual({});
+  });
+
+  it("last duplicate key wins", () => {
+    expect(parseLabeledOutput_mirror("status: ok\nstatus: done")).toEqual({ status: "done" });
+  });
+});
+
+// ---- headline logic mirror ----
+// Private helper in actions.ts — returns first non-SQL-keyword line.
+const SQL_SKIP = /^(BEGIN|COMMIT|INSERT|UPDATE|DELETE|DO|ROLLBACK)\b/;
+function headline_mirror(out: string): string {
+  for (const line of out.split("\n").map((l) => l.trim())) {
+    if (line && !SQL_SKIP.test(line)) return line;
+  }
+  return out.split("\n")[0] || "";
+}
+
+describe("headline (actions.ts mirror)", () => {
+  it("returns first non-SQL line", () => {
+    expect(headline_mirror("Merged 2 contacts")).toBe("Merged 2 contacts");
+  });
+
+  it("skips INSERT prefix and returns next line", () => {
+    expect(headline_mirror("INSERT 0 1\nDone: 1 row merged")).toBe("Done: 1 row merged");
+  });
+
+  it("skips all SQL noise lines", () => {
+    expect(headline_mirror("BEGIN\nCOMMIT\nDELETE 3\nOK: applied")).toBe("OK: applied");
+  });
+
+  it("falls back to first line when all lines are SQL noise", () => {
+    expect(headline_mirror("BEGIN\nCOMMIT")).toBe("BEGIN");
+  });
+
+  it("returns first line on plain output (no SQL noise)", () => {
+    expect(headline_mirror("dry_run: true\nrows: 0")).toBe("dry_run: true");
+  });
+
+  it("trims leading/trailing whitespace from lines", () => {
+    expect(headline_mirror("  INSERT 0 1  \n  Result line  ")).toBe("Result line");
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(headline_mirror("")).toBe("");
   });
 });
