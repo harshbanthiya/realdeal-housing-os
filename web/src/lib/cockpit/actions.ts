@@ -348,3 +348,13 @@ export async function updateBuildingMode(input: {
     raw: out,
   };
 }
+
+/** Resume a captcha_required IGR job → sets status back to queued for the worker. */
+export async function resumeIgrJob(input: { jobId: string }): Promise<ActionResult> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.jobId)) {
+    return { ok: false, applied: false, dryRun: false, message: "Invalid job ID.", fields: {}, raw: "" };
+  }
+  const { code, out } = await runScript("worker.py", ["--resume", input.jobId]);
+  const ok = code === 0 && out.startsWith("resumed:");
+  return { ok, applied: ok, dryRun: false, message: ok ? `Job ${input.jobId.slice(0, 8)}… queued` : out.split("\n")[0], fields: {}, raw: out };
+}
