@@ -45,7 +45,7 @@ SELECT id, snapshot_path FROM claimed;
 
 _STATUS_SQL = """
 UPDATE igr_registration_search_jobs
-SET job_status = '{status}', error_summary = {err}, updated_at = now()
+SET job_status = '{status}', updated_at = now()
 WHERE id = '{job_id}';
 """
 
@@ -57,8 +57,7 @@ GROUP BY job_status ORDER BY job_status;
 
 
 def _set_status(job_id: str, status: str, error: str | None = None) -> None:
-    err_lit = f"'{error.replace(chr(39), chr(39)*2)}'" if error else "NULL"
-    run_psql(_STATUS_SQL.format(status=status, err=err_lit, job_id=job_id))
+    run_psql(_STATUS_SQL.format(status=status, job_id=job_id))
 
 
 def _dispatch(job_id: str, snapshot_path: str, dry_run: bool) -> None:
