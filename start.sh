@@ -22,6 +22,7 @@ CLEANER="$PROJECT_ROOT/scripts/clean_appledouble_junk.sh"
 SPARSEBUNDLE='/Volumes/RDH 5TB/rdh-postgres-data.sparsebundle'
 APFS_VOLUME='/Volumes/RDH_POSTGRES_DATA'
 APFS_PG_DIR="$APFS_VOLUME/postgres"
+ATTACH_LOG="${TMPDIR:-/tmp}/rdh-postgres-hdiutil-attach.log"
 
 # Count macOS metadata junk (.DS_Store and AppleDouble ._*) under a directory, files only.
 junk_count() {
@@ -42,22 +43,136 @@ preflight_clean() {
   fi
 }
 
+is_apfs_postgres_mounted() {
+  mount | grep -qF " on $APFS_VOLUME "
+}
+
+sparsebundle_attached() {
+  hdiutil info | grep -qF "$SPARSEBUNDLE"
+}
+
+attached_sparsebundle_devices() {
+  hdiutil info | awk -v image="$SPARSEBUNDLE" '
+    /^================================================/ { inside = 0 }
+    /^image-path[[:space:]]*:/ && index($0, image) { inside = 1; next }
+    inside && /^\/dev\/disk[0-9]/ { print $1 }
+  '
+}
+
+wait_for_apfs_postgres_mount() {
+  tries="$1"
+  while [ "$tries" -gt 0 ]; do
+    if is_apfs_postgres_mounted; then
+      return 0
+    fi
+    sleep 1
+    tries=$((tries - 1))
+  done
+  return 1
+}
+
+clean_sparsebundle_appledouble() {
+  # Clean AppleDouble junk that hdiutil can choke on when the bundle lives on exFAT.
+  find "$SPARSEBUNDLE" -name "._*" -exec rm -f {} + 2>/dev/null || true
+  find "$SPARSEBUNDLE/bands" -name "._*" -exec rm -f {} + 2>/dev/null || true
+}
+
+mount_attached_sparsebundle_devices() {
+  devices="$(attached_sparsebundle_devices || true)"
+  if [ -z "$devices" ]; then
+    return 1
+  fi
+
+  for dev in $devices; do
+    hdiutil mountvol "$dev" >/dev/null 2>&1 || true
+    if is_apfs_postgres_mounted; then
+      return 0
+    fi
+  done
+
+  if command -v diskutil >/dev/null 2>&1; then
+    for dev in $devices; do
+      diskutil mount "$dev" >/dev/null 2>&1 || true
+      if is_apfs_postgres_mounted; then
+        return 0
+      fi
+    done
+
+    for dev in $devices; do
+      diskutil mountDisk "$dev" >/dev/null 2>&1 || true
+      if is_apfs_postgres_mounted; then
+        return 0
+      fi
+    done
+  fi
+
+  return 1
+}
+
+print_apfs_mount_diagnostics() {
+  devices="$(attached_sparsebundle_devices || true)"
+  echo "ERROR: APFS volume still not mounted after attach attempts." >&2
+  echo "Sparsebundle: $SPARSEBUNDLE" >&2
+  if [ -n "$devices" ]; then
+    echo "Attached devices found for this sparsebundle:" >&2
+    for dev in $devices; do
+      echo "  $dev" >&2
+    done
+    echo "Manual recovery to try:" >&2
+    echo "  diskutil mount <one of the diskXsY devices above>" >&2
+    echo "  hdiutil detach <top-level diskX above> && hdiutil attach '$SPARSEBUNDLE' -mountpoint '$APFS_VOLUME'" >&2
+  else
+    echo "No attached /dev/disk entries were found for this sparsebundle." >&2
+    echo "Manual recovery to try:" >&2
+    echo "  hdiutil attach '$SPARSEBUNDLE' -mountpoint '$APFS_VOLUME'" >&2
+  fi
+  if [ -s "$ATTACH_LOG" ]; then
+    echo "Last hdiutil attach output:" >&2
+    sed 's/^/  /' "$ATTACH_LOG" >&2
+  fi
+}
+
 # Ensure the APFS sparsebundle holding the live Postgres cluster is mounted and
 # populated BEFORE Docker starts. Critical safety: if the volume is missing or
 # empty, Docker would bind-mount an empty dir and Postgres would initialise a
 # brand-new empty cluster (silent apparent data loss). Abort instead.
 ensure_apfs_postgres() {
-  if ! mount | grep -qF " on $APFS_VOLUME "; then
+  if ! is_apfs_postgres_mounted; then
     echo "APFS Postgres volume not mounted; attaching sparsebundle..."
     if [ ! -e "$SPARSEBUNDLE" ]; then
       echo "ERROR: sparsebundle missing: $SPARSEBUNDLE" >&2
       echo "Cannot start Postgres without its APFS data volume. Aborting." >&2
       exit 1
     fi
-    hdiutil attach "$SPARSEBUNDLE" >/dev/null || {
-      echo "ERROR: failed to attach sparsebundle $SPARSEBUNDLE" >&2
+
+    rm -f "$ATTACH_LOG"
+    if sparsebundle_attached; then
+      echo "Sparsebundle is already attached; mounting its APFS volume..."
+    else
+      clean_sparsebundle_appledouble
+      if ! hdiutil attach "$SPARSEBUNDLE" -mountpoint "$APFS_VOLUME" >"$ATTACH_LOG" 2>&1; then
+        echo "Explicit mountpoint attach did not complete; retrying default attach..."
+        if ! hdiutil attach "$SPARSEBUNDLE" >"$ATTACH_LOG" 2>&1; then
+          echo "ERROR: failed to attach sparsebundle $SPARSEBUNDLE" >&2
+          sed 's/^/  /' "$ATTACH_LOG" >&2
+          exit 1
+        fi
+      fi
+    fi
+
+    if ! wait_for_apfs_postgres_mount 5; then
+      mount_attached_sparsebundle_devices || true
+      wait_for_apfs_postgres_mount 5 || {
+        print_apfs_mount_diagnostics
+        exit 1
+      }
+    fi
+
+    if ! is_apfs_postgres_mounted; then
+      # Belt-and-suspenders guard; the wait block above should already exit.
+      print_apfs_mount_diagnostics
       exit 1
-    }
+    fi
   fi
 
   if [ ! -d "$APFS_PG_DIR" ]; then
