@@ -101,6 +101,11 @@ imports/contacts/raw_archives/
 imports/contacts/raw_samples/
 !imports/contacts/*.csv.example
 !imports/contacts/*.vcf.example
+# Raw property data subdirs — contain PII/registration data (PDFs, XLS), never commit.
+imports/buildings/
+imports/igr Registrations/
+imports/mahaRera/
+imports/inventory/
 
 # Database dumps and local database files
 *.dump
