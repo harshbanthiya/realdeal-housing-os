@@ -11,6 +11,8 @@ import { projects as siteProjects, listings as siteListings, type Listing } from
 import { facts as dlfFacts } from "@/lib/content";
 import type { Tone } from "@/components/ui/primitives";
 import { isDbConfigured, readQuery } from "@/lib/db";
+import { recoverWingUnit, joinPartyNames } from "./units-clean";
+import { buildCandidate, findMatches, unitKey, toUnitContact, dedupeContacts, type Candidate } from "./contact-match";
 import type {
   Mode, Building, ReviewItem, AgentEvent, Blocker, Person, Keyword,
   Campaign, Fact, WebPage, AgentTask, KanbanTask, CalendarItem, LaunchStream,
@@ -468,6 +470,7 @@ type URegistry = import("./types").UnitRegistry;
 type UCell = import("./types").UnitCell;
 type UEvent = import("./types").UnitTimelineEvent;
 type RParty = import("./types").RegParty;
+type UReview = import("./types").UnitReviewItem;
 
 const ZERO_STATS: URegistry["stats"] = {
   expected: 0, mappedUnits: 0, withRegistration: 0, owned: 0, tenanted: 0, registered: 0,
@@ -496,14 +499,61 @@ function deriveFloorPos(u: string): { floor: number; pos: number } {
   return { floor: Math.min(Math.max(1, n), MAX_FLOOR), pos: 1 };
 }
 
+// Import sheets store the building only in the filename. ponytail: a 5-entry lookup beats a
+// fuzzy filename matcher ("Kalptaru" vs "Kalpataru"); add a line when a new sheet is imported.
+const SOURCE_FILE_BUILDING: Record<string, string> = {
+  "Kalptaru Radiance new.xlsx": "Kalpataru Radiance",
+  "Imperial Heights unit data.xlsx": "Imperial Heights",
+  "Oberoi esquire units.xlsx": "Oberoi Esquire",
+  "Ekta Tripolis Data new.xlsx": "Ekta Tripolis",
+  "Windsor Grande Residences Condominium - Member Details (1).xlsx": "Windsor Grande Residences",
+};
+
+// Contacts + raw import rows, with phone/email resolved, as name-match candidates.
+// Phone lives in contact_methods (contacts.phone_primary is empty), so we pull the best mobile there.
+async function getContactIndex(): Promise<Candidate[]> {
+  const contacts = await readQuery<{ id: string; full_name: string; email: string | null; phone: string | null }>(
+    `select c.id::text id, c.full_name,
+            coalesce(nullif(c.email,''),
+              (select m.normalized_value from contact_methods m
+                where m.contact_id=c.id and m.method_type='email' and m.normalized_value is not null limit 1)) email,
+            (select m.normalized_value from contact_methods m
+               where m.contact_id=c.id and m.method_type in ('mobile','phone') and m.normalized_value is not null
+               order by (m.method_type='mobile') desc limit 1) phone
+       from contacts c`);
+  const imports = await readQuery<{ name: string; phone: string | null; email: string | null; contact_id: string | null; wing: string | null; unit: string | null; building: string | null; source_file: string | null }>(
+    `select coalesce(cleaned_display_name, raw_name) name, phone_normalized phone, email_normalized email,
+            matched_contact_id::text contact_id, parsed_wing wing, parsed_unit_number unit,
+            parsed_building_name building, source_file
+       from contact_import_rows
+      where coalesce(cleaned_display_name, raw_name) is not null
+        and (phone_normalized is not null or email_normalized is not null)`);
+  const out: Candidate[] = [];
+  for (const c of contacts) out.push(buildCandidate({ name: c.full_name, source: "contact", phone: c.phone ?? undefined, email: c.email ?? undefined, contactId: c.id }));
+  for (const r of imports) {
+    // The import sheets (Kalpataru/Oberoi/…) carry no building tag — derive it from source_file so
+    // unit matches stay within-building. wing parses to a single letter for exact compare.
+    // parsed_building_name is often "" (not NULL), so use || not ?? to fall through to the filename map.
+    const building = (r.building && r.building.trim()) || (r.source_file ? SOURCE_FILE_BUILDING[r.source_file] : undefined);
+    out.push(buildCandidate({
+      name: r.name, source: "import", phone: r.phone ?? undefined, email: r.email ?? undefined,
+      contactId: r.contact_id ?? undefined, building: building ?? undefined,
+      wing: r.wing ? recoverWingUnit({ wingText: r.wing }).wing || undefined : undefined,
+      unit: r.unit ?? undefined,
+    }));
+  }
+  return out;
+}
+
 export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
   const b = (await getBuildings()).find((x) => x.slug === slug);
-  const empty = (name: string): URegistry => ({ buildingName: name, towers: [], unitsPerFloor: 6, units: [], stats: ZERO_STATS });
+  const empty = (name: string): URegistry => ({ buildingName: name, towers: [], unitsPerFloor: 6, units: [], expiringLeases: [], reviewQueue: [], stats: ZERO_STATS });
   if (!b) return null;
   if (!live()) return empty(b.name);
 
   const recs = await readQuery<{
-    building_name: string; building_unit_id: string | null; wing: string | null; unit_number: string | null;
+    record_id: string; building_name: string; building_unit_id: string | null; wing: string | null; unit_number: string | null;
+    wing_text: string | null; unit_text: string | null; property_description_raw: string | null;
     registration_date: string | null; registration_year: number | null; document_type: string | null;
     category: string | null; doc_number: string | null; sro_office: string | null;
     consideration_amount: string | null; market_value: string | null; stamp_duty: string | null;
@@ -511,12 +561,18 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     tenancy_end_date: string | null; tenancy_monthly_rent: string | null; tenancy_deposit: string | null;
     parties: RParty[] | null;
   }>(
-    `select building_name, building_unit_id::text, wing, unit_number, registration_date::text, registration_year,
+    `select record_id::text, building_name, building_unit_id::text, wing, unit_number,
+            wing_text, unit_text, property_description_raw, registration_date::text, registration_year,
             document_type, category, doc_number, sro_office, consideration_amount::text, market_value::text,
             stamp_duty::text, registration_fee::text, area_text, tenancy_start_date::text, tenancy_end_date::text,
             tenancy_monthly_rent::text, tenancy_deposit::text, parties
        from vw_unit_registration_full_operator order by registration_date`);
   const myRecs = recs.filter((r) => slugify(String(r.building_name ?? "")) === slug);
+  // Recover wing+flat once per record from the raw register text / Marathi description.
+  const recovery = new Map<string, ReturnType<typeof recoverWingUnit>>();
+  for (const r of myRecs) recovery.set(r.record_id, recoverWingUnit({
+    unitWing: r.wing, unitNumber: r.unit_number, wingText: r.wing_text, unitText: r.unit_text, descriptionRaw: r.property_description_raw,
+  }));
 
   const bunits = await readQuery<{ id: string; wing: string | null; unit_number: string | null; bn: string }>(
     `select bu.id::text, bu.wing, bu.unit_number, b.name bn
@@ -566,14 +622,14 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
   });
   const evByKey = new Map<string, UEvent[]>();
   for (const r of myRecs) {
-    const key = `${towerLetter(r.wing)}|${String(r.unit_number ?? "").replace(/\D/g, "")}`;
+    const rec = recovery.get(r.record_id)!;
+    const key = `${rec.wing}|${rec.unit}`;
     (evByKey.get(key) ?? evByKey.set(key, []).get(key)!).push(toEvent(r));
   }
 
   const now = Date.now();
   const yrs = (d?: string) => (d ? Math.max(0, (now - new Date(d).getTime()) / 31_557_600_000) : 0);
-  const partyNames = (ev: UEvent, roles: string[]) =>
-    ev.parties.filter((p) => roles.includes(p.role)).map((p) => p.english).join(", ");
+  const partyNames = (ev: UEvent, roles: string[]) => joinPartyNames(ev.parties, roles);
 
   const units: UCell[] = [];
   for (const u of myUnits) {
@@ -599,8 +655,9 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
       ownerContactId: resolvedContactId,
       ownerSince: lastOwn?.date, lastPrice: lastOwn?.consideration,
       currentTenant: activeLease ? partyNames(activeLease, ["lessee", "tenant"]) || undefined : undefined,
-      rent: activeLease?.rent, tenancyEnd: activeLease?.tenancyEnd,
-      registrationCount: events.length, events,
+      rent: activeLease?.rent, deposit: activeLease?.deposit,
+      tenancyStart: activeLease?.tenancyStart, tenancyEnd: activeLease?.tenancyEnd,
+      registrationCount: events.length, events, contactMatches: [],
     });
   }
 
@@ -631,8 +688,87 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     `select rera_expected_units::text n from vw_building_unit_accounting where building_name = $1`, [b.name]))[0]?.n);
   const panCount = myRecs.reduce((s, r) => s + (r.parties ?? []).filter((p) => p.pan).length, 0);
 
+  // Expiring leases + review queue both derive from myRecs — no extra query, and we get
+  // the Devanagari party names + raw description + recovered wing/flat for free.
+  const MS_DAY = 86_400_000;
+  const pansByRole = (parties: RParty[] | null, roles: string[]) =>
+    (parties ?? []).filter((p) => roles.includes(p.role) && p.pan).map((p) => p.pan as string);
+  const expRecs = myRecs
+    .filter((r) => r.category === "tenancy" && r.tenancy_end_date &&
+      new Date(r.tenancy_end_date).getTime() >= now && new Date(r.tenancy_end_date).getTime() <= now + 183 * MS_DAY)
+    .sort((a, z) => (a.tenancy_end_date ?? "").localeCompare(z.tenancy_end_date ?? ""));
+  // Probable contact info: pay for the contact+import scan if there's anything to enrich.
+  const candidates = units.length || expRecs.length ? await getContactIndex() : [];
+  // Index candidates by building+wing+flat for O(1) per-unit lookup (sheet rows are flat-tagged).
+  const candByUnit = new Map<string, Candidate[]>();
+  for (const c of candidates) {
+    const k = unitKey(c.building, c.wing, c.unit);
+    if (k) (candByUnit.get(k) ?? candByUnit.set(k, []).get(k)!).push(c);
+  }
+  // A party is matchable only via its romanized name (Devanagari can't match English contacts).
+  const romanParties = (parties: RParty[] | null, roles: string[], role: "tenant" | "owner") =>
+    (parties ?? []).filter((p) => roles.includes(p.role))
+      .map((p) => ({ name: p.english && /[A-Za-z]/.test(p.english) ? p.english : "", role }))
+      .filter((p) => p.name);
+  const expiringLeases: import("./types").ExpiringLease[] = expRecs.map((r) => {
+    const rec = recovery.get(r.record_id)!;
+    const parties = [...romanParties(r.parties, ["lessee", "tenant"], "tenant"), ...romanParties(r.parties, ["lessor", "landlord"], "owner")];
+    return {
+      wing: rec.wing || "—", unit: rec.unit || "—",
+      daysRemaining: Math.max(0, Math.round((new Date(r.tenancy_end_date!).getTime() - now) / MS_DAY)),
+      rent: r.tenancy_monthly_rent ? num(r.tenancy_monthly_rent) : undefined,
+      deposit: r.tenancy_deposit ? num(r.tenancy_deposit) : undefined,
+      tenancyStart: r.tenancy_start_date ?? undefined, tenancyEnd: r.tenancy_end_date!,
+      tenantNames: joinPartyNames(r.parties, ["lessee", "tenant"]) || "—",
+      ownerNames: joinPartyNames(r.parties, ["lessor", "landlord"]) || "—",
+      tenantPans: pansByRole(r.parties, ["lessee", "tenant"]).join(", "),
+      docNumber: r.doc_number ?? "—", sro: r.sro_office ?? undefined,
+      confidence: rec.confidence, descriptionRaw: r.property_description_raw ?? undefined,
+      contactMatches: candidates.length ? findMatches(parties, candidates, rec.wing, rec.unit, b.name) : [],
+    };
+  });
+
+  // Attach probable contacts to EVERY unit: direct flat lookup (the sheet maps flat→owner) first,
+  // then name-matched registration parties. Direct lookup is O(1); name-match only runs when the
+  // unit has romanized party names, so this stays cheap across hundreds of units.
+  if (candidates.length) {
+    for (const u of units) {
+      const flatDigits = u.flat.replace(/\D/g, "");
+      const k = unitKey(b.name, u.tower, flatDigits);
+      const direct = (k ? candByUnit.get(k) ?? [] : []).slice(0, 4).map(toUnitContact);
+      const lastOwn = u.events.filter((e) => e.category === "ownership").slice(-1);
+      const activeLease = u.events.filter((e) => e.category === "tenancy" && e.active).slice(-1);
+      const parties = [
+        ...lastOwn.flatMap((e) => romanParties(e.parties, ["purchaser", "buyer"], "owner")),
+        ...activeLease.flatMap((e) => romanParties(e.parties, ["lessee", "tenant"], "tenant")),
+      ];
+      const named = parties.length ? findMatches(parties, candidates, u.tower, flatDigits, b.name) : [];
+      u.contactMatches = dedupeContacts([direct, named], 4);
+    }
+  }
+
+  // Records whose wing/flat couldn't be cleanly resolved — the human triage board.
+  const confRank: Record<string, number> = { unknown: 0, partial: 1, recovered: 2, clean: 3 };
+  const reviewQueue: UReview[] = myRecs
+    .map((r) => ({ r, rec: recovery.get(r.record_id)! }))
+    .filter(({ rec }) => rec.confidence !== "clean")
+    .sort((a, z) => confRank[a.rec.confidence] - confRank[z.rec.confidence] || (z.r.registration_date ?? "").localeCompare(a.r.registration_date ?? ""))
+    .slice(0, 120)
+    .map(({ r, rec }) => ({
+      recordId: r.record_id, docNumber: r.doc_number ?? "—", docType: r.document_type ?? "—",
+      year: r.registration_year ?? (r.registration_date ? Number(r.registration_date.slice(0, 4)) : 0),
+      category: r.category ?? "other",
+      wingTextRaw: r.wing_text ?? undefined, unitTextRaw: r.unit_text ?? undefined,
+      descriptionRaw: r.property_description_raw ?? undefined,
+      recoveredWing: rec.wing, recoveredUnit: rec.unit, confidence: rec.confidence,
+      parties: (r.parties ?? []).map((p) => ({
+        role: p.role, english: p.english || p.devanagari || "—", devanagari: p.devanagari ?? undefined,
+        pan: p.pan ?? undefined, age: p.age ?? undefined, address: p.address ?? undefined, type: p.type ?? undefined,
+      })),
+    }));
+
   return {
-    buildingName: b.name, towers, unitsPerFloor: overallPerFloor, units,
+    buildingName: b.name, towers, unitsPerFloor: overallPerFloor, units, expiringLeases, reviewQueue,
     stats: {
       expected, mappedUnits: units.filter((u) => u.status !== "unknown").length, withRegistration: withReg.length,
       owned: units.filter((u) => u.status === "owned").length, tenanted: tenanted.length,

@@ -3,7 +3,11 @@
  * Client components import from here; server data getters live in data.ts.
  */
 import type { Tone } from "@/components/ui/primitives";
+import type { Confidence } from "./units-clean";
+import type { ProbableContact } from "./contact-match";
 export type Mode = "prospecting" | "active" | "launch" | "post_launch";
+export type { Confidence, ProbableContact };
+export type { Listing } from "@/lib/site"; // re-export so cockpit components import all types from one barrel
 
 export interface Building {
   slug: string; name: string; location: string; mode: Mode;
@@ -52,14 +56,36 @@ export interface UnitCell {
   currentOwner?: string; ownerSince?: string; lastPrice?: number; ownerContact?: boolean;
   /** Contact UUID when owner is a known canonical contact (no IGR reg yet). */
   ownerContactId?: string;
-  currentTenant?: string; rent?: number; tenancyEnd?: string;
+  currentTenant?: string; rent?: number; deposit?: number; tenancyStart?: string; tenancyEnd?: string;
   registrationCount: number;
   events: UnitTimelineEvent[];
+  /** Probable phone/email for this flat: direct sheet lookup + name-matched parties (may be empty). */
+  contactMatches: ProbableContact[];
 }
 export interface UnitTower { letter: string; label: string; floors: number; unitsPerFloor: number; unitCount: number }
+export interface ExpiringLease {
+  wing: string; unit: string; daysRemaining: number;
+  rent?: number; deposit?: number;
+  tenancyStart?: string; tenancyEnd: string;
+  tenantNames: string; ownerNames: string; tenantPans: string;
+  docNumber: string; sro?: string;
+  /** Devanagari truth + recovery grade so the operator can spot/fix bad placements. */
+  confidence: Confidence; descriptionRaw?: string;
+  /** Name-matched probable phone/email from contacts + imports (conservative, may be empty). */
+  contactMatches: ProbableContact[];
+}
+/** A registration whose wing/flat couldn't be cleanly resolved — needs a human read. */
+export interface UnitReviewItem {
+  recordId: string; docNumber: string; docType: string; year: number; category: string;
+  wingTextRaw?: string; unitTextRaw?: string; descriptionRaw?: string;
+  recoveredWing: string; recoveredUnit: string; confidence: Confidence;
+  parties: RegParty[];
+}
 export interface UnitRegistry {
   buildingName: string; towers: UnitTower[]; unitsPerFloor: number;
   units: UnitCell[];
+  expiringLeases: ExpiringLease[];
+  reviewQueue: UnitReviewItem[];
   stats: {
     expected: number; mappedUnits: number; withRegistration: number; owned: number; tenanted: number;
     registered: number; occupancyPct: number; avgRent: number;

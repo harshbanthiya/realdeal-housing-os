@@ -1,4 +1,3 @@
-"use server";
 import { isDbConfigured, readQuery } from "@/lib/db";
 import { resumeIgrJob } from "@/lib/cockpit/actions";
 
