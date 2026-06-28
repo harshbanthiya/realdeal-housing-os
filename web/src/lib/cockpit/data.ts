@@ -481,7 +481,7 @@ function towerLetter(wing: string | null): string {
   const m = String(wing ?? "").toUpperCase().match(/([A-Z])\s*$/);
   return m ? m[1] : "";
 }
-const MAX_FLOOR = 40; // Kalpataru Radiance ~31 habitable / 38 sanctioned; cap guards bad parses
+const MAX_FLOOR = 55; // IH goes to 51F, Kalpataru ~38 sanctioned; cap guards bad parses
 // Flat-number scheme (per brochure / IGR variants): compact parser rows use
 // floor+stack for 1-31 (`291` -> floor 29, unit 1), while older raw imports can
 // use zero-padded unit suffixes (`2706` -> floor 27, unit 6; `803` -> floor 8, unit 3).

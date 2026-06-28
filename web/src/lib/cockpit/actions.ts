@@ -358,3 +358,37 @@ export async function resumeIgrJob(input: { jobId: string }): Promise<ActionResu
   const ok = code === 0 && out.startsWith("resumed:");
   return { ok, applied: ok, dryRun: false, message: ok ? `Job ${input.jobId.slice(0, 8)}… queued` : out.split("\n")[0], fields: {}, raw: out };
 }
+
+const WING_RE = /^[A-Za-z]$/;
+const UNIT_RE = /^\d{2,6}$/;
+
+/** Assign a registration record to its canonical building unit. */
+export async function placeRegistrationRecord(input: {
+  recordId: string;
+  wing: string;
+  unitNumber: string;
+  apply?: boolean;
+}): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+
+  if (!UUID_RE.test(input.recordId)) return { ...base, message: "Invalid record ID." };
+  if (!WING_RE.test(input.wing)) return { ...base, message: "Wing must be a single letter." };
+  if (!UNIT_RE.test(input.unitNumber)) return { ...base, message: "Unit number must be 2–6 digits." };
+
+  const argv = ["--record-id", input.recordId, "--wing", input.wing.toUpperCase(), "--unit-number", input.unitNumber];
+  if (apply) argv.push("--apply");
+
+  const { code, out } = await runScript("place_registration_record.py", argv);
+  const ok = code === 0;
+  return {
+    ok,
+    applied: ok && apply,
+    dryRun: !apply,
+    message: ok
+      ? apply ? `Placed: record → ${input.wing.toUpperCase()}-${input.unitNumber}` : `Dry run: would place → ${input.wing.toUpperCase()}-${input.unitNumber}`
+      : out.split("\n")[0] || "Script failed.",
+    fields: parseLabeledOutput(out),
+    raw: out,
+  };
+}

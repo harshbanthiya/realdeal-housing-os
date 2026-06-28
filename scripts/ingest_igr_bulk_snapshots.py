@@ -119,14 +119,56 @@ _KAL_EN_WING_MAP = [
 ]
 
 # ── Imperial Heights constants ─────────────────────────────────────────────────
+# Goregaon West complex; SRO = Borivali; 4 wings A/B/C/D (RERA P51800003270 = C+D only)
 _IH_BUILDING_SUB = "(SELECT id FROM buildings WHERE id='0e72db71-8b93-4ecd-879c-17d8d8f2b206' LIMIT 1)"
-_IH_WINGS = {"Imperial Heights Wing C", "Imperial Heights Wing D"}
-_IH_WING_TOWER = {"Imperial Heights Wing C": "C", "Imperial Heights Wing D": "D"}
-_IH_RE = re.compile(r"imperial|इम्पीरियल|heights|हाईट्स|हाइट्स", re.I)
-_IH_EN_FLAT_WING = re.compile(r"(?:Apartment|Flat)\s*(?:/Flat)?\s*No\s*:?\s*([CDcd])[-/](\d+)", re.I)
+_IH_WINGS = {"Wing A", "Wing B", "Wing C", "Wing D",
+             "Imperial Heights Wing C", "Imperial Heights Wing D"}
+_IH_WING_TOWER = {
+    "Wing A": "A", "Wing B": "B", "Wing C": "C", "Wing D": "D",
+    "Imperial Heights Wing C": "C", "Imperial Heights Wing D": "D",
+}
+_IH_RE = re.compile(r"imperial|इम्पीरियल|इंपीरियल|इम्पेरियल|इम्पेरिअल|heights|हाइट्स|हाईट्स", re.I)
+
+# Marathi wing detection: "विंग डी", "ए - विंग", "टॉवर सी", flat prefix "डी-1301"
+# Use alternation (ए|बी|सी|डी) not character class [एबीसीडी] — Devanagari letters
+# like "बी" are two codepoints (ब+ी) so a character class splits them incorrectly.
+_IH_MARATHI_WING_RE = re.compile(
+    r"विंग\s*(ए|बी|सी|डी)"
+    r"|(ए|बी|सी|डी)\s*[-–\s]*विंग"
+    r"|(?:टॉवर|टोवर|टावर)\s*[-–\s]*(ए|बी|सी|डी)"  # टावर = alt spelling
+    r"|(ए|बी|सी|डी)\s*[-–\s]*(?:टॉवर|टोवर|टावर)"  # reversed: "डी-टॉवर"
+    r"|सदनिका\s*(?:नं\s*:?\s*)?(ए|बी|सी|डी)[-/]",
+    re.I
+)
+_IH_MARATHI_LETTER = {"ए": "A", "बी": "B", "सी": "C", "डी": "D"}
+
+# English wing detection from results-page property desc (not just Index II)
+_IH_EN_WING_DETECT = re.compile(
+    r"(?:Tower|Wing)\s*[-–\s]*([ABCDabcd])(?!\w)"     # "Tower D", "Wing C", "Tower DAddress:"
+    r"|Apartment/Flat\s*No\s*:?\s*([ABCDabcd])\s*[-/ ]" # "Flat No:D-2201"
+    r"|(?<!\w)([ABCDabcd])\s*[-–\s]*Wing\b",           # "C -Wing", "A Wing", "B-Wing"
+    re.I
+)
+
+def _ih_detect_wing(text: str) -> str | None:
+    m = _IH_MARATHI_WING_RE.search(text)
+    if m:
+        g = next((g for g in m.groups() if g), None)
+        return "Wing " + _IH_MARATHI_LETTER.get(g, g.upper()) if g else None
+    m = _IH_EN_WING_DETECT.search(text)
+    if m:
+        g = next((g for g in m.groups() if g), None)
+        return "Wing " + g.upper() if g else None
+    return None
+
+_IH_EN_FLAT_WING = re.compile(
+    r"(?:Apartment|Flat)\s*(?:/Flat)?\s*No\s*:?\s*([ABCDabcd])\s*[-/]\s*(\d+)", re.I
+)
 _IH_EN_WING_MAP = [
-    ("Imperial Heights Wing C", re.compile(r"wing[- ]?c\b|\bc[-/]\d{3,}", re.I)),
-    ("Imperial Heights Wing D", re.compile(r"wing[- ]?d\b|\bd[-/]\d{3,}", re.I)),
+    ("Wing A", re.compile(r"(?:wing|tower)[- ]?a\b|[Aa]\s*[-/]\s*\d{3,}", re.I)),
+    ("Wing B", re.compile(r"(?:wing|tower)[- ]?b\b|[Bb]\s*[-/]\s*\d{3,}", re.I)),
+    ("Wing C", re.compile(r"(?:wing|tower)[- ]?c\b|[Cc]\s*[-/]\s*\d{3,}", re.I)),
+    ("Wing D", re.compile(r"(?:wing|tower)[- ]?d\b|[Dd]\s*[-/]\s*\d{3,}", re.I)),
 ]
 
 # Active building config — set in main() based on --building flag
@@ -199,6 +241,11 @@ def parse_results_folder(folder: Path) -> dict[str, dict]:
             bldg_re = _CFG.get('bldg_re', _KAL_RE)
             if not wing and not bldg_re.search(propdesc):
                 continue  # skip rows for other buildings
+            # Building-specific wing detection from results-page desc (e.g. IH Marathi)
+            if not wing:
+                extra_fn = _CFG.get('extra_wing_detect')
+                if extra_fn:
+                    wing = extra_fn(propdesc) or extra_fn(dname or "")
 
             etype, cat = results_classify(dname)
             # Run both parsers; take any non-null value from either.
@@ -305,7 +352,9 @@ def parse_index2_txt_en(path: Path, text: str) -> dict | None:
 
     area = clean_frag(f.get(5, ""))[:80] or None
 
-    wing = _en_detect_wing(prop) or detect_wing(prop) or detect_wing(text)
+    extra_fn = _CFG.get('extra_wing_detect')
+    wing = (_en_detect_wing(prop) or detect_wing(prop) or detect_wing(text)
+            or (extra_fn and (extra_fn(prop) or extra_fn(text))))
 
     stamp_m  = re.search(r"Rs\.?\s*([\d,]+)\s*/-", f.get(12, ""))
     regfee_m = re.search(r"Rs\.?\s*([\d,]+)\s*/-", f.get(13, ""))
@@ -816,6 +865,7 @@ def main() -> int:
             'bldg_re': _IH_RE,
             'en_flat_wing': _IH_EN_FLAT_WING,
             'en_wing_map': _IH_EN_WING_MAP,
+            'extra_wing_detect': _ih_detect_wing,
             'folder_label': 'imperial_heights',
         }
     else:

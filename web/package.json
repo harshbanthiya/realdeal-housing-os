@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "share": "next build && next start",
+    "share": "../share-cockpit.sh",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",

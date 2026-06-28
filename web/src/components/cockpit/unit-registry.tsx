@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Pill, Mono, type Tone } from "@/components/ui/primitives";
-import { enqueueContact } from "@/lib/cockpit/actions";
+import { enqueueContact, placeRegistrationRecord } from "@/lib/cockpit/actions";
 import { cleanName } from "@/lib/cockpit/units-clean";
 import type {
   UnitRegistry as UnitRegistryData, UnitCell, UnitTimelineEvent, RegParty,
@@ -93,7 +93,7 @@ export function UnitRegistry({ data }: { data: UnitRegistryData }) {
       </div>
 
       {view === "review" ? (
-        <ReviewBoard items={data.reviewQueue} onJump={jumpToUnit} />
+        <ReviewBoard items={data.reviewQueue} onJump={jumpToUnit} towerLetters={towers.map((t) => t.letter).filter(Boolean)} />
       ) : (
         <>
           {/* tower switcher */}
@@ -384,77 +384,203 @@ function ContactMatches({ matches }: { matches: ProbableContact[] }) {
   );
 }
 
-/** Kanban-style triage: registrations whose wing/flat couldn't be cleanly resolved. */
-function ReviewBoard({ items, onJump }: { items: UnitReviewItem[]; onJump: (w: string, u: string) => boolean }) {
-  const cols: { key: Confidence; title: string; hint: string }[] = [
-    { key: "unknown", title: "Unreadable", hint: "No wing or flat — read the description" },
-    { key: "partial", title: "Wing or flat missing", hint: "One half recovered, confirm the other" },
-    { key: "recovered", title: "Auto-placed — verify", hint: "Read description, confirm placement" },
-  ];
+/**
+ * 2-panel review: list on left (click to select), full detail + correction form on right.
+ * The right panel shows the complete Marathi description, all parties, and lets you
+ * set the correct wing + flat and save it to the DB.
+ */
+function ReviewBoard({ items, onJump, towerLetters }: { items: UnitReviewItem[]; onJump: (w: string, u: string) => boolean; towerLetters: string[] }) {
+  const [selectedId, setSelectedId] = useState<string | null>(items[0]?.recordId ?? null);
+  const [filter, setFilter] = useState<Confidence | "all">("all");
+
+  const visible = filter === "all" ? items : items.filter((it) => it.confidence === filter);
+  const selected = visible.find((it) => it.recordId === selectedId) ?? visible[0] ?? null;
+
+  const counts: Record<Confidence, number> = { unknown: 0, partial: 0, recovered: 0, clean: 0 };
+  for (const it of items) counts[it.confidence] = (counts[it.confidence] ?? 0) + 1;
+
   return (
-    <div>
-      <p className="mb-3 text-[12px] text-ink/55">
-        {items.length} registration{items.length === 1 ? "" : "s"} couldn&apos;t be cleanly mapped to a wing + flat. Read the register
-        description (Devanagari or English) on each card and confirm where it belongs. Editing &amp; saving back is the next step —
-        for now this surfaces every ambiguous record with its best-guess placement.
-      </p>
-      <div className="grid gap-4 md:grid-cols-3">
-        {cols.map((c) => {
-          const colItems = items.filter((it) => it.confidence === c.key);
+    <div className="space-y-3">
+      {/* filter tabs */}
+      <div className="flex flex-wrap items-center gap-2">
+        {(["all", "unknown", "partial", "recovered"] as const).map((f) => {
+          const count = f === "all" ? items.length : counts[f as Confidence];
+          const tone: Tone = f === "unknown" ? "blocked" : f === "partial" ? "review" : f === "recovered" ? "neutral" : "neutral";
+          const active = filter === f;
           return (
-            <div key={c.key} className="rounded-xl border border-mist bg-mist/20 p-2">
-              <div className="flex items-center justify-between px-1.5 py-1">
-                <span className="text-[12px] font-semibold text-ink/75">{c.title}</span>
-                <Pill tone={CONF[c.key].tone}>{colItems.length}</Pill>
-              </div>
-              <p className="px-1.5 pb-2 text-[11px] text-ink/40">{c.hint}</p>
-              <div className="max-h-[640px] space-y-2 overflow-y-auto">
-                {colItems.length === 0
-                  ? <p className="px-1.5 py-3 text-[12px] text-ink/35">Nothing here.</p>
-                  : colItems.map((it) => <ReviewCard key={it.recordId} item={it} onJump={onJump} />)}
-              </div>
-            </div>
+            <button key={f} onClick={() => { setFilter(f); setSelectedId(null); }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-[12px] font-medium transition ${
+                active ? "border-teal bg-teal text-white" : "border-mist-deep text-ink/60 hover:text-teal"}`}>
+              {f === "all" ? "All" : f === "unknown" ? "Unreadable" : f === "partial" ? "Wing/flat missing" : "Auto-placed"}
+              <span className={`rounded-full px-1.5 text-[11px] tabular-nums ${active ? "bg-white/25" : "bg-mist text-ink/50"}`}>{count}</span>
+            </button>
           );
         })}
+        <span className="ml-auto text-[11px] text-ink/40">Click a row to read & assign</span>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
+        {/* LEFT: scrollable list */}
+        <div className="overflow-hidden rounded-xl border border-mist">
+          <div className="max-h-[700px] overflow-y-auto divide-y divide-mist">
+            {visible.length === 0 && <p className="p-4 text-[12px] text-ink/40">Nothing to review.</p>}
+            {visible.map((it) => {
+              const isSelected = it.recordId === (selected?.recordId ?? null);
+              const guess = [it.recoveredWing && `Wing ${it.recoveredWing}`, it.recoveredUnit && `Flat ${it.recoveredUnit}`].filter(Boolean).join(" · ");
+              return (
+                <button key={it.recordId} onClick={() => setSelectedId(it.recordId)}
+                  className={`w-full text-left px-3 py-2.5 transition ${isSelected ? "bg-teal/10 border-l-2 border-teal" : "hover:bg-mist/50 border-l-2 border-transparent"}`}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-[12.5px] font-semibold text-ink/85 truncate">{it.year || "—"} · {it.docType.replace(/_/g, " ")}</span>
+                    <Pill tone={CONF[it.confidence].tone}>{it.confidence}</Pill>
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-ink/50 truncate">
+                    {guess || <span className="text-red-500">no placement guess</span>}
+                  </div>
+                  <div className="mt-0.5 text-[10.5px] text-ink/35 truncate">
+                    {it.wingTextRaw || it.unitTextRaw
+                      ? [it.wingTextRaw, it.unitTextRaw].filter(Boolean).join(" / ")
+                      : it.descriptionRaw?.slice(0, 60) ?? "—"}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* RIGHT: full detail + assign form */}
+        {selected
+          ? <ReviewDetail item={selected} onJump={onJump} towerLetters={towerLetters} onSaved={() => setSelectedId(null)} />
+          : <Card className="p-6 text-sm text-ink/40">Select a record on the left to read the full details and assign it to a unit.</Card>}
       </div>
     </div>
   );
 }
 
-function ReviewCard({ item, onJump }: { item: UnitReviewItem; onJump: (w: string, u: string) => boolean }) {
-  const guess = [item.recoveredWing && `Wing ${item.recoveredWing}`, item.recoveredUnit && `Flat ${item.recoveredUnit}`].filter(Boolean).join(" · ");
+function ReviewDetail({ item, onJump, towerLetters, onSaved }: {
+  item: UnitReviewItem;
+  onJump: (w: string, u: string) => boolean;
+  towerLetters: string[];
+  onSaved: () => void;
+}) {
+  const [wing, setWing] = useState(item.recoveredWing || (towerLetters[0] ?? ""));
+  const [flat, setFlat] = useState(item.recoveredUnit || "");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pending, start] = useTransition();
+  const router = useRouter();
+
+  // Reset form when item changes
+  const itemId = item.recordId;
+  useEffect(() => {
+    setWing(item.recoveredWing || (towerLetters[0] ?? ""));
+    setFlat(item.recoveredUnit || "");
+    setMsg(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemId]);
+
   const canJump = Boolean(item.recoveredWing && item.recoveredUnit);
+
+  function handleSave(apply: boolean) {
+    setMsg(null);
+    start(async () => {
+      const res = await placeRegistrationRecord({ recordId: item.recordId, wing: wing.trim(), unitNumber: flat.trim(), apply });
+      setMsg({ ok: res.ok, text: res.message });
+      if (res.applied) { onSaved(); router.refresh(); }
+    });
+  }
+
   return (
-    <div className="rounded-lg border border-mist bg-white p-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[12.5px] font-semibold text-ink/85">{item.year || "—"} · {item.docType.replace(/_/g, " ")}</span>
-        <Pill tone={CAT_TONE[item.category] ?? "neutral"}>{item.category}</Pill>
-      </div>
-      <div className="mt-1 text-[11px] text-ink/45">
-        best guess: {guess ? (
-          canJump ? <button onClick={() => onJump(item.recoveredWing, item.recoveredUnit)} className="font-medium text-teal hover:underline">{guess}</button>
-                  : <span className="font-medium text-ink/70">{guess}</span>
-        ) : <span className="text-red-600">none</span>}
-      </div>
-
-      {/* raw signals the parser saw — the human reads these to place it */}
-      <div className="mt-2 space-y-1 text-[11px]">
-        {(item.wingTextRaw || item.unitTextRaw) && (
-          <div className="text-ink/50"><span className="text-ink/35">register text:</span> <Mono className="text-ink/70">{[item.wingTextRaw, item.unitTextRaw].filter(Boolean).join(" / ")}</Mono></div>
-        )}
-        {item.descriptionRaw && (
-          <p className="rounded-md bg-mist/40 p-2 leading-relaxed text-ink/70">{item.descriptionRaw}</p>
-        )}
-      </div>
-
-      {item.parties.length > 0 && (
-        <div className="mt-2 space-y-1.5">
-          {item.parties.slice(0, 4).map((p, i) => <PartyRow key={i} p={p} />)}
-          {item.parties.length > 4 && <div className="text-[11px] text-ink/35">+{item.parties.length - 4} more</div>}
+    <Card className="p-0 overflow-hidden">
+      {/* header */}
+      <div className="flex items-start justify-between gap-3 border-b border-mist px-5 py-4">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[15px] font-semibold text-ink/90">{item.year || "—"} · {item.docType.replace(/_/g, " ")}</span>
+            <Pill tone={CAT_TONE[item.category] ?? "neutral"}>{item.category}</Pill>
+            <Pill tone={CONF[item.confidence].tone}>{CONF[item.confidence].label}</Pill>
+          </div>
+          <Mono className="mt-1 text-[11px] text-ink/35">doc {item.docNumber}</Mono>
         </div>
-      )}
-      <Mono className="mt-2 block text-[10.5px] text-ink/30">doc {item.docNumber}</Mono>
-    </div>
+        {canJump && (
+          <button onClick={() => onJump(item.recoveredWing, item.recoveredUnit)}
+            className="shrink-0 rounded-lg border border-teal/30 px-3 py-1.5 text-[12px] font-medium text-teal hover:bg-teal/10">
+            Jump to unit ↗
+          </button>
+        )}
+      </div>
+
+      <div className="max-h-[640px] overflow-y-auto space-y-5 p-5">
+        {/* register text clues */}
+        {(item.wingTextRaw || item.unitTextRaw) && (
+          <div>
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-ink/40">Register text (parsed wing / unit)</div>
+            <Mono className="text-[13px] text-ink/80">{[item.wingTextRaw, item.unitTextRaw].filter(Boolean).join("  ·  ")}</Mono>
+          </div>
+        )}
+
+        {/* full description */}
+        {item.descriptionRaw && (
+          <div>
+            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">Property description (Marathi — read to find wing + flat)</div>
+            <p lang="mr" className="rounded-lg border border-mist bg-mist/30 p-4 text-[14px] leading-relaxed text-ink/85 whitespace-pre-wrap">
+              {item.descriptionRaw}
+            </p>
+          </div>
+        )}
+
+        {/* parties */}
+        {item.parties.length > 0 && (
+          <div>
+            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">Parties ({item.parties.length})</div>
+            <div className="space-y-2">
+              {item.parties.map((p, i) => <PartyRow key={i} p={p} />)}
+            </div>
+          </div>
+        )}
+
+        {/* assign form */}
+        <div className="rounded-xl border-2 border-teal/30 bg-teal/5 p-4 space-y-3">
+          <div className="text-[13px] font-semibold text-teal">Assign to unit</div>
+          <p className="text-[12px] text-ink/60">
+            Read the description above. Set the correct wing + flat, then <strong>Dry run</strong> to verify the unit exists, then <strong>Save</strong> to write.
+          </p>
+          <div className="flex gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-medium uppercase tracking-wide text-ink/50">Wing</label>
+              {towerLetters.length > 0 ? (
+                <select value={wing} onChange={(e) => setWing(e.target.value)}
+                  className="rounded-lg border border-mist bg-white px-3 py-2 text-[14px] font-medium text-ink/85 w-20 focus:border-teal focus:outline-none">
+                  {towerLetters.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+              ) : (
+                <input value={wing} onChange={(e) => setWing(e.target.value.toUpperCase().slice(0, 1))}
+                  maxLength={1} placeholder="A"
+                  className="rounded-lg border border-mist px-3 py-2 text-[14px] font-medium text-ink/85 w-20 focus:border-teal focus:outline-none" />
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5 flex-1">
+              <label className="text-[11px] font-medium uppercase tracking-wide text-ink/50">Flat number</label>
+              <input value={flat} onChange={(e) => setFlat(e.target.value.replace(/\D/g, ""))}
+                placeholder="e.g. 291" maxLength={6}
+                className="rounded-lg border border-mist px-3 py-2 text-[14px] font-medium text-ink/85 focus:border-teal focus:outline-none" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 pt-1">
+            <button onClick={() => handleSave(false)} disabled={pending || !wing || !flat}
+              className="rounded-lg border border-teal/40 px-4 py-2 text-[13px] font-medium text-teal hover:bg-teal/10 disabled:opacity-40 transition">
+              {pending ? "Checking…" : "Dry run"}
+            </button>
+            <button onClick={() => handleSave(true)} disabled={pending || !wing || !flat}
+              className="rounded-lg bg-teal px-5 py-2 text-[13px] font-semibold text-white hover:bg-teal/90 disabled:opacity-40 transition">
+              {pending ? "Saving…" : "Save to DB"}
+            </button>
+            {msg && (
+              <span className={`text-[12px] font-medium ${msg.ok ? "text-emerald-600" : "text-red-600"}`}>{msg.text}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
 

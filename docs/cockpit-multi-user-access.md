@@ -14,7 +14,7 @@ one Postgres, many browser clients = everyone sees the same data.
   Your Mac (server)                         Director's laptop/phone
   ┌───────────────────────────┐             ┌──────────────────┐
   │ Docker Postgres (truth)    │             │  Browser         │
-  │ Next.js cockpit :3000  ◄───┼──Tailscale──┼─►  /cockpit      │
+  │ Next.js prod cockpit    ◄───┼──Tailscale──┼─►  /cockpit      │
   └───────────────────────────┘             └──────────────────┘
 ```
 
@@ -34,30 +34,31 @@ one Postgres, many browser clients = everyone sees the same data.
 
 ```bash
 ./start.sh              # Postgres (if not already up)
-./scripts/serve_cockpit.sh
+./share-cockpit.sh      # build prod, start Next.js, publish through Tailscale
 ```
 
-`serve_cockpit.sh` builds the app, prints the LAN / Bonjour / Tailscale URLs, and serves
-on `0.0.0.0:3000` with `caffeinate` so the Mac won't sleep and drop the director.
+`share-cockpit.sh` builds the app, runs `next start` in the background with `caffeinate`
+so the Mac won't sleep, publishes that production server through Tailscale Serve, and
+prints the HTTPS URL plus IP fallback for the other Mac. You can also run `npm run share`
+from `web/`; it calls the same script.
 
-The director opens the **Tailscale URL** (works on any network) or, on the same WiFi,
-`http://<your-mac>.local:3000/cockpit`. First visit → she enters the shared password
-once (30-day session cookie). "Sign out" is in the sidebar.
+Use the **Tailscale HTTPS URL** printed by `share-cockpit.sh` for the other Mac. This avoids
+the dev-server websocket/HMR path and exposes the production build instead. First visit →
+she enters the shared password once (30-day session cookie). "Sign out" is in the sidebar.
 
 ## Security notes
 
 - The cockpit shows **real contact PII**. The password gate (Next.js middleware) protects
   every `/cockpit` route; Tailscale keeps it off the public internet and limits access to
-  your tailnet. Don't expose port 3000 to the open internet or a public/guest WiFi.
-- If `COCKPIT_AUTH_TOKEN` is unset, the gate is **open** — `serve_cockpit.sh` warns before
+  your tailnet. Don't expose the cockpit port to the open internet or a public/guest WiFi.
+- If `COCKPIT_AUTH_TOKEN` is unset, the gate is **open** — `share-cockpit.sh` warns before
   starting. Always keep it set when exposing the app.
 - All writes still go through the guarded Python scripts (dry-run by default); the DB layer
   is read-only. Two people using it at once is safe — Postgres handles concurrency and the
   in-transaction guards (daily cap, `send_enabled=false`) hold under races.
 
-## Same-WiFi-only fallback (no Tailscale)
+## Direct-IP fallback
 
-Run `serve_cockpit.sh`, allow incoming connections for Node in macOS Firewall, and have the
-director use the printed **LAN** or **Bonjour** URL. A DHCP reservation in your router keeps
-the LAN IP stable. This won't work when she's on a different network — that's what Tailscale
-solves.
+If the MagicDNS name does not resolve on the other Mac, use the printed **IP fallback**
+URL. It uses your Tailscale `100.x.x.x` address plus the production app port, so the other
+Mac still needs to be connected to the same tailnet.
