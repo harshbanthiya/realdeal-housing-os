@@ -115,31 +115,77 @@ def _role(page, kind: str, name: str):
     return page.get_by_role(kind, name=name)
 
 
-def _pick_sro(page, sro_text: str) -> str | None:
-    """Select the SRO dropdown option whose text best matches sro_text.
-
-    IGR option texts are in Marathi/English. We extract the trailing number
-    from the DB value ("Joint S.R. Mumbai 18" → "18", "सह दु.नि.मुंबई 16" → "16")
-    and find the option whose text contains that number.
-    Returns the option value used, or None if not matched.
-    """
-    m = re.search(r'(\d+)\s*$', sro_text.strip())
-    if not m:
-        return None
-    num = m.group(1)
+def _load_sro_options(page) -> list[dict]:
+    """Return all non-blank SRO dropdown options as [{v, t}]."""
     try:
-        options = page.evaluate(f"""
+        return page.evaluate(f"""
             () => Array.from(document.querySelector('{_SEL_SRO}')?.options || [])
                 .map(o => ({{v: o.value, t: o.text.trim()}}))
+                .filter(o => o.v && o.v !== '0')
         """)
-        # Prefer an option that contains the number as a word (not a substring of a larger number)
+    except Exception:
+        return []
+
+
+def _pick_sro(page, sro_text: str) -> str | None:
+    """Select the SRO dropdown option that best matches sro_text.
+
+    Strategy:
+    1. Extract trailing number ("Joint S.R. Mumbai 18" → "18").
+    2. Also extract locality word ("Mumbai", "Borivali", etc.).
+    3. Try to match both in option text (locality + number).
+    4. Fall back to number-only match if needed.
+    5. If still no match, print numbered list and let operator type index.
+    Returns the matched option text, or None on give-up.
+    """
+    m_num = re.search(r'(\d+)\s*$', sro_text.strip())
+    if not m_num:
+        return None
+    num = m_num.group(1)
+    # Extract locality word — first capitalised word that isn't Joint/Sub/S/R
+    m_loc = re.search(r'\b(Mumbai|Borivali|Thane|Pune|Nashik|Aurangabad)\b', sro_text, re.I)
+    locality = m_loc.group(1).lower() if m_loc else ""
+
+    options = _load_sro_options(page)
+    if not options:
+        print(f"  [sro] dropdown empty or not loaded yet")
+        return None
+
+    num_re = re.compile(r'(?<!\d)' + re.escape(num) + r'(?!\d)')
+
+    # Pass 1: locality + number
+    if locality:
         for opt in options:
-            if re.search(r'(?<!\d)' + re.escape(num) + r'(?!\d)', opt['t']):
+            tl = opt['t'].lower()
+            if locality in tl and num_re.search(opt['t']):
                 page.locator(_SEL_SRO).select_option(value=opt['v'])
                 return opt['t']
-    except Exception as e:
-        print(f"  [sro] error: {e}")
-    return None
+
+    # Pass 2: number only (skip ambiguous single-digit matches like "8" matching "18")
+    candidates = [o for o in options if num_re.search(o['t'])]
+    if len(candidates) == 1:
+        page.locator(_SEL_SRO).select_option(value=candidates[0]['v'])
+        return candidates[0]['t']
+
+    # Pass 3: print numbered list, let operator type index
+    print(f"\n  [sro] could not auto-match {sro_text!r}. Available options:")
+    for i, opt in enumerate(options):
+        print(f"    {i+1:3}.  {opt['t']}")
+    while True:
+        try:
+            raw = input(f"  → Type option number (1-{len(options)}) or s to skip: ").strip()
+        except EOFError:
+            return None
+        if raw.lower() == 's':
+            return None
+        try:
+            idx = int(raw) - 1
+            if 0 <= idx < len(options):
+                page.locator(_SEL_SRO).select_option(value=options[idx]['v'])
+                return options[idx]['t']
+        except ValueError:
+            pass
+        print("  Invalid — enter a number from the list.")
 
 
 def navigate_to_doc_tab(page) -> None:
