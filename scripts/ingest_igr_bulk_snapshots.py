@@ -143,10 +143,13 @@ _IH_MARATHI_WING_RE = re.compile(
 _IH_MARATHI_LETTER = {"ए": "A", "बी": "B", "सी": "C", "डी": "D"}
 
 # English wing detection from results-page property desc (not just Index II)
+# No lookahead on Tower/Wing alternative: "Tower DAddress:" (no space) must match Wing D.
+# re.I makes any lookahead character class case-insensitive, so (?!\w) and (?![a-z]) both
+# block uppercase "A" from "Address:". The Tower/Wing keyword is tight enough without it.
 _IH_EN_WING_DETECT = re.compile(
-    r"(?:Tower|Wing)\s*[-–\s]*([ABCDabcd])(?!\w)"     # "Tower D", "Wing C", "Tower DAddress:"
+    r"(?:Tower|Wing)\s*[-–\s]*([ABCDabcd])"             # "Tower D", "Wing C", "Tower DAddress:"
     r"|Apartment/Flat\s*No\s*:?\s*([ABCDabcd])\s*[-/ ]" # "Flat No:D-2201"
-    r"|(?<!\w)([ABCDabcd])\s*[-–\s]*Wing\b",           # "C -Wing", "A Wing", "B-Wing"
+    r"|(?<!\w)([ABCDabcd])\s*[-–\s]*Wing\b",            # "C -Wing", "A Wing", "B-Wing"
     re.I
 )
 
@@ -165,10 +168,10 @@ _IH_EN_FLAT_WING = re.compile(
     r"(?:Apartment|Flat)\s*(?:/Flat)?\s*No\s*:?\s*([ABCDabcd])\s*[-/]\s*(\d+)", re.I
 )
 _IH_EN_WING_MAP = [
-    ("Wing A", re.compile(r"(?:wing|tower)[- ]?a\b|[Aa]\s*[-/]\s*\d{3,}", re.I)),
-    ("Wing B", re.compile(r"(?:wing|tower)[- ]?b\b|[Bb]\s*[-/]\s*\d{3,}", re.I)),
-    ("Wing C", re.compile(r"(?:wing|tower)[- ]?c\b|[Cc]\s*[-/]\s*\d{3,}", re.I)),
-    ("Wing D", re.compile(r"(?:wing|tower)[- ]?d\b|[Dd]\s*[-/]\s*\d{3,}", re.I)),
+    ("Wing A", re.compile(r"(?:wing|tower)\s*[- ]?\s*a(?![a-zA-Z])|[Aa]\s*[-/]\s*\d{3,}", re.I)),
+    ("Wing B", re.compile(r"(?:wing|tower)\s*[- ]?\s*b(?![a-zA-Z])|[Bb]\s*[-/]\s*\d{3,}", re.I)),
+    ("Wing C", re.compile(r"(?:wing|tower)\s*[- ]?\s*c(?![a-zA-Z])|[Cc]\s*[-/]\s*\d{3,}", re.I)),
+    ("Wing D", re.compile(r"(?:wing|tower)\s*[- ]?\s*d(?![a-zA-Z])|[Dd]\s*[-/]\s*\d{3,}", re.I)),
 ]
 
 # Active building config — set in main() based on --building flag
