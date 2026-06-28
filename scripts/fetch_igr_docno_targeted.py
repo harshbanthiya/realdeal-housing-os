@@ -120,16 +120,19 @@ def detect_captcha(page) -> bool:
 
 
 def _click_search(page) -> None:
-    """Click the Search button — try multiple selectors with generous timeout."""
-    for loc in [
-        page.get_by_role("button", name="शोध / Search"),
-        page.locator("input[value*='Search']"),
-        page.locator("input[value*='शोध']"),
+    """Click the Search button — count() first so we don't burn 8s per miss."""
+    candidates = [
+        page.locator("input[type='submit'][value*='शोध']"),
+        page.locator("input[type='submit'][value*='Search']"),
+        page.locator("input[type='submit']"),
         page.locator("#btnSearch"),
-    ]:
+        page.get_by_role("button", name="शोध / Search"),
+    ]
+    for loc in candidates:
         try:
-            loc.click(timeout=8000)
-            return
+            if loc.count() > 0:
+                loc.first.click(timeout=5000)
+                return
         except Exception:
             pass
     raise RuntimeError("Search button not found with any selector")
@@ -428,12 +431,6 @@ def main() -> int:
             print(f"│  Flat {r['wing'] or '?'} {r['unit']}  (registered {r['date']})")
             print(f"└────────────────────────────────────────────────────────────────")
 
-            # Re-acquire page after any popup closed it
-            page = next((pg for pg in context.pages if not pg.is_closed()), None)
-            if page is None:
-                print("  [ERROR] All browser pages closed — stopping.")
-                break
-
             fill_form(page, r)
 
             # CAPTCHA — human only
@@ -465,6 +462,14 @@ def main() -> int:
             prefix = f"capture_{abs_num:03d}_doc{r['doc']}_{r['year']}"
             save_page(context, page, out_dir, prefix, written, captures)
             print()
+
+            # Reset: navigate back to fresh form for next doc
+            page = next((pg for pg in context.pages if not pg.is_closed()), None)
+            if page is None:
+                break
+            page.goto(args.url, timeout=60000, wait_until='domcontentloaded')
+            page.wait_for_timeout(1200)
+            navigate_to_doc_tab(page)
 
         context.close()
         browser.close()
