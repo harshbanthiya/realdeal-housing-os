@@ -31,6 +31,18 @@ from _db import run_psql
 DEFAULT_URL = "https://freesearchigrservice.maharashtra.gov.in/"
 INDEX2_BTN_SEL = "input[value='IndexII']"
 
+# Exact selectors from playwright codegen recording (2026-06-28)
+IGR_DISTRICT = "31"   # Mumbai Suburban
+_SEL_CLOSE_POPUP  = "link:Close"                        # landing popup
+_SEL_DOC_TAB      = "link:दस्त निहाय/Document Number"  # tab
+_SEL_EREG_RADIO   = "radio:eRegistration"               # registration type
+_SEL_DISTRICT     = "#ddldistrictfordoc"
+_SEL_SRO          = "#ddlSROName"
+_SEL_YEAR         = "#ddlYearForDoc"
+_SEL_DOCNO        = "#txtDocumentNo"
+_SEL_CAPTCHA      = "textbox:Enter captcha as shown"    # human fills this
+_SEL_SEARCH       = "button:शोध / Search"
+
 _BUILDING_FILTER = {
     "kalpataru": "b.name ILIKE '%kalpataru%radiance%'",
     "imperial_heights": "b.id = '0e72db71-8b93-4ecd-879c-17d8d8f2b206'",
@@ -98,23 +110,100 @@ def safe_label(s: str) -> str:
     return re.sub(r'[^a-zA-Z0-9_-]', '_', s)[:40]
 
 
-def detect_captcha(page) -> bool:
+def _role(page, kind: str, name: str):
+    """Shorthand for get_by_role with a human-readable selector string."""
+    return page.get_by_role(kind, name=name)
+
+
+def _pick_sro(page, sro_text: str) -> str | None:
+    """Select the SRO dropdown option whose text best matches sro_text.
+
+    IGR option texts are in Marathi/English. We extract the trailing number
+    from the DB value ("Joint S.R. Mumbai 18" → "18", "सह दु.नि.मुंबई 16" → "16")
+    and find the option whose text contains that number.
+    Returns the option value used, or None if not matched.
+    """
+    m = re.search(r'(\d+)\s*$', sro_text.strip())
+    if not m:
+        return None
+    num = m.group(1)
     try:
-        return bool(page.locator(
-            "img[src*='captcha'], input[id*='captcha'], #captcha, .captcha, "
-            "[id*='CaptchaImage'], [id*='captchaImage']"
-        ).count())
+        options = page.evaluate(f"""
+            () => Array.from(document.querySelector('{_SEL_SRO}')?.options || [])
+                .map(o => ({{v: o.value, t: o.text.trim()}}))
+        """)
+        # Prefer an option that contains the number as a word (not a substring of a larger number)
+        for opt in options:
+            if re.search(r'(?<!\d)' + re.escape(num) + r'(?!\d)', opt['t']):
+                page.locator(_SEL_SRO).select_option(value=opt['v'])
+                return opt['t']
+    except Exception as e:
+        print(f"  [sro] error: {e}")
+    return None
+
+
+def navigate_to_doc_tab(page) -> None:
+    """One-time setup: dismiss popup, activate the Document Number tab, select eRegistration + district."""
+    # Close landing popup if present
+    try:
+        page.get_by_role("link", name="Close").click(timeout=4000)
+        page.wait_for_timeout(300)
     except Exception:
-        return False
+        pass
+    # Click Document Number tab
+    try:
+        page.get_by_role("link", name="दस्त निहाय/Document Number").click(timeout=6000)
+        page.wait_for_timeout(500)
+    except Exception:
+        print("  [nav] doc-number tab not found — may already be active")
+    # eRegistration radio
+    try:
+        page.get_by_role("radio", name="eRegistration").check(timeout=4000)
+        page.wait_for_timeout(300)
+    except Exception:
+        pass
+    # District
+    try:
+        page.locator(_SEL_DISTRICT).select_option(IGR_DISTRICT)
+        page.wait_for_timeout(800)   # SRO dropdown reloads after district change
+    except Exception as e:
+        print(f"  [nav] district select failed: {e}")
 
 
-def pause_if_captcha(page) -> None:
-    if detect_captcha(page):
-        print("\n  *** CAPTCHA detected — solve it in the browser, then press Enter ***")
+def fill_form(page, r: dict) -> bool:
+    """Fill SRO + Year + Doc No. Returns True if all three filled."""
+    ok = True
+
+    # SRO
+    sro_matched = _pick_sro(page, r['sro'])
+    if sro_matched:
+        print(f"  [sro]   {sro_matched!r}")
+    else:
+        print(f"  [sro]   no match for {r['sro']!r} — select manually, then press Enter")
         try:
-            input("  (press Enter after solving CAPTCHA): ")
+            input("  → (select SRO in browser, press Enter): ")
         except EOFError:
             pass
+        ok = False
+
+    # Year
+    try:
+        page.locator(_SEL_YEAR).select_option(str(r['year']))
+        print(f"  [year]  {r['year']}")
+    except Exception as e:
+        print(f"  [year]  failed ({e}) — set manually")
+        ok = False
+
+    # Doc No
+    try:
+        page.locator(_SEL_DOCNO).triple_click()
+        page.locator(_SEL_DOCNO).fill(str(r['doc']))
+        print(f"  [doc]   {r['doc']}")
+    except Exception as e:
+        print(f"  [doc]   failed ({e}) — enter manually")
+        ok = False
+
+    return ok
 
 
 def save_page(context, page, out_dir: Path, prefix: str, written: list, captures: list) -> None:
@@ -250,33 +339,45 @@ def main() -> int:
     written:  list[str]  = []
 
     print(f"\nSnapshot folder: {out_dir}")
-    print(f"Browser opening. Navigate to the Document Number search tab on the IGR site.")
-    print(f"For each doc: fill in SRO, Year, Doc No → solve CAPTCHA if shown → click Search.")
-    print(f"Then press Enter here. Type 's' to skip a doc, 'done' to quit early.\n")
+    print(f"Script auto-fills SRO + Year + Doc No. You only need to:")
+    print(f"  1. Solve the CAPTCHA in the browser when it appears")
+    print(f"  2. Press Enter here after solving (script clicks Search automatically)")
+    print(f"  Type 's' to skip a doc, 'done' to quit early.\n")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         context = browser.new_context()
         page    = context.new_page()
         page.goto(args.url, timeout=60000, wait_until='domcontentloaded')
+        page.wait_for_timeout(1500)
+
+        # One-time: dismiss popup, click doc-number tab, select district
+        navigate_to_doc_tab(page)
 
         for idx, r in enumerate(remaining):
             abs_num = args.skip + idx + 1
             total   = len(queue)
 
-            print(f"┌── Doc {abs_num}/{total} ──────────────────────────────────────────")
-            print(f"│  SRO     : {r['sro']}")
-            print(f"│  Year    : {r['year']}")
-            print(f"│  Doc No  : {r['doc']}")
-            print(f"│  Flat    : {r['wing'] or '?'}  {r['unit']}  (registered {r['date']})")
-            print(f"└───────────────────────────────────────────────────────────────────")
+            print(f"┌── Doc {abs_num}/{total} ─────────────────────────────────────────")
+            print(f"│  SRO  {r['sro']}  ·  Year {r['year']}  ·  Doc {r['doc']}")
+            print(f"│  Flat {r['wing'] or '?'} {r['unit']}  (registered {r['date']})")
+            print(f"└────────────────────────────────────────────────────────────────")
 
-            try:
-                cmd = input("  → Enter values in browser, press Enter when result loads  (s=skip  done=quit): ")
-            except EOFError:
+            # Re-acquire page after any popup closed it
+            page = next((pg for pg in context.pages if not pg.is_closed()), None)
+            if page is None:
+                print("  [ERROR] All browser pages closed — stopping.")
                 break
 
-            cmd = cmd.strip().lower()
+            fill_form(page, r)
+
+            # CAPTCHA — human only
+            print(f"  Solve the CAPTCHA in the browser, then press Enter.")
+            print(f"  (s=skip  done=quit)")
+            try:
+                cmd = input("  → ").strip().lower()
+            except EOFError:
+                break
             if cmd in ('done', 'q', 'quit', 'exit'):
                 print("Stopping.")
                 break
@@ -284,13 +385,16 @@ def main() -> int:
                 print("  Skipped.\n")
                 continue
 
-            # Re-acquire live page reference
-            page = next((pg for pg in context.pages if not pg.is_closed()), None)
-            if page is None:
-                print("  [ERROR] All browser pages closed — stopping.")
-                break
-
-            pause_if_captcha(page)
+            # Auto-click Search
+            try:
+                page.get_by_role("button", name="शोध / Search").click(timeout=5000)
+                page.wait_for_timeout(2000)
+            except Exception as e:
+                print(f"  [search] click failed: {e} — click Search manually, press Enter")
+                try:
+                    input("  → (press Enter when results loaded): ")
+                except EOFError:
+                    break
 
             # Files: capture_NNN_doc<docno>_<year>_r0.txt — matches ingest glob
             prefix = f"capture_{abs_num:03d}_doc{r['doc']}_{r['year']}"
@@ -304,7 +408,7 @@ def main() -> int:
         'capture_type': 'index2_targeted_docno',
         'url': args.url,
         'started_at': started_at,
-        'method': 'playwright-guided-per-doc',
+        'method': 'playwright-autofill-per-doc',
         'output_label': args.output_label,
         'total_docs_in_queue': len(queue),
         'docs_attempted': len(remaining),
