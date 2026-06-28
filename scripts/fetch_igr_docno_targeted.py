@@ -110,9 +110,29 @@ def safe_label(s: str) -> str:
     return re.sub(r'[^a-zA-Z0-9_-]', '_', s)[:40]
 
 
-def _role(page, kind: str, name: str):
-    """Shorthand for get_by_role with a human-readable selector string."""
-    return page.get_by_role(kind, name=name)
+def detect_captcha(page) -> bool:
+    try:
+        return bool(page.locator(
+            "img[src*='captcha' i], input[id*='captcha' i], [class*='captcha' i]"
+        ).count())
+    except Exception:
+        return False
+
+
+def _click_search(page) -> None:
+    """Click the Search button — try multiple selectors with generous timeout."""
+    for loc in [
+        page.get_by_role("button", name="शोध / Search"),
+        page.locator("input[value*='Search']"),
+        page.locator("input[value*='शोध']"),
+        page.locator("#btnSearch"),
+    ]:
+        try:
+            loc.click(timeout=8000)
+            return
+        except Exception:
+            pass
+    raise RuntimeError("Search button not found with any selector")
 
 
 def _load_sro_options(page) -> list[dict]:
@@ -432,10 +452,10 @@ def main() -> int:
 
             # Auto-click Search
             try:
-                page.get_by_role("button", name="शोध / Search").click(timeout=5000)
+                _click_search(page)
                 page.wait_for_timeout(2000)
             except Exception as e:
-                print(f"  [search] click failed: {e} — click Search manually, press Enter")
+                print(f"  [search] {e} — click Search manually, press Enter")
                 try:
                     input("  → (press Enter when results loaded): ")
                 except EOFError:
