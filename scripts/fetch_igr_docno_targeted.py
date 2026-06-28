@@ -242,7 +242,6 @@ def fill_form(page, r: dict) -> bool:
 
     # Doc No
     try:
-        page.locator(_SEL_DOCNO).triple_click()
         page.locator(_SEL_DOCNO).fill(str(r['doc']))
         print(f"  [doc]   {r['doc']}")
     except Exception as e:
