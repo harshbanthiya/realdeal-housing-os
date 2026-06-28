@@ -110,32 +110,6 @@ def safe_label(s: str) -> str:
     return re.sub(r'[^a-zA-Z0-9_-]', '_', s)[:40]
 
 
-def detect_captcha(page) -> bool:
-    try:
-        return bool(page.locator(
-            "img[src*='captcha' i], input[id*='captcha' i], [class*='captcha' i]"
-        ).count())
-    except Exception:
-        return False
-
-
-def _click_search(page) -> None:
-    """Click the Search button — count() first so we don't burn 8s per miss."""
-    candidates = [
-        page.locator("input[type='submit'][value*='शोध']"),
-        page.locator("input[type='submit'][value*='Search']"),
-        page.locator("input[type='submit']"),
-        page.locator("#btnSearch"),
-        page.get_by_role("button", name="शोध / Search"),
-    ]
-    for loc in candidates:
-        try:
-            if loc.count() > 0:
-                loc.first.click(timeout=5000)
-                return
-        except Exception:
-            pass
-    raise RuntimeError("Search button not found with any selector")
 
 
 def _load_sro_options(page) -> list[dict]:
@@ -275,23 +249,10 @@ def fill_form(page, r: dict) -> bool:
 
 
 def save_page(context, page, out_dir: Path, prefix: str, written: list, captures: list) -> None:
-    """Save results page + click all IndexII buttons, saving each popup."""
-    captcha_here = detect_captcha(page)
-
-    # Save results page
-    for ext, fn in [
-        ('.html', lambda: page.content()),
-        ('.txt',  lambda: page.inner_text('body')),
-    ]:
-        try:
-            data = fn()
-            (out_dir / f"{prefix}_results{ext}").write_text(data, encoding='utf-8')
-            written.append(f"{prefix}_results{ext}")
-        except Exception:
-            pass
-
+    """Click all IndexII buttons and save each popup."""
+    # Wait up to 5s for at least one IndexII button to appear
     try:
-        page.wait_for_selector(INDEX2_BTN_SEL, timeout=10000)
+        page.wait_for_selector(INDEX2_BTN_SEL, timeout=5000)
     except Exception:
         pass
 
@@ -299,7 +260,6 @@ def save_page(context, page, out_dir: Path, prefix: str, written: list, captures
     print(f"  {btn_count} IndexII button(s) found")
 
     for btn_idx in range(btn_count):
-        # Re-acquire live page in case a popup shifted focus
         live = next((pg for pg in context.pages if not pg.is_closed()), None)
         if live is None:
             break
@@ -318,28 +278,15 @@ def save_page(context, page, out_dir: Path, prefix: str, written: list, captures
                 ('.txt',  lambda pg=popup: pg.inner_text('body')),
             ]:
                 try:
-                    data = fn()
-                    (out_dir / f"{idx2_prefix}{ext}").write_text(data, encoding='utf-8')
+                    (out_dir / f"{idx2_prefix}{ext}").write_text(fn(), encoding='utf-8')
                     written.append(f"{idx2_prefix}{ext}")
                 except Exception:
                     pass
-            captures.append({'prefix': idx2_prefix, 'captcha': captcha_here, 'type': 'popup'})
+            captures.append({'prefix': idx2_prefix})
             print(f"  saved IndexII → {idx2_prefix}")
             popup.close()
         except Exception as e:
-            # Popup didn't open — capture current page state as fallback
-            for ext, fn in [
-                ('.html', lambda pg=live: pg.content()),
-                ('.txt',  lambda pg=live: pg.inner_text('body')),
-            ]:
-                try:
-                    data = fn()
-                    (out_dir / f"{idx2_prefix}{ext}").write_text(data, encoding='utf-8')
-                    written.append(f"{idx2_prefix}{ext}")
-                except Exception:
-                    pass
-            captures.append({'prefix': idx2_prefix, 'captcha': captcha_here, 'type': 'fallback', 'error': str(e)})
-            print(f"  fallback saved → {idx2_prefix}  ({e})")
+            print(f"  IndexII {btn_idx} failed: {e}")
 
 
 def print_queue(queue: list[dict], skip: int) -> None:
@@ -407,10 +354,10 @@ def main() -> int:
     written:  list[str]  = []
 
     print(f"\nSnapshot folder: {out_dir}")
-    print(f"Script auto-fills SRO + Year + Doc No. You only need to:")
-    print(f"  1. Solve the CAPTCHA in the browser when it appears")
-    print(f"  2. Press Enter here after solving (script clicks Search automatically)")
-    print(f"  Type 's' to skip a doc, 'done' to quit early.\n")
+    print(f"Script fills SRO + Year + Doc No. For each doc:")
+    print(f"  1. Solve CAPTCHA + click Search in the browser")
+    print(f"  2. Press Enter here — script grabs IndexII then reloads the form")
+    print(f"  Type 's' to skip, 'done' to quit.\n")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
@@ -433,8 +380,7 @@ def main() -> int:
 
             fill_form(page, r)
 
-            # CAPTCHA — human only
-            print(f"  Solve the CAPTCHA in the browser, then press Enter.")
+            print(f"  Solve CAPTCHA + click Search in browser, then press Enter.")
             print(f"  (s=skip  done=quit)")
             try:
                 cmd = input("  → ").strip().lower()
@@ -447,28 +393,16 @@ def main() -> int:
                 print("  Skipped.\n")
                 continue
 
-            # Auto-click Search
-            try:
-                _click_search(page)
-                page.wait_for_timeout(2000)
-            except Exception as e:
-                print(f"  [search] {e} — click Search manually, press Enter")
-                try:
-                    input("  → (press Enter when results loaded): ")
-                except EOFError:
-                    break
-
-            # Files: capture_NNN_doc<docno>_<year>_r0.txt — matches ingest glob
             prefix = f"capture_{abs_num:03d}_doc{r['doc']}_{r['year']}"
             save_page(context, page, out_dir, prefix, written, captures)
             print()
 
-            # Reset: navigate back to fresh form for next doc
+            # Reload fresh form for next doc
             page = next((pg for pg in context.pages if not pg.is_closed()), None)
             if page is None:
                 break
             page.goto(args.url, timeout=60000, wait_until='domcontentloaded')
-            page.wait_for_timeout(1200)
+            page.wait_for_timeout(1500)
             navigate_to_doc_tab(page)
 
         context.close()
