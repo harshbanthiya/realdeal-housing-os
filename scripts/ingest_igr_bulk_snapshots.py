@@ -100,18 +100,44 @@ def derive_ll_fields(
 
 PHASE = "6.23c"
 SOURCE = "igr_ingest_bulk_2020_2026"
-BUILDING_SUB = "(SELECT id FROM buildings WHERE name ILIKE '%kalpataru%radiance%' ORDER BY created_at LIMIT 1)"
-KALPATARU_WINGS = {"Wing A-Ora", "Wing B-Brilliance", "Wing C-Allura", "Wing D-Lumina"}
-WING_TOWER = {"Wing A-Ora": "A", "Wing B-Brilliance": "B", "Wing C-Allura": "C", "Wing D-Lumina": "D"}
 
-# Additional wing needles not in the existing detect_wing (covers more Marathi variants)
-_WING_EXTRA = re.compile(
+# ── Kalpataru Radiance constants ───────────────────────────────────────────────
+_KAL_BUILDING_SUB = "(SELECT id FROM buildings WHERE name ILIKE '%kalpataru%radiance%' ORDER BY created_at LIMIT 1)"
+_KAL_WINGS = {"Wing A-Ora", "Wing B-Brilliance", "Wing C-Allura", "Wing D-Lumina"}
+_KAL_WING_TOWER = {"Wing A-Ora": "A", "Wing B-Brilliance": "B", "Wing C-Allura": "C", "Wing D-Lumina": "D"}
+_KAL_WING_EXTRA = re.compile(
     r"ओरा|ऑरा|अलोर|अल्लुर|एल्लूर|लुमिन|लुमीन|ब्रिलिय|ब्रिल्ली|ब्रिलीय"
     r"|\bora\b|allur|allor|lumina|brillian", re.I
 )
-KALPATARU_RE = re.compile(
-    r"कल्पतर|kalpataru|रेडियंस|रेडीयंस|रेिडयंस|radiance", re.I
-)
+_KAL_RE = re.compile(r"कल्पतर|kalpataru|रेडियंस|रेडीयंस|रेिडयंस|radiance", re.I)
+_KAL_EN_FLAT_WING = re.compile(r"\bApartment/Flat No:([A-Da-d])-(\d+)", re.I)
+_KAL_EN_WING_MAP = [
+    ("Wing A-Ora",        re.compile(r"radiance[- ]?a\b|wing[- ]?a\b|a[- ]ora\b|aura\b", re.I)),
+    ("Wing B-Brilliance", re.compile(r"radiance[- ]?b\b|wing[- ]?b\b|brilliance\b", re.I)),
+    ("Wing C-Allura",     re.compile(r"radiance[- ]?c\b|wing[- ]?c\b|allura\b|allure\b", re.I)),
+    ("Wing D-Lumina",     re.compile(r"radiance[- ]?d\b|wing[- ]?d\b|lumina\b", re.I)),
+]
+
+# ── Imperial Heights constants ─────────────────────────────────────────────────
+_IH_BUILDING_SUB = "(SELECT id FROM buildings WHERE id='0e72db71-8b93-4ecd-879c-17d8d8f2b206' LIMIT 1)"
+_IH_WINGS = {"Imperial Heights Wing C", "Imperial Heights Wing D"}
+_IH_WING_TOWER = {"Imperial Heights Wing C": "C", "Imperial Heights Wing D": "D"}
+_IH_RE = re.compile(r"imperial|इम्पीरियल|heights|हाईट्स|हाइट्स", re.I)
+_IH_EN_FLAT_WING = re.compile(r"(?:Apartment|Flat)\s*(?:/Flat)?\s*No\s*:?\s*([CDcd])[-/](\d+)", re.I)
+_IH_EN_WING_MAP = [
+    ("Imperial Heights Wing C", re.compile(r"wing[- ]?c\b|\bc[-/]\d{3,}", re.I)),
+    ("Imperial Heights Wing D", re.compile(r"wing[- ]?d\b|\bd[-/]\d{3,}", re.I)),
+]
+
+# Active building config — set in main() based on --building flag
+_CFG: dict = {}
+
+# Legacy aliases (used by module-level functions before main() runs; overridden at runtime)
+BUILDING_SUB = _KAL_BUILDING_SUB
+KALPATARU_WINGS = _KAL_WINGS
+WING_TOWER = _KAL_WING_TOWER
+_WING_EXTRA = _KAL_WING_EXTRA
+KALPATARU_RE = _KAL_RE
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -170,8 +196,9 @@ def parse_results_folder(folder: Path) -> dict[str, dict]:
 
             doc_no = doc_no.strip()
             wing = detect_wing(propdesc) or detect_wing(dname)
-            if not wing and not KALPATARU_RE.search(propdesc):
-                continue  # skip non-Kalpataru rows
+            bldg_re = _CFG.get('bldg_re', _KAL_RE)
+            if not wing and not bldg_re.search(propdesc):
+                continue  # skip rows for other buildings
 
             etype, cat = results_classify(dname)
             # Run both parsers; take any non-null value from either.
@@ -203,9 +230,118 @@ def parse_results_folder(folder: Path) -> dict[str, dict]:
 
 # ── Phase 2: Parse Index II TXT files ─────────────────────────────────────────
 
+def _en_detect_wing(prop_desc: str) -> str | None:
+    flat_wing_re = _CFG.get('en_flat_wing', _KAL_EN_FLAT_WING)
+    en_wing_map  = _CFG.get('en_wing_map',  _KAL_EN_WING_MAP)
+    m = flat_wing_re.search(prop_desc)
+    if m:
+        prefix = m.group(1).upper()
+        # Map flat prefix → canonical wing label from active config
+        for label, _ in en_wing_map:
+            if label.endswith(f"Wing {prefix}") or f"-{prefix}" in label or label == f"Wing {prefix}":
+                return label
+    for label, pat in en_wing_map:
+        if pat.search(prop_desc):
+            return label
+    return None
+
+def _en_parse_parties(block: str) -> list[dict]:
+    """Parse English-format party lines: 'Name: X  Age: N  Address: ...  PAN: Y'"""
+    out = []
+    for m in re.finditer(
+        r"Name:\s+(.+?)\s+Age:\s+(\d+).*?PAN:\s+([A-Z]{5}[0-9]{4}[A-Z])",
+        block, re.S
+    ):
+        name = re.sub(r"\s+", " ", m.group(1)).strip()
+        out.append({"name": name, "age": m.group(2), "pan": m.group(3)})
+    return out
+
+def _en_split_fields(text: str) -> dict[int, str]:
+    """Split numbered English Index II fields (1)–(14)."""
+    out: dict[int, str] = {}
+    for m in re.finditer(r"\((\d+)\)\s+(.+?)(?=\(\d+\)|\Z)", text, re.S):
+        label = m.group(2).strip()
+        # strip the field name prefix (up to first line break or tab)
+        body = re.sub(r"^[^\n\t]+[\n\t]+", "", label, count=1).strip()
+        out[int(m.group(1))] = body or label
+    return out
+
+def parse_index2_txt_en(path: Path, text: str) -> dict | None:
+    """Parse English-format free-search Index II captures."""
+    # Doc No. : 23809/2023
+    m = re.search(r"Doc No\.\s*:\s*(\d+)/(\d{4})", text)
+    if not m:
+        return None
+    doc_no, year = m.group(1), m.group(2)
+
+    sro_m = re.search(r"SroName\s*:\s*(.+)", text)
+    sro = sro_m.group(1).strip() if sro_m else None
+    vill_m = re.search(r"Village\s+Name\s*:\s*(.+)", text)
+    village = vill_m.group(1).strip() if vill_m else None
+
+    f = _en_split_fields(text)
+
+    article_raw = clean_frag(f.get(1, ""))[:80]
+    etype, cat = idx2_classify(article_raw)
+
+    prop = f.get(4, "")
+    cts_m = re.search(r"C\.T\.S\.\s*(?:Number|No\.?)\s*[:\-]?\s*([0-9/A-Za-z]+)", prop, re.I)
+    cts = cts_m.group(1).strip() if cts_m else None
+
+    flat_m = re.search(r"Apartment/Flat No:([^\s,]+)", prop, re.I)
+    flat = flat_m.group(1).strip() if flat_m else None
+
+    floor_m = re.search(r"Floor No:([^\s,]+)", prop, re.I)
+    floor = floor_m.group(1).strip() if floor_m else None
+
+    tenure_m = re.search(r"Leave and License Months:(\d+)", prop, re.I)
+    tenure = int(tenure_m.group(1)) if tenure_m else None
+
+    # Rent: first Rs amount on field (3); field (2) = deposit for L&L
+    rent_m  = re.search(r"Rs\.?\s*([\d,]+)\s*/-", f.get(3, ""))
+    deposit_m = re.search(r"Rs\.?\s*([\d,]+)\s*/-", f.get(2, ""))
+    rent    = rent_m.group(1).replace(",","")    if rent_m    else None
+    deposit = deposit_m.group(1).replace(",","") if deposit_m else None
+
+    area = clean_frag(f.get(5, ""))[:80] or None
+
+    wing = _en_detect_wing(prop) or detect_wing(prop) or detect_wing(text)
+
+    stamp_m  = re.search(r"Rs\.?\s*([\d,]+)\s*/-", f.get(12, ""))
+    regfee_m = re.search(r"Rs\.?\s*([\d,]+)\s*/-", f.get(13, ""))
+    stamp  = int(stamp_m.group(1).replace(",",""))  if stamp_m  else None
+    regfee = int(regfee_m.group(1).replace(",","")) if regfee_m else None
+
+    de_m = re.search(r"(\d{2}/\d{2}/\d{4})", f.get(9, ""))
+    dr_m = re.search(r"(\d{2}/\d{2}/\d{4})", f.get(10, ""))
+
+    sellers    = _en_parse_parties(f.get(7, ""))
+    purchasers = _en_parse_parties(f.get(8, ""))
+
+    # ponytail: consideration/market_value not in English L&L Index II — those fields are deposit/rent
+    return {
+        "doc_no": doc_no, "year": year, "doc_type": etype, "cat": cat, "dtype_raw": article_raw,
+        "sro": sro, "village": village, "cts": cts,
+        "consideration": None, "market_value": None,
+        "stamp_duty": stamp, "reg_fee": regfee,
+        "area": area,
+        "flat": flat, "floor": floor,
+        "rent": rent, "deposit": deposit,
+        "tenure_months": tenure,
+        "tenure_derived": False,
+        "date_exec": iso(de_m.group(1)) if de_m else None,
+        "date_reg":  iso(dr_m.group(1)) if dr_m else None,
+        "sellers":    sellers,
+        "purchasers": purchasers,
+        "wing": wing, "remarks": None,
+        "_src_txt": path.name, "_folder": path.parent.name,
+    }
+
 def parse_index2_txt(path: Path) -> dict | None:
     """Parse one Index II .txt capture (same format as pdftotext output)."""
     text = path.read_text(encoding="utf-8", errors="replace")
+    if "Index -2" in text and "Doc No. :" in text:
+        return parse_index2_txt_en(path, text)
     if "दस्त क्रमांक" not in text and "सूची" not in text:
         return None
 
@@ -490,7 +626,7 @@ def record_sql(m: dict, existing_doc_nos: set[str]) -> list[str]:
     """Return SQL statements for one merged registration record."""
     doc_no = m["doc_no"]
     wing = m.get("wing")
-    tower = WING_TOWER.get(wing, "")
+    tower = _CFG.get('wing_tower', _KAL_WING_TOWER).get(wing, "")
     flat = m.get("flat")
     cat = m.get("cat", "other")
     d_exec = m.get("date_exec")
@@ -659,12 +795,46 @@ def main() -> int:
     )
     ap.add_argument("--snapshot-root", default=str(SNAPSHOT_ROOT))
     ap.add_argument("--year", help="Filter to one year, e.g. 2024")
+    ap.add_argument("--building", default="kalpataru",
+                    choices=["kalpataru", "imperial_heights"],
+                    help="Which building to ingest (default: kalpataru)")
     ap.add_argument("--apply",   action="store_true")
     ap.add_argument("--real-ok", action="store_true")
     ap.add_argument("--revert",  action="store_true")
     args = ap.parse_args()
 
     snap_root = Path(args.snapshot_root)
+
+    # Populate active building config; update module-level aliases used by SQL helpers
+    global _CFG, BUILDING_SUB, KALPATARU_WINGS, WING_TOWER, KALPATARU_RE
+    if args.building == "imperial_heights":
+        _CFG = {
+            'building_name': 'Imperial Heights',
+            'building_sub': _IH_BUILDING_SUB,
+            'valid_wings': _IH_WINGS,
+            'wing_tower': _IH_WING_TOWER,
+            'bldg_re': _IH_RE,
+            'en_flat_wing': _IH_EN_FLAT_WING,
+            'en_wing_map': _IH_EN_WING_MAP,
+            'folder_label': 'imperial_heights',
+        }
+    else:
+        _CFG = {
+            'building_name': 'Kalpataru Radiance',
+            'building_sub': _KAL_BUILDING_SUB,
+            'valid_wings': _KAL_WINGS,
+            'wing_tower': _KAL_WING_TOWER,
+            'bldg_re': _KAL_RE,
+            'en_flat_wing': _KAL_EN_FLAT_WING,
+            'en_wing_map': _KAL_EN_WING_MAP,
+            'folder_label': 'kalpataru',
+        }
+    # Update module-level aliases so SQL helper functions (record_sql etc.) pick up the right building
+    BUILDING_SUB    = _CFG['building_sub']
+    KALPATARU_WINGS = _CFG['valid_wings']
+    WING_TOWER      = _CFG['wing_tower']
+    KALPATARU_RE    = _CFG['bldg_re']
+    print(f"Building: {_CFG['building_name']}")
 
     if args.revert:
         if not (args.apply and args.real_ok):
@@ -686,7 +856,8 @@ def main() -> int:
     # Discover folders
     folders = sorted(snap_root.glob("*_bulk/"))
     if args.year:
-        folders = [f for f in folders if f"_kalpataru_{args.year}_" in f.name]
+        flabel = _CFG['folder_label']
+        folders = [f for f in folders if f"_{flabel}_{args.year}_" in f.name]
     if not folders:
         print(f"No *_bulk/ folders in {snap_root}")
         return 1
@@ -703,7 +874,7 @@ def main() -> int:
         res_map  = parse_results_folder(folder)
         idx2_map = parse_index2_folder(folder)
 
-        print(f"  results rows (Kalpataru): {len(res_map)}")
+        print(f"  results rows ({_CFG['building_name']}): {len(res_map)}")
         print(f"  Index II captures:        {len(idx2_map)}")
 
         for doc_no in set(res_map) | set(idx2_map):
@@ -718,26 +889,38 @@ def main() -> int:
     counts_by_wing: dict[str, int] = {}
     cross_issues: list[str] = []
 
+    # Load existing doc_nos now so we can use them in the wing-guard logic below
+    _, existing_raw = run_psql(
+        "SELECT doc_number FROM unit_registration_records "
+        f"WHERE building_id={_CFG['building_sub']}"
+    )
+    existing_doc_nos: set[str] = set(existing_raw.strip().splitlines())
+
     for doc_no in sorted(all_doc_nos):
         m = merge(all_results.get(doc_no), all_index2.get(doc_no))
         m["doc_no"] = doc_no
         if m.get("_folder") is None:
             m["_folder"] = folder_labels.get(doc_no, "")
         wing = m.get("wing")
-        if not wing or wing not in KALPATARU_WINGS:
-            # Skip Patra Chawl and truly unknown
-            counts_by_wing[wing or "undetected"] = counts_by_wing.get(wing or "undetected", 0) + 1
-            continue
-        counts_by_wing[wing] = counts_by_wing.get(wing, 0) + 1
+        if not wing or wing not in _CFG['valid_wings']:
+            # Skip Patra Chawl and truly unknown — UNLESS it's already in the DB.
+            # For existing records the wing is already correct; we just need to enrich financials.
+            if doc_no not in existing_doc_nos:
+                counts_by_wing[wing or "undetected"] = counts_by_wing.get(wing or "undetected", 0) + 1
+                continue
+            # Fall through: existing DB record, no wing detected — still UPDATE financials
+            counts_by_wing["existing_no_wing"] = counts_by_wing.get("existing_no_wing", 0) + 1
+        else:
+            counts_by_wing[wing] = counts_by_wing.get(wing, 0) + 1
         if m["_cross_checks"]:
             cross_issues.extend([f"doc {doc_no}: {c}" for c in m["_cross_checks"]])
         merged_all.append(m)
 
     print(f"\n── Summary ──")
     print(f"Total unique doc_nos seen: {len(all_doc_nos)}")
-    print(f"Kalpataru (all wings): {len(merged_all)}")
+    print(f"{_CFG['building_name']} (all wings): {len(merged_all)}")
     for k, v in sorted(counts_by_wing.items(), key=lambda kv: -kv[1]):
-        mark = " ✓" if k in KALPATARU_WINGS else ""
+        mark = " ✓" if k in _CFG['valid_wings'] else ""
         print(f"  {v:4d}  {k}{mark}")
     print(f"Only in results (no Index II capture): "
           f"{sum(1 for m in merged_all if not m['_has_index2'])}")
