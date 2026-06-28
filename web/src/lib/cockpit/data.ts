@@ -574,12 +574,27 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     unitWing: r.wing, unitNumber: r.unit_number, wingText: r.wing_text, unitText: r.unit_text, descriptionRaw: r.property_description_raw,
   }));
 
+  // Order by record count DESC so the dedup below keeps the unit that has records.
   const bunits = await readQuery<{ id: string; wing: string | null; unit_number: string | null; bn: string }>(
-    `select bu.id::text, bu.wing, bu.unit_number, b.name bn
-       from building_units bu join buildings b on b.id = bu.building_id
+    `select bu.id::text, bu.wing, bu.unit_number, b.name bn,
+            count(r.id) recs
+       from building_units bu
+       join buildings b on b.id = bu.building_id
+       left join unit_registration_records r on r.building_unit_id = bu.id
       where bu.canonical_status = 'active'
-        and (bu.metadata->>'offgrid') is distinct from 'true'`);
-  const myUnits = bunits.filter((u) => slugify(u.bn) === slug && u.unit_number);
+        and (bu.metadata->>'offgrid') is distinct from 'true'
+      group by bu.id, bu.wing, bu.unit_number, b.name
+      order by recs desc`);
+  // Deduplicate: IGR ingest creates a building_unit per record, so the same flat can appear
+  // twice. Keep the first encountered per wing+unit_number key (DB order = creation order).
+  const _seenUnit = new Set<string>();
+  const myUnits = bunits.filter((u) => {
+    if (!u.unit_number || slugify(u.bn) !== slug) return false;
+    const k = `${towerLetter(u.wing)}|${u.unit_number}`;
+    if (_seenUnit.has(k)) return false;
+    _seenUnit.add(k);
+    return true;
+  });
 
   const orel = await readQuery<{ building_unit_id: string | null; full_name: string; contact_id: string }>(
     `select r.building_unit_id::text, c.full_name, c.id::text contact_id

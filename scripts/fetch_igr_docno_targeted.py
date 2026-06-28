@@ -7,13 +7,12 @@ waits for you to fill it in and press Enter, then auto-clicks the IndexII button
 and saves the snapshot.
 
 Hard guards: headed browser only, no CAPTCHA bypass, no auto-fill, no DB writes.
-Snapshots saved to: exports/igr_index2_snapshots/<ts>_docno_targeted_bulk/
-Files named capture_NNN_*_r0.txt so the existing ingest script picks them up.
 
 Usage:
-  python scripts/fetch_igr_docno_targeted.py              # show queue, dry-run
-  python scripts/fetch_igr_docno_targeted.py --apply      # open browser + capture
-  python scripts/fetch_igr_docno_targeted.py --apply --skip 5   # resume after 5 docs
+  python scripts/fetch_igr_docno_targeted.py                             # Kalpataru queue
+  python scripts/fetch_igr_docno_targeted.py --building imperial_heights # IH queue
+  python scripts/fetch_igr_docno_targeted.py --building imperial_heights --sro "Joint S.R. Mumbai 18"
+  python scripts/fetch_igr_docno_targeted.py --apply --skip 5            # resume after 5
 """
 from __future__ import annotations
 
@@ -25,7 +24,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SNAPSHOT_ROOT = PROJECT_ROOT / "exports" / "igr_index2_snapshots"
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from _db import run_psql
@@ -33,14 +31,26 @@ from _db import run_psql
 DEFAULT_URL = "https://freesearchigrservice.maharashtra.gov.in/"
 INDEX2_BTN_SEL = "input[value='IndexII']"
 
+_BUILDING_FILTER = {
+    "kalpataru": "b.name ILIKE '%kalpataru%radiance%'",
+    "imperial_heights": "b.id = '0e72db71-8b93-4ecd-879c-17d8d8f2b206'",
+}
+_SNAPSHOT_DIR = {
+    "kalpataru": "igr_index2_snapshots",
+    "imperial_heights": "igr_index2_snapshots_imperial_heights",
+}
 
-def load_queue() -> list[dict]:
-    """Tenancy records missing any of rent / end-date / start-date, with a known SRO."""
-    _, out = run_psql("""
+
+def load_queue(building: str = "kalpataru", sro_filter: str | None = None) -> list[dict]:
+    """Tenancy records missing rent / end-date / start-date, with a known SRO."""
+    bldg_where = _BUILDING_FILTER.get(building, _BUILDING_FILTER["kalpataru"])
+    sro_clause = f"AND r.sro_office ILIKE '%{sro_filter}%'" if sro_filter else ""
+    _, out = run_psql(f"""
         SELECT
             r.doc_number,
             r.sro_office,
-            EXTRACT(year FROM r.registration_date)::int AS reg_year,
+            COALESCE(EXTRACT(year FROM r.registration_date)::int,
+                     r.registration_year)::int AS reg_year,
             COALESCE(bu.wing, r.wing_text, '') AS wing,
             COALESCE(bu.unit_number, r.unit_text, '') AS unit,
             r.registration_date::text,
@@ -55,14 +65,13 @@ def load_queue() -> list[dict]:
         FROM unit_registration_records r
         JOIN buildings b ON b.id = r.building_id
         LEFT JOIN building_units bu ON bu.id = r.building_unit_id
-        WHERE b.name ILIKE '%kalpataru%radiance%'
-          AND COALESCE(r.transaction_category, registration_category(r.document_type)) = 'tenancy'
+        WHERE {bldg_where}
+          AND r.transaction_category = 'tenancy'
           AND (r.tenancy_monthly_rent IS NULL OR r.tenancy_end_date IS NULL OR r.tenancy_start_date IS NULL)
           AND r.doc_number NOT LIKE 'SAMPLE%%'
           AND r.sro_office IS NOT NULL AND r.sro_office != ''
-          AND COALESCE(bu.wing, r.wing_text, '') NOT ILIKE '%%Patra%%'
-          AND COALESCE(bu.wing, r.wing_text, '') NOT ILIKE '%%MHADA%%'
-        ORDER BY r.registration_date, r.doc_number
+          {sro_clause}
+        ORDER BY r.sro_office, r.registration_date, r.doc_number::int
     """)
     rows = []
     for line in out.strip().splitlines():
@@ -199,9 +208,17 @@ def main() -> int:
     ap.add_argument('--skip', type=int, default=0, metavar='N',
                     help='skip first N docs in the queue (use to resume a session)')
     ap.add_argument('--output-label', default='docno_targeted')
+    ap.add_argument('--building', default='kalpataru',
+                    choices=['kalpataru', 'imperial_heights'],
+                    help='which building to queue (default: kalpataru)')
+    ap.add_argument('--sro', default=None, metavar='NAME',
+                    help='filter queue to a specific SRO (partial match, e.g. "Mumbai 18")')
     args = ap.parse_args()
 
-    queue = load_queue()
+    snap_subdir = _SNAPSHOT_DIR.get(args.building, 'igr_index2_snapshots')
+    snapshot_root = PROJECT_ROOT / "exports" / snap_subdir
+
+    queue = load_queue(args.building, args.sro)
     if not queue:
         print("No tenancy records missing rent with a known SRO — nothing to do.")
         return 0
@@ -225,7 +242,7 @@ def main() -> int:
 
     started_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     folder_ts  = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    out_dir = SNAPSHOT_ROOT / f"{folder_ts}_{safe_label(args.output_label)}_bulk"
+    out_dir = snapshot_root / f"{folder_ts}_{safe_label(args.output_label)}_bulk"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     captures: list[dict] = []
