@@ -190,12 +190,23 @@ def load_existing_methods(cur) -> set[tuple[str, str]]:
     """)
     return {(r[0], r[1]) for r in cur.fetchall()}
 
-def fuzzy_match(name: str, id_to_name: dict) -> str | None:
+def build_name_index(id_to_name: dict) -> dict[str, list[tuple[str, str]]]:
+    """First-word → [(contact_id, full_name_upper)] for fast pre-filter."""
+    idx: dict[str, list] = {}
+    for cid, name in id_to_name.items():
+        word = re.sub(r"[^A-Z]", "", name.upper().split()[0]) if name.split() else ""
+        if word: idx.setdefault(word, []).append((cid, name.upper()))
+    return idx
+
+def fuzzy_match(name: str, name_idx: dict[str, list]) -> str | None:
     if not name or len(name) < 3: return None
-    best, best_score = None, 0.0
     name_up = name.upper()
-    for cid, cname in id_to_name.items():
-        s = difflib.SequenceMatcher(None, name_up, cname.upper()).ratio()
+    word = re.sub(r"[^A-Z]", "", name_up.split()[0]) if name_up.split() else ""
+    candidates = name_idx.get(word, [])
+    if not candidates: return None
+    best, best_score = None, 0.0
+    for cid, cname in candidates:
+        s = difflib.SequenceMatcher(None, name_up, cname).ratio()
         if s > best_score: best_score, best = s, cid
     return best if best_score >= NAME_THRESH else None
 
@@ -212,6 +223,7 @@ def main():
     print("Loading contacts from DB…")
     phone_map, email_map, id_to_name = load_contacts(cur)
     existing_methods = load_existing_methods(cur)
+    name_idx = build_name_index(id_to_name)
     print(f"  {len(id_to_name)} contacts | {len(phone_map)} phone keys | {len(email_map)} email keys")
 
     # ── scan files ────────────────────────────────────────────────────────────
@@ -246,7 +258,7 @@ def main():
         if not contact_id and email and email in email_map:
             contact_id = email_map[email]; matched_by_phone += 1
         if not contact_id and not args.no_name_match:
-            contact_id = fuzzy_match(row["name"], id_to_name)
+            contact_id = fuzzy_match(row["name"], name_idx)
             if contact_id: matched_by_name += 1
         if not contact_id:
             unmatched += 1; continue
