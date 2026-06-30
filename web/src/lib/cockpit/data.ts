@@ -489,7 +489,9 @@ function deriveFloorPos(u: string): { floor: number; pos: number } {
   const n = Number(String(u).replace(/\D/g, "")) || 0;
   const raw = String(u).replace(/\D/g, "");
   if (raw.length === 3) {
-    const fc = Math.floor(n / 10), pc = n % 10;      // compact: 291 -> 29/1, 106 -> 10/6
+    const fa3 = Math.floor(n / 100), pa3 = n % 100;  // standard: 501 -> floor 5 / unit 01
+    if (fa3 >= 1 && fa3 <= 9 && pa3 >= 1 && pa3 <= 12) return { floor: fa3, pos: pa3 };
+    const fc = Math.floor(n / 10), pc = n % 10;       // compact: 291 -> floor 29 / unit 1
     if (fc >= 10 && fc <= MAX_FLOOR && pc >= 1 && pc <= 9) return { floor: fc, pos: pc };
   }
   const fa = Math.floor(n / 100), pa = n % 100;       // last two digits = unit (e.g. 2706 -> 27/06)
