@@ -97,9 +97,9 @@ export default function DripOneA({
             {/* ── Pull quote ── */}
             <Section style={pullQuote}>
               <Text style={pullQuoteText}>
-                &ldquo;DLF Westpark is the first DLF project in Mumbai.
-                Andheri West. Pre-launch pricing. We&rsquo;re
-                giving our clients the first look.&rdquo;
+                &ldquo;DLF The Westpark is DLF&rsquo;s first project in Mumbai.
+                Andheri West. MahaRERA registered. Pre-launch pricing.
+                Our clients get first look.&rdquo;
               </Text>
             </Section>
 
@@ -141,13 +141,13 @@ export default function DripOneA({
               </Column>
               <Column style={factColMid} />
               <Column style={factCol}>
-                <Text style={factNum}>Andheri W</Text>
-                <Text style={factLabel}>Western Express Hwy</Text>
+                <Text style={factNum}>3BHK</Text>
+                <Text style={factLabel}>from 1,255 sq ft carpet</Text>
               </Column>
               <Column style={factColMid} />
               <Column style={factCol}>
-                <Text style={factNum}>Pre-launch</Text>
-                <Text style={factLabel}>Early access pricing</Text>
+                <Text style={factNum}>50+</Text>
+                <Text style={factLabel}>amenities incl. spa & 25m pool</Text>
               </Column>
             </Row>
           </Section>
@@ -161,6 +161,9 @@ export default function DripOneA({
             <Text style={footerText}>
               You&rsquo;re receiving this because you&rsquo;re a valued client of Real Deal Housing.{" "}
               <Link href={unsubUrl} style={unsubLink}>Unsubscribe</Link>
+            </Text>
+            <Text style={footerText}>
+              MahaRERA: PR1181012500079 · valid 30/06/2032 · maharera.maharashtra.gov.in
             </Text>
           </Section>
         </Container>

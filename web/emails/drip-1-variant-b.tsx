@@ -34,8 +34,8 @@ export default function DripOneB({
           <Text style={heroEyebrow}>REAL DEAL HOUSING · INVESTOR BRIEF</Text>
           <Text style={heroHeadline}>
             DLF enters Mumbai.<br />
-            The city's most anticipated<br />
-            pre-launch of 2025.
+            The Westpark — Andheri West.<br />
+            Pre-launch. MahaRERA registered.
           </Text>
           <Text style={heroDate}>June 2026 · Private Distribution</Text>
 
@@ -212,9 +212,9 @@ export default function DripOneB({
               <Link href="https://realdealhousing.com/privacy" style={footerLink}>Privacy</Link>
             </Text>
             <Text style={disclaimer}>
-              This is not financial advice. All return figures are historical,
-              from publicly available DLF project data. Past performance does
-              not guarantee future returns.
+              This is not financial advice. Return figures are historical references from
+              publicly available DLF project data. Past performance does not guarantee future
+              returns. MahaRERA: PR1181012500079 · valid 30/06/2032 · maharera.maharashtra.gov.in
             </Text>
           </Section>
 
