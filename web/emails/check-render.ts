@@ -4,8 +4,6 @@ import EmailB from './drip-1-variant-b';
 (async () => {
   const ha = await render(EmailA({ firstName: 'Rajkumar' }));
   const hb = await render(EmailB({ firstName: 'Rajkumar' }));
-  console.log('Variant A:', ha.length, 'chars | CTA:', ha.includes('Send me the project brief'));
-  console.log('Variant B:', hb.length, 'chars | CTA:', hb.includes('Request early access'));
-  console.log('A teal:', ha.includes('1f3d4d'), '| amber:', ha.includes('b6862c'));
-  console.log('B dark hero:', hb.includes('DLF enters Mumbai'), '| disclaimer:', hb.includes('not financial advice'));
+  console.log('Variant A:', ha.length, 'chars | sold-out hook:', ha.includes('7 days'), '| amber:', ha.includes('b6862c'), '| 4BHK:', ha.includes('4BHK'));
+  console.log('Variant B:', hb.length, 'chars | sold-out hook:', hb.includes('7 days'), '| amber:', hb.includes('b6862c'), '| EOI:', hb.includes('EOI'));
 })();

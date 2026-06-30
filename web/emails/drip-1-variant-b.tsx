@@ -1,220 +1,229 @@
 /**
- * Email 1 — Awareness, Variant B: "The Investment Brief"
- * Tone: editorial, data-first, like a VC memo to a smart investor.
- * Audience: same warm investors but reached via credibility not warmth.
- * Design: structured like a magazine brief — bold headers, stat callouts, dark hero.
+ * Email 1 — Variant B: "The Launch Bulletin"
+ * Newspaper/editorial bold. SOLD OUT in 7 days as the entire hook.
+ * White, black, amber — hard contrast, news urgency, data-driven.
+ * REDESIGN v2 — bold typographic impact, tabloid-editorial energy.
  */
 import {
   Body, Button, Container, Head, Hr, Html, Img,
-  Preview, Section, Text, Link, Row, Column, Font,
+  Preview, Section, Text, Link, Row, Column,
 } from "@react-email/components";
 import * as React from "react";
+
+// ponytail: swap CDN paths once images uploaded to Wix Media Manager
+const IMG_EXTERIOR = "https://static.wixstatic.com/media/dlf-westpark-exterior.jpg"; // brochure pg2 render
+const IMG_POOL     = "https://static.wixstatic.com/media/dlf-westpark-pool.jpg";     // brochure pg3 render
 
 interface Props {
   firstName?: string;
   ctaUrl?: string;
+  waUrl?: string;
   unsubUrl?: string;
 }
 
 export default function DripOneB({
   firstName = "Investor",
   ctaUrl = "https://realdealhousing.com/dlf-westpark-andheri-west",
+  waUrl = "https://wa.me/918291293889",
   unsubUrl = "#",
 }: Props) {
   return (
     <Html lang="en" dir="ltr">
       <Head />
-      <Preview>
-        DLF's first Mumbai project. Early access. Here's what the numbers say.
-      </Preview>
+      <Preview>DLF Westpark Phase 1: SOLD OUT in 7 days. Towers 6 & 7 now open for EOI.</Preview>
       <Body style={body}>
-
-        {/* ── Dark hero ── */}
-        <Section style={darkHero}>
-          <Text style={heroEyebrow}>REAL DEAL HOUSING · INVESTOR BRIEF</Text>
-          <Text style={heroHeadline}>
-            DLF enters Mumbai.<br />
-            The Westpark — Andheri West.<br />
-            Pre-launch. MahaRERA registered.
-          </Text>
-          <Text style={heroDate}>June 2026 · Private Distribution</Text>
-
-          <Button style={heroCtaButton} href={ctaUrl}>
-            Request early access →
-          </Button>
-        </Section>
 
         <Container style={container}>
 
-          {/* ── "Why this matters" bar ── */}
-          <Section style={whyBar}>
-            <Text style={whyBarText}>
-              DLF has never launched in Mumbai before.
-              When India's largest developer enters a new city,
-              the micro-market moves — permanently.
+          {/* ── Masthead ── */}
+          <Section style={masthead}>
+            <Row>
+              <Column style={{ width: "50%", textAlign: "left" as const }}>
+                <Text style={mastheadBrand}>REAL DEAL HOUSING</Text>
+              </Column>
+              <Column style={{ width: "50%", textAlign: "right" as const }}>
+                <Text style={mastheadDate}>June 2026 · Mumbai</Text>
+              </Column>
+            </Row>
+            <Hr style={mastheadRule} />
+          </Section>
+
+          {/* ── Banner headline ── */}
+          <Section style={bannerSection}>
+            <Text style={bannerKicker}>BREAKING · DLF WESTPARK PHASE 2</Text>
+            <Text style={bannerHeadline}>
+              Phase 1:<br />
+              SOLD OUT<br />
+              in 7 days.
+            </Text>
+            <Text style={bannerDeck}>
+              Four towers. One week. Now Towers 6 &amp; 7 open for EOI —
+              with pre-launch pricing still live and no lock-in.
             </Text>
           </Section>
 
-          {/* ── Stat row ── */}
-          <Section style={statsSection}>
+          {/* ── Exterior image ── */}
+          <Section style={{ padding: 0 }}>
+            <Img
+              src={IMG_EXTERIOR}
+              width="600"
+              alt="DLF The Westpark — Andheri West exterior"
+              style={fullImg}
+            />
+            <Text style={imgCaption}>Artist&rsquo;s impression · DLF The Westpark · Andheri West</Text>
+          </Section>
+
+          {/* ── Numbers that matter ── */}
+          <Section style={numbersSection}>
+            <Text style={numbersTitle}>THE NUMBERS THAT MATTER</Text>
             <Row>
-              <Column style={statCol}>
-                <Text style={statNumber}>57 yrs</Text>
-                <Text style={statLabel}>DLF track record</Text>
+              <Column style={numCol}>
+                <Text style={numBig}>18</Text>
+                <Text style={numUnit}>acres</Text>
+                <Text style={numDesc}>landmark scale</Text>
               </Column>
-              <Column style={statDivider} />
-              <Column style={statCol}>
-                <Text style={statNumber}>~10–15×</Text>
-                <Text style={statLabel}>avg early-stage returns, DLF projects</Text>
+              <Column style={numCol}>
+                <Text style={numBig}>8</Text>
+                <Text style={numUnit}>towers</Text>
+                <Text style={numDesc}>40 storeys each</Text>
               </Column>
-              <Column style={statDivider} />
-              <Column style={statCol}>
-                <Text style={statNumber}>Andheri W</Text>
-                <Text style={statLabel}>Mumbai's highest-velocity micro-market</Text>
+              <Column style={numCol}>
+                <Text style={numBig}>60k+</Text>
+                <Text style={numUnit}>sq ft</Text>
+                <Text style={numDesc}>amenities, 3 levels</Text>
+              </Column>
+              <Column style={numCol}>
+                <Text style={numBig}>7</Text>
+                <Text style={numUnit}>days</Text>
+                <Text style={numDesc}>Phase 1 sold out</Text>
               </Column>
             </Row>
           </Section>
 
-          {/* ── Section: The Developer ── */}
-          <Section style={contentSection}>
-            <Text style={sectionEyebrow}>THE DEVELOPER</Text>
-            <Text style={sectionHeadline}>DLF: the name that built India's most valuable neighbourhoods.</Text>
-
-            <Text style={bodyText}>
-              DLF built DLF Cyber City (Gurgaon), DLF Avenue (Delhi), and DLF
-              The Crest — properties that have delivered between 8× and 15× to
-              investors who entered at launch pricing. Their residential pipeline
-              has a consistent record: deliver on time, build a premium address
-              from scratch, and watch early investors compound.
-            </Text>
-
-            <Text style={bodyText}>
-              They are not a speculative developer. They are India&rsquo;s largest
-              listed real estate company by market cap. When DLF chooses a city,
-              it is because they intend to own its skyline.
-            </Text>
-
-            {/* callout box */}
-            <Section style={calloutBox}>
-              <Text style={calloutText}>
-                DLF has <strong>never</strong> launched a project in Mumbai
-                before DLF Westpark. This is their market-entry project — the
-                one they will protect most fiercely.
-              </Text>
-            </Section>
+          {/* ── Two-column: why DLF + why now ── */}
+          <Section style={twoColSection}>
+            <Row>
+              <Column style={twoColLeft}>
+                <Text style={colLabel}>WHY DLF</Text>
+                <Text style={colBody}>
+                  India&rsquo;s largest listed real estate company.
+                  57 years. NSE/BSE listed. Early investors across
+                  DLF projects have seen 10–15× returns. They
+                  chose Mumbai for their first project — this is
+                  a city-entry statement, not just another launch.
+                </Text>
+              </Column>
+              <Column style={twoColRight}>
+                <Text style={colLabel}>WHY NOW</Text>
+                <Text style={colBody}>
+                  Pre-launch pricing. No lock-in period. Lifetime
+                  maintenance by DLF — not a third-party society.
+                  EOI secures your position in the allotment queue
+                  before public pricing is released.
+                </Text>
+              </Column>
+            </Row>
           </Section>
 
-          <Hr style={sectionDivider} />
-
-          {/* ── Section: The Location ── */}
-          <Section style={contentSection}>
-            <Text style={sectionEyebrow}>THE LOCATION</Text>
-            <Text style={sectionHeadline}>Andheri West: connectivity + premium supply crunch.</Text>
-
-            <Text style={bodyText}>
-              Andheri West sits at the intersection of the Western Express
-              Highway and the metro corridor — office workers from BKC can
-              reach it in 20 minutes, airport in 10. The micro-market has
-              seen consistent 12–18% YoY price appreciation on new-build
-              inventory over the past 4 years.
-            </Text>
-
-            <Text style={bodyText}>
-              Premium supply (2Cr+ ticket) has been constrained — Oberoi,
-              Lodha, and Rustomjee have absorbed most land parcels. DLF
-              entering here is not incremental — it is a compression event.
-            </Text>
-
-            {/* mini stat row */}
-            <Section style={miniStatRow}>
-              <Row>
-                <Column style={miniStatCol}>
-                  <Text style={miniStatNum}>10 min</Text>
-                  <Text style={miniStatLbl}>to airport</Text>
-                </Column>
-                <Column style={miniStatCol}>
-                  <Text style={miniStatNum}>20 min</Text>
-                  <Text style={miniStatLbl}>to BKC via metro</Text>
-                </Column>
-                <Column style={miniStatCol}>
-                  <Text style={miniStatNum}>12–18%</Text>
-                  <Text style={miniStatLbl}>YoY price appreciation (Andheri W)</Text>
-                </Column>
-              </Row>
-            </Section>
+          {/* ── Pool / lifestyle image ── */}
+          <Section style={{ padding: 0 }}>
+            <Img
+              src={IMG_POOL}
+              width="600"
+              alt="DLF The Westpark — landscaped pool and gardens"
+              style={fullImg}
+            />
+            <Text style={imgCaption}>Artist&rsquo;s impression · curved pool · Japanese garden landscape</Text>
           </Section>
 
-          <Hr style={sectionDivider} />
+          {/* ── What's included ── */}
+          <Section style={includesSection}>
+            <Text style={includesTitle}>ULTRA LUXURY 4BHK · WHAT&rsquo;S INCLUDED</Text>
+            <Row>
+              <Column style={incCol}>
+                {[
+                  "Fine Dining Restaurant",
+                  "Café",
+                  "25m Swimming Pool",
+                  "Jacuzzi + Kids Pool",
+                  "Sky Lounge",
+                ].map((i, idx) => (
+                  <Text key={idx} style={incItem}>
+                    <span style={{ color: "#b6862c" }}>›</span> {i}
+                  </Text>
+                ))}
+              </Column>
+              <Column style={incCol}>
+                {[
+                  "Spa + Treatment Rooms",
+                  "Gym · TRX · Yoga Studio",
+                  "Cricket Pitch · Pickleball",
+                  "Bowling + Arcade + VR",
+                  "Proposed Metro Station adjacent",
+                ].map((i, idx) => (
+                  <Text key={idx} style={incItem}>
+                    <span style={{ color: "#b6862c" }}>›</span> {i}
+                  </Text>
+                ))}
+              </Column>
+            </Row>
+          </Section>
 
-          {/* ── Section: The Opportunity ── */}
-          <Section style={contentSection}>
-            <Text style={sectionEyebrow}>THE OPPORTUNITY</Text>
-            <Text style={sectionHeadline}>Pre-launch pricing: the window that closes first.</Text>
-
-            <Text style={bodyText}>
-              Pre-launch pricing on any DLF project has historically been 15–25%
-              below the first public price list. The projects that moved fastest
-              were the ones where informed investors moved in the pre-launch
-              window — before the brochure went public.
-            </Text>
-
-            <Text style={bodyText}>
-              We are offering our existing clients — you included — first
-              access to the project brief before it goes to the wider market.
-              No commitment. Just information.
+          {/* ── Standout box ── */}
+          <Section style={standoutBox}>
+            <Text style={standoutText}>
+              &ldquo;Phase 1: 4 towers SOLD OUT within ONE WEEK of launch.
+              EOI for Phase 2 (Towers 6 &amp; 7) is open now.
+              Limited inventory.&rdquo;
             </Text>
           </Section>
 
-          {/* ── CTA section ── */}
+          {/* ── CTA ── */}
           <Section style={ctaSection}>
-            <Text style={ctaHeadline}>Request the DLF Westpark brief.</Text>
-            <Text style={ctaSubhead}>
-              Floor plans, RERA details, pricing estimates, and our view on
-              the investment case. Sent within the hour.
-            </Text>
-            <Button style={ctaButton} href={ctaUrl}>
-              Get the project brief →
-            </Button>
-            <Text style={ctaAlt}>
-              Prefer a call?{" "}
-              <Link href="https://wa.me/918291293889" style={ctaAltLink}>
-                WhatsApp Padmini directly →
-              </Link>
-            </Text>
-          </Section>
-
-          {/* ── Signature / from line ── */}
-          <Section style={fromSection}>
-            <Hr style={fromDivider} />
             <Row>
-              <Column style={{ width: "40px" }}>
-                <Section style={avatarCircle}>
-                  <Text style={avatarInitial}>P</Text>
-                </Section>
+              <Column style={{ width: "60%", paddingRight: "20px" }}>
+                <Text style={ctaLeft}>
+                  Request the EOI form, price list, floor plans,
+                  and brochure. Private presentation available
+                  for serious buyers.
+                </Text>
               </Column>
-              <Column style={{ paddingLeft: "12px" }}>
-                <Text style={fromName}>Padmini Jain</Text>
-                <Text style={fromTitle}>Director, Real Deal Housing · +91 82912 93889</Text>
+              <Column style={{ width: "40%", textAlign: "center" as const }}>
+                <Button href={ctaUrl} style={ctaBtn}>
+                  Get the brief →
+                </Button>
+                <Text style={ctaOr}>or</Text>
+                <Button href={waUrl} style={waBtn}>
+                  WhatsApp →
+                </Button>
               </Column>
             </Row>
+          </Section>
+
+          {/* ── From ── */}
+          <Section style={fromSection}>
+            <Hr style={fromHr} />
+            <Text style={fromName}>Padmini Jain</Text>
+            <Text style={fromTitle2}>Director · Real Deal Housing · +91 82912 93889</Text>
           </Section>
 
           {/* ── Footer ── */}
           <Section style={footer}>
-            <Hr style={footerDivider} />
+            <Hr style={footerHr} />
             <Text style={footerText}>
-              Real Deal Housing Pvt. Ltd. · Mumbai, Maharashtra, India
+              Real Deal Housing Pvt. Ltd. · Mumbai, Maharashtra
             </Text>
             <Text style={footerText}>
-              You are receiving this as a client of Real Deal Housing.{" "}
+              MahaRERA: PR1181012500079 · valid 30/06/2032 · maharera.maharashtra.gov.in
+            </Text>
+            <Text style={footerText}>
+              Receiving this as a client of Real Deal Housing.{" "}
               <Link href={unsubUrl} style={footerLink}>Unsubscribe</Link>
-              {" · "}
-              <Link href="https://realdealhousing.com/privacy" style={footerLink}>Privacy</Link>
             </Text>
             <Text style={disclaimer}>
-              This is not financial advice. Return figures are historical references from
-              publicly available DLF project data. Past performance does not guarantee future
-              returns. MahaRERA: PR1181012500079 · valid 30/06/2032 · maharera.maharashtra.gov.in
+              Not financial advice. Artist&rsquo;s impressions used where indicated.
+              Return figures are historical references from public DLF project data.
+              Past performance does not guarantee future returns.
             </Text>
           </Section>
 
@@ -225,223 +234,234 @@ export default function DripOneB({
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
+
 const body: React.CSSProperties = {
-  backgroundColor: "#f5f5f0",
-  fontFamily: "Arial, Helvetica, sans-serif",
+  backgroundColor: "#f0efea",
   margin: 0,
   padding: 0,
+  fontFamily: "Arial, Helvetica, sans-serif",
 };
-
-const darkHero: React.CSSProperties = {
-  backgroundColor: "#1f3d4d",
-  padding: "48px 40px 40px",
-  textAlign: "center",
-};
-const heroEyebrow: React.CSSProperties = {
-  color: "#b6862c",
-  fontSize: "10px",
-  fontWeight: "700",
-  letterSpacing: "3px",
-  margin: "0 0 24px",
-};
-const heroHeadline: React.CSSProperties = {
-  color: "#ffffff",
-  fontSize: "32px",
-  lineHeight: "1.2",
-  fontWeight: "700",
-  fontFamily: "Georgia, serif",
-  margin: "0 0 16px",
-};
-const heroDate: React.CSSProperties = {
-  color: "rgba(255,255,255,0.5)",
-  fontSize: "11px",
-  letterSpacing: "1px",
-  margin: "0 0 32px",
-};
-const heroCtaButton: React.CSSProperties = {
-  backgroundColor: "#b6862c",
-  color: "#ffffff",
-  padding: "14px 28px",
-  borderRadius: "3px",
-  fontSize: "13px",
-  fontWeight: "700",
-  letterSpacing: "0.5px",
-  textDecoration: "none",
-  display: "inline-block",
-};
-
 const container: React.CSSProperties = {
   maxWidth: "600px",
   margin: "0 auto",
   backgroundColor: "#ffffff",
 };
 
-const whyBar: React.CSSProperties = {
-  backgroundColor: "#eef1ef",
-  padding: "20px 40px",
-  borderLeft: "4px solid #1f3d4d",
+const masthead: React.CSSProperties = { padding: "16px 32px 0" };
+const mastheadBrand: React.CSSProperties = {
+  fontSize: "11px",
+  fontWeight: "700",
+  letterSpacing: "2px",
+  color: "#1a1a1a",
+  margin: 0,
 };
-const whyBarText: React.CSSProperties = {
+const mastheadDate: React.CSSProperties = {
+  fontSize: "10px",
+  color: "#999",
+  margin: 0,
+  letterSpacing: "0.5px",
+};
+const mastheadRule: React.CSSProperties = { borderColor: "#1a1a1a", borderWidth: "2px", margin: "12px 0 0" };
+
+const bannerSection: React.CSSProperties = { padding: "28px 32px 24px", backgroundColor: "#ffffff" };
+const bannerKicker: React.CSSProperties = {
+  fontSize: "10px",
+  fontWeight: "700",
+  letterSpacing: "3px",
+  color: "#b6862c",
+  margin: "0 0 10px",
+};
+const bannerHeadline: React.CSSProperties = {
+  fontSize: "58px",
+  fontWeight: "900",
+  lineHeight: "0.95",
+  color: "#0c1a23",
+  margin: "0 0 16px",
+  fontFamily: "Arial Black, Arial, sans-serif",
+  letterSpacing: "-1px",
+};
+const bannerDeck: React.CSSProperties = {
   fontSize: "15px",
   lineHeight: "1.6",
-  color: "#1f3d4d",
-  fontStyle: "italic",
-  margin: 0,
-  fontFamily: "Georgia, serif",
+  color: "#555",
+  margin: "0",
+  borderLeft: "3px solid #b6862c",
+  paddingLeft: "14px",
 };
 
-const statsSection: React.CSSProperties = {
-  padding: "32px 40px",
-  backgroundColor: "#ffffff",
+const fullImg: React.CSSProperties = {
+  width: "600px",
+  maxWidth: "100%",
+  display: "block",
+  height: "300px",
+  objectFit: "cover",
+  objectPosition: "center",
 };
-const statCol: React.CSSProperties = { textAlign: "center", width: "30%" };
-const statDivider: React.CSSProperties = { width: "1px", backgroundColor: "#eef1ef" };
-const statNumber: React.CSSProperties = {
-  fontSize: "22px",
-  fontWeight: "700",
-  color: "#1f3d4d",
-  margin: "0 0 4px",
-};
-const statLabel: React.CSSProperties = {
+const imgCaption: React.CSSProperties = {
   fontSize: "10px",
-  color: "#888",
-  letterSpacing: "0.5px",
+  color: "#aaa",
+  fontStyle: "italic",
+  padding: "6px 32px",
   margin: 0,
+  backgroundColor: "#f8f8f6",
+};
+
+const numbersSection: React.CSSProperties = {
+  backgroundColor: "#0c1a23",
+  padding: "28px 20px",
+};
+const numbersTitle: React.CSSProperties = {
+  fontSize: "9px",
+  fontWeight: "700",
+  letterSpacing: "3px",
+  color: "rgba(255,255,255,0.4)",
+  textAlign: "center",
+  margin: "0 0 20px",
+};
+const numCol: React.CSSProperties = { textAlign: "center", width: "25%" };
+const numBig: React.CSSProperties = {
+  fontSize: "30px",
+  fontWeight: "900",
+  color: "#b6862c",
+  margin: "0 0 2px",
+  lineHeight: "1",
+};
+const numUnit: React.CSSProperties = {
+  fontSize: "11px",
+  fontWeight: "700",
+  color: "#ffffff",
+  margin: "0 0 3px",
+  letterSpacing: "1px",
+};
+const numDesc: React.CSSProperties = {
+  fontSize: "9px",
+  color: "rgba(255,255,255,0.45)",
+  margin: 0,
+  lineHeight: "1.3",
+};
+
+const twoColSection: React.CSSProperties = { padding: "28px 0" };
+const twoColLeft: React.CSSProperties = {
+  width: "50%",
+  padding: "0 20px 0 32px",
+  borderRight: "1px solid #eee",
+  verticalAlign: "top",
+};
+const twoColRight: React.CSSProperties = {
+  width: "50%",
+  padding: "0 32px 0 20px",
+  verticalAlign: "top",
+};
+const colLabel: React.CSSProperties = {
+  fontSize: "9px",
+  fontWeight: "700",
+  letterSpacing: "3px",
+  color: "#b6862c",
+  margin: "0 0 10px",
+};
+const colBody: React.CSSProperties = {
+  fontSize: "13px",
+  lineHeight: "1.7",
+  color: "#444",
+  margin: 0,
+};
+
+const includesSection: React.CSSProperties = { padding: "20px 32px 24px", backgroundColor: "#f8f8f6" };
+const includesTitle: React.CSSProperties = {
+  fontSize: "9px",
+  fontWeight: "700",
+  letterSpacing: "3px",
+  color: "#0c1a23",
+  margin: "0 0 16px",
+};
+const incCol: React.CSSProperties = { width: "50%", verticalAlign: "top" };
+const incItem: React.CSSProperties = {
+  fontSize: "12px",
+  color: "#444",
+  margin: "0 0 7px",
   lineHeight: "1.4",
 };
 
-const contentSection: React.CSSProperties = { padding: "24px 40px 8px" };
-const sectionEyebrow: React.CSSProperties = {
-  fontSize: "10px",
-  fontWeight: "700",
-  letterSpacing: "2.5px",
-  color: "#b6862c",
-  margin: "0 0 8px",
+const standoutBox: React.CSSProperties = {
+  backgroundColor: "#b6862c",
+  padding: "24px 32px",
 };
-const sectionHeadline: React.CSSProperties = {
-  fontSize: "20px",
-  fontWeight: "700",
-  color: "#1a1a1a",
-  fontFamily: "Georgia, serif",
-  margin: "0 0 16px",
-  lineHeight: "1.3",
-};
-const bodyText: React.CSSProperties = {
-  fontSize: "15px",
-  lineHeight: "1.75",
-  color: "#444",
-  margin: "0 0 16px",
-};
-
-const calloutBox: React.CSSProperties = {
-  backgroundColor: "#1f3d4d",
-  borderRadius: "4px",
-  padding: "20px 24px",
-  margin: "16px 0 24px",
-};
-const calloutText: React.CSSProperties = {
-  fontSize: "15px",
+const standoutText: React.CSSProperties = {
+  fontSize: "16px",
   lineHeight: "1.6",
   color: "#ffffff",
+  fontStyle: "italic",
+  fontFamily: "Georgia, serif",
   margin: 0,
-};
-
-const sectionDivider: React.CSSProperties = { borderColor: "#eef1ef", margin: "8px 40px" };
-
-const miniStatRow: React.CSSProperties = {
-  backgroundColor: "#f8f9f8",
-  borderRadius: "4px",
-  padding: "16px 0",
-  margin: "16px 0 24px",
-};
-const miniStatCol: React.CSSProperties = { textAlign: "center", width: "33%" };
-const miniStatNum: React.CSSProperties = {
-  fontSize: "16px",
-  fontWeight: "700",
-  color: "#1f3d4d",
-  margin: "0 0 2px",
-};
-const miniStatLbl: React.CSSProperties = { fontSize: "10px", color: "#888", margin: 0 };
-
-const ctaSection: React.CSSProperties = {
-  padding: "32px 40px",
-  backgroundColor: "#1a1a1a",
   textAlign: "center",
 };
-const ctaHeadline: React.CSSProperties = {
-  fontSize: "22px",
-  fontWeight: "700",
-  color: "#ffffff",
-  fontFamily: "Georgia, serif",
-  margin: "0 0 8px",
+
+const ctaSection: React.CSSProperties = { padding: "28px 32px", borderTop: "1px solid #eee" };
+const ctaLeft: React.CSSProperties = {
+  fontSize: "13px",
+  lineHeight: "1.7",
+  color: "#444",
+  margin: 0,
 };
-const ctaSubhead: React.CSSProperties = {
-  fontSize: "14px",
-  color: "rgba(255,255,255,0.65)",
-  lineHeight: "1.6",
-  margin: "0 0 24px",
-};
-const ctaButton: React.CSSProperties = {
-  backgroundColor: "#b6862c",
+const ctaBtn: React.CSSProperties = {
+  backgroundColor: "#0c1a23",
   color: "#ffffff",
-  padding: "16px 32px",
-  borderRadius: "3px",
-  fontSize: "14px",
+  padding: "12px 20px",
+  fontSize: "12px",
   fontWeight: "700",
   letterSpacing: "0.5px",
+  borderRadius: "2px",
+  textDecoration: "none",
+  display: "inline-block",
+  marginBottom: "8px",
+};
+const ctaOr: React.CSSProperties = {
+  fontSize: "10px",
+  color: "#ccc",
+  margin: "4px 0",
+  textAlign: "center",
+};
+const waBtn: React.CSSProperties = {
+  backgroundColor: "transparent",
+  color: "#b6862c",
+  padding: "10px 20px",
+  fontSize: "12px",
+  fontWeight: "700",
+  border: "1px solid #b6862c",
+  borderRadius: "2px",
   textDecoration: "none",
   display: "inline-block",
 };
-const ctaAlt: React.CSSProperties = {
-  fontSize: "12px",
-  color: "rgba(255,255,255,0.45)",
-  marginTop: "16px",
-};
-const ctaAltLink: React.CSSProperties = { color: "#b6862c", textDecoration: "none" };
 
-const fromSection: React.CSSProperties = { padding: "24px 40px" };
-const fromDivider: React.CSSProperties = { borderColor: "#eef1ef", margin: "0 0 20px" };
-const avatarCircle: React.CSSProperties = {
-  width: "40px",
-  height: "40px",
-  borderRadius: "50%",
-  backgroundColor: "#1f3d4d",
-  textAlign: "center",
-};
-const avatarInitial: React.CSSProperties = {
-  color: "#b6862c",
-  fontSize: "18px",
-  fontWeight: "700",
-  lineHeight: "40px",
-  margin: 0,
-};
+const fromSection: React.CSSProperties = { padding: "16px 32px 20px" };
+const fromHr: React.CSSProperties = { borderColor: "#eee", margin: "0 0 14px" };
 const fromName: React.CSSProperties = {
-  fontSize: "15px",
+  fontSize: "14px",
   fontWeight: "700",
   color: "#1a1a1a",
   margin: "0 0 2px",
 };
-const fromTitle: React.CSSProperties = {
-  fontSize: "12px",
-  color: "#888",
+const fromTitle2: React.CSSProperties = {
+  fontSize: "11px",
+  color: "#999",
   margin: 0,
 };
 
-const footer: React.CSSProperties = { padding: "0 40px 40px" };
-const footerDivider: React.CSSProperties = { borderColor: "#eef1ef", margin: "0 0 16px" };
+const footer: React.CSSProperties = { padding: "0 32px 32px" };
+const footerHr: React.CSSProperties = { borderColor: "#eee", margin: "0 0 14px" };
 const footerText: React.CSSProperties = {
-  fontSize: "11px",
-  color: "#aaa",
+  fontSize: "10px",
+  color: "#bbb",
   textAlign: "center",
-  lineHeight: "1.6",
-  margin: "0 0 4px",
+  margin: "0 0 3px",
+  lineHeight: "1.5",
 };
-const footerLink: React.CSSProperties = { color: "#aaa", textDecoration: "underline" };
+const footerLink: React.CSSProperties = { color: "#bbb", textDecoration: "underline" };
 const disclaimer: React.CSSProperties = {
   fontSize: "10px",
   color: "#ccc",
   textAlign: "center",
-  lineHeight: "1.5",
-  margin: "16px 0 0",
   fontStyle: "italic",
+  margin: "12px 0 0",
+  lineHeight: "1.5",
 };
