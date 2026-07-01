@@ -2,11 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-/**
- * Mobile sticky CTA — two segments (Request details | WhatsApp). Hides once the
- * enquiry section is in view (intersection), matching the approved Gallery
- * White spec. WhatsApp is a placeholder href (no live contact wired).
- */
 export function StickyCta() {
   const [hidden, setHidden] = useState(false);
 
@@ -33,13 +28,14 @@ export function StickyCta() {
       >
         Request details
       </a>
-      <span
-        aria-disabled
-        title="Preview only — no live contact wired"
-        className="flex-1 cursor-default bg-warm py-4 text-center text-sm font-semibold text-white/95"
+      <a
+        href="https://wa.me/918291293889?text=Hi%20Padmini%2C%20I%27m%20interested%20in%20DLF%20Westpark%20%E2%80%94%20can%20you%20share%20details%3F"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 bg-warm py-4 text-center text-sm font-semibold text-white"
       >
         WhatsApp
-      </span>
+      </a>
     </div>
   );
 }

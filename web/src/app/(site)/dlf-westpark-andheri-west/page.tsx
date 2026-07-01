@@ -237,68 +237,58 @@ export default function DlfWestparkPage() {
         </div>
       </section>
 
-      {/* 09 — PREVIEW-ONLY ENQUIRY */}
+      {/* 09 — ENQUIRY */}
       <section id="enquiry" className="mx-auto max-w-6xl px-6 py-24">
         <Reveal>
-          <Eyebrow n="09" label="Enquiry" />
+          <Eyebrow n="09" label="Get in touch" />
           <div className="grid gap-12 md:grid-cols-[1fr_1.1fr]">
             <div>
               <h2 className="text-3xl font-bold tracking-tight text-teal md:text-4xl">
-                Request details
+                Request the full brief.
               </h2>
               <p className="mt-5 max-w-md text-ink/65">
-                This is a staging preview. The form below does{" "}
-                <strong className="text-teal">not</strong> submit — there is no
-                live capture, no automation, and no contact is created. Enquiries
-                are manual-review only.
+                Price list, floor plans and brochure — and a private presentation
+                if you&rsquo;d like to go deeper. No commitment, no lock-in.
               </p>
-              <p className="mt-4 inline-flex rounded-md bg-mist px-3 py-2 font-mono text-xs text-ink/60">
-                send_enabled = false · webhook = none · CRM_write = none
+              <div className="mt-8 space-y-3">
+                <a
+                  href="https://wa.me/918291293889?text=Hi%20Padmini%2C%20I%27m%20interested%20in%20DLF%20Westpark%20Phase%202%20%E2%80%94%20can%20you%20share%20the%20price%20list%20and%20floor%20plans%3F"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-full bg-warm px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 w-fit"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.549 4.107 1.51 5.84L.057 23.428a.5.5 0 0 0 .614.614l5.588-1.453A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.65-.52-5.16-1.426l-.37-.22-3.818.993.993-3.818-.22-.37A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                  WhatsApp Padmini
+                </a>
+                <a
+                  href={`mailto:PadminiJain1@gmail.com?subject=${encodeURIComponent("DLF Westpark — request for details")}&body=${encodeURIComponent("Hi Padmini,\n\nI'd like the price list, floor plans and brochure for DLF Westpark Phase 2.\n\nName: \nPhone: \nConfiguration interest (3 / 4 BHK): \n\nThank you.")}`}
+                  className="flex items-center gap-3 rounded-full border border-mist-deep px-6 py-3.5 text-sm font-semibold text-teal transition-colors hover:bg-mist w-fit"
+                >
+                  Email instead →
+                </a>
+              </div>
+              <p className="mt-6 font-mono text-xs text-ink/40">
+                +91 82912 93889 · Director, Real Deal Housing
               </p>
             </div>
 
-            {/* Preview-only form: no action, submit disabled, consent unchecked */}
-            <form
-              aria-disabled
-              onSubmit={undefined}
-              className="rounded-2xl border border-mist-deep bg-white p-7"
-            >
-              <div className="grid gap-4">
-                <Field label="Name" placeholder="Your name" />
-                <Field label="Contact method" placeholder="Phone or email" />
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/50">
-                    Buying intent
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {["End use", "Investment", "Just exploring"].map((p) => (
-                      <span
-                        key={p}
-                        className="rounded-full border border-mist-deep px-3 py-1.5 text-xs text-ink/60"
-                      >
-                        {p}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <Field label="Message" placeholder="Anything specific?" textarea />
-                <label className="flex items-start gap-2.5 text-xs text-ink/60">
-                  <input type="checkbox" disabled className="mt-0.5" />
-                  I consent to be contacted about this enquiry.
-                </label>
-                <label className="flex items-start gap-2.5 text-xs text-ink/60">
-                  <input type="checkbox" disabled className="mt-0.5" />
-                  I have read the privacy note.
-                </label>
-                <button
-                  type="button"
-                  disabled
-                  className="mt-1 cursor-not-allowed rounded-full bg-mist-deep px-6 py-3.5 text-sm font-semibold text-ink/50"
-                >
-                  Preview only — no live submission
-                </button>
-              </div>
-            </form>
+            <div className="rounded-2xl border border-mist-deep bg-mist/30 p-8">
+              <p className="font-mono text-xs uppercase tracking-wider text-ink/40 mb-5">What to expect</p>
+              <ul className="space-y-4 text-sm text-ink/65">
+                {[
+                  "Price list and carpet area schedule for 3 & 4 BHK",
+                  "Floor plans for Towers 6 & 7 (Phase 2)",
+                  "Full brochure — DLF & Trident Realty",
+                  "Private presentation if you want to go deeper",
+                  "No lock-in, no brokerage pressure",
+                ].map((item) => (
+                  <li key={item} className="flex gap-3">
+                    <span className="text-warm font-bold mt-0.5">—</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </Reveal>
       </section>
@@ -351,34 +341,3 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function Field({
-  label,
-  placeholder,
-  textarea,
-}: {
-  label: string;
-  placeholder: string;
-  textarea?: boolean;
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/50">
-        {label}
-      </label>
-      {textarea ? (
-        <textarea
-          disabled
-          rows={3}
-          placeholder={placeholder}
-          className="w-full resize-none rounded-lg border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35 focus:bg-white focus:outline-none"
-        />
-      ) : (
-        <input
-          disabled
-          placeholder={placeholder}
-          className="w-full rounded-lg border border-mist-deep bg-mist/40 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35 focus:bg-white focus:outline-none"
-        />
-      )}
-    </div>
-  );
-}

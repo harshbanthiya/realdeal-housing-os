@@ -83,6 +83,13 @@ media/
 *.webp
 *.psd
 *.ai
+# Allow website public assets to be committed
+!web/public/**/*.jpg
+!web/public/**/*.jpeg
+!web/public/**/*.png
+!web/public/**/*.gif
+!web/public/**/*.webp
+!web/public/**/*.svg
 
 # Contact/client data files
 *.csv
