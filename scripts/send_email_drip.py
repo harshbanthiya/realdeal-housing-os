@@ -18,10 +18,11 @@ WEB_DIR      = PROJECT_ROOT / "web"
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 from _db import run_psql
 
-FROM_ADDRESS  = os.environ.get("EMAIL_FROM", "Padmini Jain <padmini@realdealhousing.com>")
-DIRECTOR_WA   = "https://wa.me/918291293889"
-YOUTUBE_URL   = "https://www.youtube.com/@RealDealHousing"
-ASSET_BASE    = os.environ.get("EMAIL_ASSET_BASE", "http://localhost:3000/emails/assets")
+FROM_ADDRESS    = os.environ.get("EMAIL_FROM", "Padmini Jain <padmini@realdealhousing.com>")
+DIRECTOR_EMAIL  = "PadminiJain1@gmail.com"   # cc + reply-to on every send
+DIRECTOR_WA     = "https://wa.me/918291293889"
+YOUTUBE_URL     = "https://www.youtube.com/@RealDealHousing"
+ASSET_BASE      = os.environ.get("EMAIL_ASSET_BASE", "http://localhost:3000/emails/assets")
 
 SUBJECTS = {
     "dlf-westpark":   "Phase 2 is open — DLF Westpark, Andheri West",
@@ -101,6 +102,8 @@ def send_via_resend(api_key: str, to: str, subject: str, html: str) -> dict:
     payload = json.dumps({
         "from": FROM_ADDRESS,
         "to": [to],
+        "cc": [DIRECTOR_EMAIL],
+        "reply_to": DIRECTOR_EMAIL,
         "subject": subject,
         "html": html,
     }).encode()
@@ -162,13 +165,12 @@ def main() -> int:
     unsub_url  = make_unsub_url(contact["id"], contact["unsub_token"])
 
     props = {
-        "firstName":    first_name,
-        "leadEmail":    contact["email"],
-        "waUrl":        DIRECTOR_WA,
-        "youtubeUrl":   YOUTUBE_URL,
-        "assetBase":    ASSET_BASE,
+        "firstName":  first_name,
+        "waUrl":      DIRECTOR_WA,
+        "youtubeUrl": YOUTUBE_URL,
+        "assetBase":  ASSET_BASE,
         "showProofStrip": True,
-        "showGardens":  True,
+        "showGardens":    True,
     }
 
     subject  = SUBJECTS.get(args.template, "A private note from Real Deal Housing")
