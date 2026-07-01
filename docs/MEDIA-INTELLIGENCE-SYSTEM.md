@@ -1,6 +1,52 @@
 # Media Intelligence System
-**Status:** Design approved, not yet built  
-**Context:** Discussed 2026-07-01. Records vision + human-in-loop gates so context survives session resets.
+**Last updated:** 2026-07-01  
+**Build status:** Phase A ✅ Phase B ✅ Phase C ✅ Phase D 🔲 Phase E–G 🔲
+
+## Current State (as of 2026-07-01)
+
+### Phase A — DAM + Disk Scanner ✅ DONE
+- Migration `056_media_intelligence_dam.sql`: extended `media_assets` with `configuration_type`, `asset_level`, `asset_type`, `source`, `alt_text`, `reviewed`, `brochure_page`, etc.
+- `scripts/scan_media_to_db.py`: walked `/Volumes/RDH 5TB/RDH DATA 2024/RDH ALL Footage/ALL PROJECTS/` → 2585 files indexed (5993 found, 3408 skipped dups). 1678 rows flagged `ASSET_TYPE_UNCLEAR`.
+- DLF Westpark: 25 disk files linked to building_id `a642e2db-27e6-4aba-b4ec-056c3f3edf01` via `UPDATE … WHERE file_path LIKE '%DLF Westpark%'`.
+
+### Phase B — Brochure Intelligence Pipeline ✅ DONE
+- Migration `057_brochure_extraction_staging.sql`: tables `brochure_extractions`, `brochure_tower_staging`, `brochure_unit_config_staging`; views `vw_brochure_extraction_status`, `vw_brochure_config_review_queue`, `vw_brochure_apply_readiness`.
+- `scripts/seed_dlf_brochure_extraction.py`: seeded all 4 towers (T02–T05) from `Presenter 1.pdf` visual review. Each tower has 5–7 configs. Full floor ranges, carpet/balcony areas, refuge floors, duplexes all recorded.
+- `scripts/review_dlf_brochure_extraction.py`: review/approve/reject/revert workflow.
+- `scripts/apply_dlf_brochure_extraction.py`: wrote DLF building row to `buildings` (id `a642e2db-…`). Unit config_type backfill skipped — DLF units not yet imported to `building_units`.
+- All 25 configs approved. Committed `38130fa`, `6061bed`.
+
+**DLF config taxonomy (26 total configs):**
+- T02: 3BHK-01, 3BHK-02, 4BHK-01, 5BHK-01, 4BHK-DUPLEX-01
+- T03: 3BHK-01/02/03/04, 4BHK-03, 4BHK-DUPLEX-01/02
+- T04: 3BHK-01/02/03, 4BHK-03, 4BHK-03-FL36, 4BHK-DUPLEX-01
+- T05: 3BHK-01/02/03, STUDIO-01-REFUGE, STUDIO-01-FL36, 4BHK-DUPLEX-02/03
+
+### Phase C — Brochure Page Extractor ✅ DONE
+- Migration `058_brochure_media_extract.sql`: added `brochure_page` int column + `location_map` to asset_type enum.
+- `scripts/extract_brochure_media.py`: hardcoded `PAGE_MAP` for all 55 mapped pages of `Presenter 1.pdf` (pages 56–57 skipped: payment plan, back cover). Renders each page at 2× resolution (pymupdf), saves PNG to `exports/media/dlf-westpark/` (git-ignored), inserts into `media_assets`.
+- **Result:** 55 PNG files, 60 `media_assets` rows inserted: 20 tower floor plans, 25 configuration unit plans, 15 building-level (5 structure + 10 amenities).
+- All `reviewed=false` — nothing published until operator approves.
+- Committed `ccba75a`.
+
+**Brochure page map summary:**
+- p01–p05: building level (cover exterior, all-towers exterior, amenity, location map, master layout)
+- p06–p10: T02 floor plans (typical, refuge 7/15/22/29, refuge 36, duplex 39, duplex 40)
+- p11–p14: T02 unit plans
+- p15–p19: T03 floor plans, p20–p24: T03 unit plans
+- p25–p29: T04 floor plans, p30–p34: T04 unit plans
+- p35–p39: T05 floor plans, p40–p45: T05 unit plans
+- p46–p55: 10 amenity photos (eco-deck pool/courtyard/jogging, bowling, café, banquet, pool, kids indoor/outdoor, spa)
+
+### Phase D — Cockpit `/cockpit/media` page 🔲 NEXT
+Goal: browse and approve the 60 brochure-extracted assets + tag the 1,678 `ASSET_TYPE_UNCLEAR` disk-scanned rows. Read-only grid + approve button. Pattern: mirrors `/cockpit/outreach`.
+
+### Phase E–G 🔲 Later
+- E: YouTube + virtual staging tracking
+- F: pgvector RAG (when asset count > ~200 indexed)
+- G: Social automation
+
+---
 
 ---
 
