@@ -38,22 +38,27 @@ EXTRACTION = {
 TOWERS = {
     "T02": {
         "tower_name": "Tower-02",
-        "floor_count": 36,
+        "floor_count": 40,
         "units_per_typical_floor": 2,
-        "typical_floor_ranges": "3rd–6th, 8th–12th & 14th, 16th–21st, 23rd–28th, 30th–35th",
+        "typical_floor_ranges": "3rd–6th, 8th–12th & 14th, 16th–21st, 23rd–28th, 30th–35th (2 units); floors 36–40 single unit only",
         "atypical_floors": [
-            {"floors": "7, 15, 22, 29", "type": "refuge"},
-            {"floors": "36", "type": "penthouse"},
+            {"floors": "7, 15, 22, 29", "type": "refuge_5bhk", "units": "01 only"},
+            {"floors": "36, 37, 38", "type": "4bhk_single", "units": "01 only"},
+            {"floors": "39–40", "type": "4bhk_duplex", "units": "01 only (lower 39th / upper 40th)"},
         ],
         "brochure_page_start": 6,
     },
     "T03": {
         "tower_name": "Tower-03",
-        "floor_count": 39,
+        "floor_count": 40,
         "units_per_typical_floor": 4,
-        "typical_floor_ranges": "3rd–12th & 14th–38th (units 01/02); 3rd–12th, 14th–35th, 37th–39th (units 03/04)",
+        "typical_floor_ranges": "3–12, 14–38 (units 01/02); 3–12, 14–35, 37–39 (unit 03); 3–6, 8–11, 14, 16–21, 23–28, 30–35, 37–39 (unit 04); floor 36 unit 03 = 4BHK; floors 39–40 units 01/02 = 4BHK duplex",
         "atypical_floors": [
-            {"floors": "13", "type": "refuge"},
+            {"floors": "7, 15, 22, 29", "type": "refuge", "units": "01/02/03 only"},
+            {"floors": "12", "type": "refuge_unit04_excluded", "units": "01/02/03 present, 04 absent"},
+            {"floors": "13", "type": "refuge_all"},
+            {"floors": "36", "type": "refuge_unit03_4bhk", "units": "03=4BHK only (01/02/04 absent)"},
+            {"floors": "39–40", "type": "4bhk_duplex", "units": "01 and 02 (lower 39th / upper 40th)"},
         ],
         "brochure_page_start": 20,
     },
@@ -61,20 +66,25 @@ TOWERS = {
         "tower_name": "Tower-04",
         "floor_count": 40,
         "units_per_typical_floor": 4,
-        "typical_floor_ranges": "3rd–12th & 14th–38th (unit 01); 3rd–6th, 8th–12th, 14th, 16th–21st, 23rd–28th, 30th–35th, 37th–39th (unit 02)",
+        "typical_floor_ranges": "3–12, 14–38 (unit 01); 3–6, 8–12, 14, 16–21, 23–28, 30–35, 37–39 (units 02/03); floors 36+39–40 single-unit atypical",
         "atypical_floors": [
-            {"floors": "13", "type": "refuge"},
-            {"floors": "40", "type": "penthouse"},
+            {"floors": "7, 15, 22, 29", "type": "refuge_4bhk", "units": "03=4BHK (01/02 absent)"},
+            {"floors": "13", "type": "refuge_all"},
+            {"floors": "36", "type": "refuge_4bhk_large", "units": "03=4BHK only"},
+            {"floors": "39–40", "type": "4bhk_duplex", "units": "01 only (lower 39th / upper 40th)"},
         ],
         "brochure_page_start": 29,
     },
     "T05": {
         "tower_name": "Tower-05",
-        "floor_count": 38,
+        "floor_count": 40,
         "units_per_typical_floor": 4,
-        "typical_floor_ranges": "3rd–6th, 8th–12th & 14th, 16th–21st, 23rd–28th, 30th–35th, 37th–38th (unit 01); 3rd–12th & 14th–38th (unit 02)",
+        "typical_floor_ranges": "3–6, 8–12, 14, 16–21, 23–28, 30–35, 37–38 (unit 01); 3–12, 14–38 (units 02/03); floors 7/15/22/29/36 = refuge studios; floors 39–40 = 4BHK duplex 02+03",
         "atypical_floors": [
-            {"floors": "36", "type": "refuge"},
+            {"floors": "7, 15, 22, 29", "type": "refuge_studio", "units": "01=studio (245sqft, no balcony); 02/03 absent"},
+            {"floors": "13", "type": "refuge_all"},
+            {"floors": "36", "type": "refuge_studio_large", "units": "01=studio (478sqft); 02/03 absent"},
+            {"floors": "39–40", "type": "4bhk_duplex", "units": "02 and 03 (lower 39th / upper 40th)"},
         ],
         "brochure_page_start": 37,
     },
@@ -83,6 +93,7 @@ TOWERS = {
 # (tower_code, unit_position, is_penthouse, is_refuge_variant) → config data
 UNIT_CONFIGS = [
     # ── Tower 02 ──────────────────────────────────────────────────────────────
+    # Typical floors (2 units per floor)
     dict(tower_code="T02", unit_position="01", configuration_type="T02-3BHK-01",
          bhk=3, carpet_area_sqft=1260.72, carpet_area_sqm=117.12,
          balcony_sqft=103.99, total_area_sqft=1364.71,
@@ -95,11 +106,26 @@ UNIT_CONFIGS = [
          typical_floors="3–6, 8–12, 14, 16–21, 23–28, 30–35",
          is_penthouse=False, is_refuge_variant=False, floor_plan_page=11),
 
-    dict(tower_code="T02", unit_position="01", configuration_type="T02-4BHK-PH",
+    # Refuge floors 7, 15, 22, 29 — unit 01 only, 5BHK
+    dict(tower_code="T02", unit_position="01", configuration_type="T02-5BHK-01",
+         bhk=5, carpet_area_sqft=1825.23, carpet_area_sqm=169.57,
+         balcony_sqft=175.69, total_area_sqft=2000.92,
+         typical_floors="7, 15, 22, 29",
+         is_penthouse=False, is_refuge_variant=True, floor_plan_page=13),
+
+    # Floors 36–38 — unit 01 only, 4BHK (single unit per floor, same floor plan type)
+    dict(tower_code="T02", unit_position="01", configuration_type="T02-4BHK-01",
          bhk=4, carpet_area_sqft=2136.46, carpet_area_sqm=198.48,
          balcony_sqft=175.69, total_area_sqft=2312.15,
-         typical_floors="36",
-         is_penthouse=True, is_refuge_variant=False, floor_plan_page=12),
+         typical_floors="36, 37, 38",
+         is_penthouse=False, is_refuge_variant=False, floor_plan_page=12),
+
+    # Floors 39–40 — unit 01 only, 4BHK Duplex (lower 39th / upper 40th)
+    dict(tower_code="T02", unit_position="01", configuration_type="T02-4BHK-DUPLEX-01",
+         bhk=4, carpet_area_sqft=2087.62, carpet_area_sqm=193.95,
+         balcony_sqft=162.08, total_area_sqft=2249.71,
+         typical_floors="39 (lower) + 40 (upper)",
+         is_penthouse=False, is_refuge_variant=False, floor_plan_page=14),
 
     # ── Tower 03 ──────────────────────────────────────────────────────────────
     dict(tower_code="T03", unit_position="01", configuration_type="T03-3BHK-01",
@@ -120,11 +146,32 @@ UNIT_CONFIGS = [
          typical_floors="3–12, 14–35, 37–39",
          is_penthouse=False, is_refuge_variant=False, floor_plan_page=21),
 
+    # Unit 04 excludes refuge floors 7,15,22,29,36 + floors 12,13 (position is refuge area)
     dict(tower_code="T03", unit_position="04", configuration_type="T03-3BHK-04",
          bhk=3, carpet_area_sqft=1048.07, carpet_area_sqm=97.37,
          balcony_sqft=78.33, total_area_sqft=1126.40,
-         typical_floors="3–6, 8–12, 14, 16–21, 23–28, 30–35, 37–39",
+         typical_floors="3–6, 8–11, 14, 16–21, 23–28, 30–35, 37–39",
          is_penthouse=False, is_refuge_variant=False, floor_plan_page=21),
+
+    # Floor 36 — unit 03 only, 4BHK (refuge floor; units 01/02/04 absent)
+    dict(tower_code="T03", unit_position="03", configuration_type="T03-4BHK-03",
+         bhk=4, carpet_area_sqft=1277.50, carpet_area_sqm=118.69,
+         balcony_sqft=78.33, total_area_sqft=1355.83,
+         typical_floors="36",
+         is_penthouse=False, is_refuge_variant=True, floor_plan_page=22),
+
+    # Floors 39–40 — units 01 and 02, 4BHK Duplex (lower 39th / upper 40th)
+    dict(tower_code="T03", unit_position="01", configuration_type="T03-4BHK-DUPLEX-01",
+         bhk=4, carpet_area_sqft=2078.77, carpet_area_sqm=193.11,
+         balcony_sqft=162.08, total_area_sqft=2240.85,
+         typical_floors="39 (lower) + 40 (upper)",
+         is_penthouse=False, is_refuge_variant=False, floor_plan_page=23),
+
+    dict(tower_code="T03", unit_position="02", configuration_type="T03-4BHK-DUPLEX-02",
+         bhk=4, carpet_area_sqft=2078.77, carpet_area_sqm=193.11,
+         balcony_sqft=162.08, total_area_sqft=2240.85,
+         typical_floors="39 (lower) + 40 (upper)",
+         is_penthouse=False, is_refuge_variant=False, floor_plan_page=23),
 
     # ── Tower 04 ──────────────────────────────────────────────────────────────
     dict(tower_code="T04", unit_position="01", configuration_type="T04-3BHK-01",
@@ -139,33 +186,81 @@ UNIT_CONFIGS = [
          typical_floors="3–6, 8–12, 14, 16–21, 23–28, 30–35, 37–39",
          is_penthouse=False, is_refuge_variant=False, floor_plan_page=30),
 
+    # Unit 03 — same floors as unit 02
+    dict(tower_code="T04", unit_position="03", configuration_type="T04-3BHK-03",
+         bhk=3, carpet_area_sqft=1048.07, carpet_area_sqm=97.37,
+         balcony_sqft=78.33, total_area_sqft=1126.40,
+         typical_floors="3–6, 8–12, 14, 16–21, 23–28, 30–35, 37–39",
+         is_penthouse=False, is_refuge_variant=False, floor_plan_page=31),
+
+    # Refuge floors 7, 15, 22, 29 — unit 03 only, 4BHK
+    dict(tower_code="T04", unit_position="03", configuration_type="T04-4BHK-03",
+         bhk=4, carpet_area_sqft=1246.20, carpet_area_sqm=115.78,
+         balcony_sqft=78.33, total_area_sqft=1324.53,
+         typical_floors="7, 15, 22, 29",
+         is_penthouse=False, is_refuge_variant=True, floor_plan_page=32),
+
+    # Floor 36 — unit 03 only, 4BHK (larger refuge variant)
+    dict(tower_code="T04", unit_position="03", configuration_type="T04-4BHK-03-FL36",
+         bhk=4, carpet_area_sqft=1510.37, carpet_area_sqm=140.32,
+         balcony_sqft=138.24, total_area_sqft=1648.61,
+         typical_floors="36",
+         is_penthouse=False, is_refuge_variant=True, floor_plan_page=33),
+
+    # Floors 39–40 — unit 01 only, 4BHK Duplex
+    dict(tower_code="T04", unit_position="01", configuration_type="T04-4BHK-DUPLEX-01",
+         bhk=4, carpet_area_sqft=2078.79, carpet_area_sqm=193.12,
+         balcony_sqft=162.06, total_area_sqft=2240.85,
+         typical_floors="39 (lower) + 40 (upper)",
+         is_penthouse=False, is_refuge_variant=False, floor_plan_page=34),
+
     # ── Tower 05 ──────────────────────────────────────────────────────────────
+    # Unit 01 — excluded on all refuge floors (7, 13, 15, 22, 29, 36)
     dict(tower_code="T05", unit_position="01", configuration_type="T05-3BHK-01",
          bhk=3, carpet_area_sqft=1368.37, carpet_area_sqm=127.13,
          balcony_sqft=99.45, total_area_sqft=1467.82,
          typical_floors="3–6, 8–12, 14, 16–21, 23–28, 30–35, 37–38",
          is_penthouse=False, is_refuge_variant=False, floor_plan_page=40),
 
+    # Units 02 and 03 — excluded on floor 13 only
     dict(tower_code="T05", unit_position="02", configuration_type="T05-3BHK-02",
          bhk=3, carpet_area_sqft=1362.13, carpet_area_sqm=126.55,
          balcony_sqft=147.07, total_area_sqft=1509.20,
          typical_floors="3–12, 14–38",
          is_penthouse=False, is_refuge_variant=False, floor_plan_page=41),
-    # T05 units 03/04 from refuge page — pending full unit plan page review
-    # review_gate: UNIT_POSITION_UNCLEAR (studio variant on refuge floor)
-    dict(tower_code="T05", unit_position="03", configuration_type="T05-3BHK-03",
-         bhk=3, carpet_area_sqft=None, carpet_area_sqm=None,
-         balcony_sqft=None, total_area_sqft=None,
-         typical_floors="pending",
-         is_penthouse=False, is_refuge_variant=False, floor_plan_page=37,
-         review_gate="CARPET_AREA_MISSING"),
 
-    dict(tower_code="T05", unit_position="04", configuration_type="T05-STUDIO-04",
-         bhk=1, carpet_area_sqft=None, carpet_area_sqm=None,
-         balcony_sqft=None, total_area_sqft=None,
-         typical_floors="refuge floor 36 only",
-         is_penthouse=False, is_refuge_variant=True, floor_plan_page=37,
-         review_gate="UNIT_POSITION_UNCLEAR"),
+    dict(tower_code="T05", unit_position="03", configuration_type="T05-3BHK-03",
+         bhk=3, carpet_area_sqft=1363.27, carpet_area_sqm=126.66,
+         balcony_sqft=147.54, total_area_sqft=1510.81,
+         typical_floors="3–12, 14–38",
+         is_penthouse=False, is_refuge_variant=False, floor_plan_page=41),
+
+    # Refuge floors 7, 15, 22, 29 — unit 01, small studio (no balcony)
+    dict(tower_code="T05", unit_position="01", configuration_type="T05-STUDIO-01-REFUGE",
+         bhk=1, carpet_area_sqft=245.25, carpet_area_sqm=22.78,
+         balcony_sqft=0, total_area_sqft=245.25,
+         typical_floors="7, 15, 22, 29",
+         is_penthouse=False, is_refuge_variant=True, floor_plan_page=42),
+
+    # Floor 36 — unit 01, larger studio
+    dict(tower_code="T05", unit_position="01", configuration_type="T05-STUDIO-01-FL36",
+         bhk=1, carpet_area_sqft=477.78, carpet_area_sqm=44.39,
+         balcony_sqft=71.70, total_area_sqft=549.48,
+         typical_floors="36",
+         is_penthouse=False, is_refuge_variant=True, floor_plan_page=43),
+
+    # Floors 39–40 — units 02 and 03, 4BHK Duplex
+    dict(tower_code="T05", unit_position="02", configuration_type="T05-4BHK-DUPLEX-02",
+         bhk=4, carpet_area_sqft=2277.12, carpet_area_sqm=211.54,
+         balcony_sqft=255.68, total_area_sqft=2532.80,
+         typical_floors="39 (lower) + 40 (upper)",
+         is_penthouse=False, is_refuge_variant=False, floor_plan_page=44),
+
+    dict(tower_code="T05", unit_position="03", configuration_type="T05-4BHK-DUPLEX-03",
+         bhk=4, carpet_area_sqft=2278.27, carpet_area_sqm=211.64,
+         balcony_sqft=256.15, total_area_sqft=2534.42,
+         typical_floors="39 (lower) + 40 (upper)",
+         is_penthouse=False, is_refuge_variant=False, floor_plan_page=44),
 ]
 
 # ── DB ────────────────────────────────────────────────────────────────────────
