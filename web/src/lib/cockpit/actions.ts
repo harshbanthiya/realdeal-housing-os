@@ -392,3 +392,45 @@ export async function placeRegistrationRecord(input: {
     raw: out,
   };
 }
+
+const ALLOWED_ASSET_TYPES = new Set([
+  "floor_plan", "exterior", "interior", "amenity",
+  "master_layout", "location_map", "video", "brochure", "virtual_stage", "other",
+]);
+
+/** Approve (or unapprove) a media_asset row, optionally setting asset_type + alt_text. */
+export async function approveMediaAsset(input: {
+  assetId: string;
+  assetType?: string;
+  altText?: string;
+  unapprove?: boolean;
+  apply?: boolean;
+}): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+
+  if (!UUID_RE.test(input.assetId)) return { ...base, message: "Invalid asset id." };
+  if (input.assetType && !ALLOWED_ASSET_TYPES.has(input.assetType))
+    return { ...base, message: `Invalid asset_type: ${input.assetType}` };
+
+  const argv = ["--asset-id", input.assetId];
+  if (input.assetType) argv.push("--asset-type", input.assetType);
+  if (input.altText) argv.push("--alt-text", input.altText);
+  if (input.unapprove) argv.push("--unapprove");
+  if (apply) argv.push("--apply");
+
+  const { code, out } = await runScript("approve_media_asset.py", argv);
+  const ok = code === 0;
+  return {
+    ok,
+    applied: ok && apply,
+    dryRun: !apply,
+    message: ok
+      ? apply
+        ? input.unapprove ? "Asset un-approved." : "Asset approved."
+        : "Dry run — pass apply=true to write."
+      : out.split("\n")[0] || "Script failed.",
+    fields: parseLabeledOutput(out),
+    raw: out,
+  };
+}

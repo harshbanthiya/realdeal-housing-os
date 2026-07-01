@@ -83,6 +83,11 @@ media/
 *.webp
 *.psd
 *.ai
+# Exception: cockpit media page + local image-serving API route are source code, not media files.
+!web/src/app/cockpit/media/
+!web/src/app/cockpit/media/**
+!web/src/app/api/cockpit/
+!web/src/app/api/cockpit/**
 # Allow website public assets to be committed
 !web/public/**/*.jpg
 !web/public/**/*.jpeg

@@ -1,6 +1,6 @@
 # Media Intelligence System
 **Last updated:** 2026-07-01  
-**Build status:** Phase A ✅ Phase B ✅ Phase C ✅ Phase D 🔲 Phase E–G 🔲
+**Build status:** Phase A ✅ Phase B ✅ Phase C ✅ Phase D ✅ Phase E–G 🔲
 
 ## Current State (as of 2026-07-01)
 
@@ -38,8 +38,16 @@
 - p35–p39: T05 floor plans, p40–p45: T05 unit plans
 - p46–p55: 10 amenity photos (eco-deck pool/courtyard/jogging, bowling, café, banquet, pool, kids indoor/outdoor, spa)
 
-### Phase D — Cockpit `/cockpit/media` page 🔲 NEXT
-Goal: browse and approve the 60 brochure-extracted assets + tag the 1,678 `ASSET_TYPE_UNCLEAR` disk-scanned rows. Read-only grid + approve button. Pattern: mirrors `/cockpit/outreach`.
+### Phase D — Cockpit `/cockpit/media` page ✅ DONE
+- `scripts/approve_media_asset.py`: sets `reviewed=true` (optionally `asset_type`) for a given asset UUID. `--apply` gated, reversible with `--unapprove`.
+- `web/src/lib/cockpit/media.ts`: data layer — `getMediaOverview()`, `getBrochureAssets()`, `getNeedsTaggingAssets()`.
+- `web/src/app/cockpit/media/page.tsx`: SSC page with stats strip, brochure-extract panel, and disk-scan tagging panel. Approve button writes via server action → Python script.
+- `web/src/app/api/cockpit/media/[id]/route.ts`: local file server — looks up `file_path` by asset UUID, streams PNG to browser. Never exposes raw paths to the client.
+- `web/src/components/cockpit/media-grid.tsx`: client component — thumbnail (clickable → opens full image in new tab), approve/undo buttons for brochure rows, type-selector + save for disk-scan rows.
+- `web/src/lib/cockpit/actions.ts`: added `approveMediaAsset()` server action.
+- `web/src/components/cockpit/sidebar.tsx`: added "Media" nav link.
+- **SEO note:** local file names don't matter for Wix CDN (Wix uses its own hash URL). Fill `alt_text` + `seo_title` in `media_assets` before the upload step — those get passed as metadata on upload.
+- **State as of commit:** 60 brochure_extract rows (1 approved as test), ~3500 disk_scan rows with null `asset_type` pending tagging. `reviewed=true` is the gate — nothing publishes until set.
 
 ### Phase E–G 🔲 Later
 - E: YouTube + virtual staging tracking

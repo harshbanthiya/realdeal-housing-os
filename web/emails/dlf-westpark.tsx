@@ -54,7 +54,6 @@ function EmailButton({ href, bg, border, color, children }: {
     <table cellPadding={0} cellSpacing={0} role="presentation" style={{ marginBottom: 10 }}>
       <tr>
         <td
-          bgcolor={bg}
           style={{ backgroundColor: bg, borderRadius: 2, border: border ?? "none" }}
         >
           <a
