@@ -67,11 +67,20 @@ export default function DlfWestparkEmail({
   leadEmail = "PadminiJain1@gmail.com",
   waUrl = "https://wa.me/918291293889",
   youtubeUrl = "https://www.youtube.com/@RealDealHousing",
-  assetBase = "https://CHANGE-ME.cdn/realdealhousing",
+  assetBase = "",
   showProofStrip = true,
   showGardens = true,
 }: DlfWestparkEmailProps) {
-  const A = (f: string) => `${assetBase}/${f}`;
+  // Wix CDN URLs — keyed by original filename
+  const WIX: Record<string, string> = {
+    "rdh-icon.png":              "https://static.wixstatic.com/media/77ab1a_a79e024dffb94e01a19fab09913a2203~mv2.png",
+    "rdh-logo-full.png":         "https://static.wixstatic.com/media/77ab1a_1c2c2403692f401fae342354823ccee4~mv2.png",
+    "westpark-exterior.jpg":     "https://static.wixstatic.com/media/77ab1a_c28efc2061634aff9bb7b5a017227c88~mv2.jpeg",
+    "westpark-gardens.jpg":      "https://static.wixstatic.com/media/77ab1a_99c3e0e06c5d4b0f90066e08e3e10c6c~mv2.jpeg",
+    "westpark-location.png":     "https://static.wixstatic.com/media/77ab1a_ff96bbb73e5b4c5b80b3c9e1b2c504b2~mv2.png",
+    "westpark-masterlayout.png": "https://static.wixstatic.com/media/77ab1a_5e66202ba05d4b6fbb113be140c70404~mv2.png",
+  };
+  const A = (f: string) => WIX[f] ?? (assetBase ? `${assetBase}/${f}` : f);
   const pad = { paddingLeft: 44, paddingRight: 44 };
 
   return (
