@@ -25,10 +25,22 @@ YOUTUBE_URL     = "https://www.youtube.com/@RealDealHousing"
 ASSET_BASE      = os.environ.get("EMAIL_ASSET_BASE", "http://localhost:3000/emails/assets")
 
 SUBJECTS = {
-    "dlf-westpark":   "Phase 2 is open — DLF Westpark, Andheri West",
+    "dlf-westpark":   "{firstName}, wanted you to see this before it's public",
     "drip-1-variant-a": "An exclusive opportunity — DLF Westpark",
     "drip-1-variant-b": "Private invite — DLF Westpark Phase 2",
 }
+
+# ponytail: simple substring check, not a full entity-type classifier — good
+# enough to keep "Dear Shree," from firing off a company-name fragment.
+ENTITY_MARKERS = ("PVT", "LTD", "LLP", "TRUST", "M/S", "HUF", "BUILDER",
+                   "DEVELOPER", "ASSOCIATES", "ENTERPRISE", "COMPANY")
+
+
+def first_name_or_fallback(full_name: str) -> str:
+    name = (full_name or "").strip()
+    if not name or any(marker in name.upper() for marker in ENTITY_MARKERS):
+        return "there"
+    return name.split()[0].capitalize()
 
 
 def load_env() -> dict:
@@ -161,7 +173,7 @@ def main() -> int:
         print(f"Skipped ({reason}): {contact['email']}")
         return 0
 
-    first_name = (contact["name"] or "").split()[0] or "there"
+    first_name = first_name_or_fallback(contact["name"])
     unsub_url  = make_unsub_url(contact["id"], contact["unsub_token"])
 
     props = {
@@ -173,7 +185,8 @@ def main() -> int:
         "showGardens":    True,
     }
 
-    subject  = SUBJECTS.get(args.template, "A private note from Real Deal Housing")
+    subject_name = first_name if first_name != "there" else "Hello"
+    subject = SUBJECTS.get(args.template, "A private note from Real Deal Housing").format(firstName=subject_name)
 
     print(f"Contact : {contact['name']} <{contact['email']}>")
     print(f"Template: {args.template}")
