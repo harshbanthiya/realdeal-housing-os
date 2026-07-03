@@ -70,7 +70,7 @@ def build_queue(template: str, segment: str, limit: int) -> list[dict]:
               AND ds.template_key = '{template}'
               AND (ds.sent_at IS NOT NULL OR ds.unsubscribed_at IS NOT NULL)
           )
-        ORDER BY c.full_name
+        ORDER BY (cm.validation_status <> 'valid'), c.full_name
         LIMIT {limit}
     """)
     rows = []

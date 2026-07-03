@@ -223,3 +223,18 @@ done
 # Postgres is healthy: bring up the rest of the stack.
 docker compose --env-file .env up -d
 docker compose --env-file .env ps
+
+# Resend bounce/complaint webhook receiver (plain python, not dockerized —
+# it just needs to be up whenever the stack is). Idempotent: skip if already
+# listening. The Cloudflare tunnel to it runs as its own separate launchd
+# service (com.cloudflare.cloudflared) and is not managed here.
+WEBHOOK_SECRET="$(grep '^RESEND_WEBHOOK_SECRET=' .env | cut -d= -f2-)"
+if [ -n "$WEBHOOK_SECRET" ] && ! lsof -i :8787 >/dev/null 2>&1; then
+  echo "Starting Resend webhook receiver on :8787..."
+  nohup python3 "$PROJECT_ROOT/scripts/resend_webhook_server.py" \
+    --port 8787 --secret "$WEBHOOK_SECRET" \
+    > "$PROJECT_ROOT/data/resend-webhook.log" 2>&1 &
+  disown
+else
+  echo "Resend webhook receiver already running (or no RESEND_WEBHOOK_SECRET set)."
+fi
