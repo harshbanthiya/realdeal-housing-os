@@ -13,6 +13,11 @@ Usage:
   python scripts/fetch_igr_docno_targeted.py --building imperial_heights # IH queue
   python scripts/fetch_igr_docno_targeted.py --building imperial_heights --sro "Joint S.R. Mumbai 18"
   python scripts/fetch_igr_docno_targeted.py --apply --skip 5            # resume after 5
+
+  # Apartments with zero DB records that the independent QA audit found a raw doc for
+  # (run qa_independent_audit.py then --search-missing first):
+  python scripts/fetch_igr_docno_targeted.py --source missing-units --building imperial_heights
+  python scripts/fetch_igr_docno_targeted.py --source missing-units --building kalpataru --apply
 """
 from __future__ import annotations
 
@@ -54,7 +59,23 @@ _SNAPSHOT_DIR = {
 
 
 def load_queue(building: str = "kalpataru", sro_filter: str | None = None) -> list[dict]:
-    """Tenancy records missing rent / end-date / start-date, with a known SRO."""
+    """Records with no Index II ever captured (stamp_duty NULL), tenancy records still
+    missing rent / end-date / start-date, and records with a BLANK property_description_raw
+    (with a known SRO).
+
+    A blank description means the record's building was never actually confirmed --
+    it was inserted via a doc-number/wing fallback during a bulk SRO-wide crawl, not a
+    verified match. 2026-07-06: 6 such "Imperial Heights" records were docno-captured for
+    real and turned out to belong to unrelated buildings on the same SRO (Roma Tower,
+    Dattani Shelter, Kamla Gulmohar Heights, Dheeraj Residency) -- set aside to
+    exports/ih_misfiled_setaside/. Blank-description rows are treated as unverified and
+    requeued here regardless of whether stamp_duty/rent got backfilled by that same
+    unreliable pass.
+
+    Excludes SAMPLE% fixtures and 'Patra Chawl (MHADA rehab)' rows -- a different
+    building's documents that had been mis-filed under Kalpataru's building_id (found and
+    set aside 2026-07-06; see exports/patra_chawl_setaside/).
+    """
     bldg_where = _BUILDING_FILTER.get(building, _BUILDING_FILTER["kalpataru"])
     sro_clause = f"AND r.sro_office ILIKE '%{sro_filter}%'" if sro_filter else ""
     _, out = run_psql(f"""
@@ -67,9 +88,11 @@ def load_queue(building: str = "kalpataru", sro_filter: str | None = None) -> li
             COALESCE(bu.unit_number, r.unit_text, '') AS unit,
             r.registration_date::text,
             TRIM(
-                CASE WHEN r.tenancy_monthly_rent IS NULL THEN 'rent ' ELSE '' END ||
-                CASE WHEN r.tenancy_end_date   IS NULL THEN 'end-date ' ELSE '' END ||
-                CASE WHEN r.tenancy_start_date IS NULL THEN 'start-date' ELSE '' END
+                CASE WHEN COALESCE(r.property_description_raw,'')='' THEN 'UNVERIFIED ' ELSE '' END ||
+                CASE WHEN r.stamp_duty IS NULL THEN 'index2 ' ELSE '' END ||
+                CASE WHEN r.transaction_category = 'tenancy' AND r.tenancy_monthly_rent IS NULL THEN 'rent ' ELSE '' END ||
+                CASE WHEN r.transaction_category = 'tenancy' AND r.tenancy_end_date   IS NULL THEN 'end-date ' ELSE '' END ||
+                CASE WHEN r.transaction_category = 'tenancy' AND r.tenancy_start_date IS NULL THEN 'start-date' ELSE '' END
             ) AS gap,
             r.tenancy_monthly_rent::text,
             r.tenancy_start_date::text,
@@ -78,9 +101,14 @@ def load_queue(building: str = "kalpataru", sro_filter: str | None = None) -> li
         JOIN buildings b ON b.id = r.building_id
         LEFT JOIN building_units bu ON bu.id = r.building_unit_id
         WHERE {bldg_where}
-          AND r.transaction_category = 'tenancy'
-          AND (r.tenancy_monthly_rent IS NULL OR r.tenancy_end_date IS NULL OR r.tenancy_start_date IS NULL)
+          AND (
+                r.stamp_duty IS NULL
+                OR COALESCE(r.property_description_raw,'') = ''
+                OR (r.transaction_category = 'tenancy'
+                    AND (r.tenancy_monthly_rent IS NULL OR r.tenancy_end_date IS NULL OR r.tenancy_start_date IS NULL))
+              )
           AND r.doc_number NOT LIKE 'SAMPLE%%'
+          AND COALESCE(r.wing_text, '') NOT ILIKE 'Patra Chawl%%'
           AND r.sro_office IS NOT NULL AND r.sro_office != ''
           {sro_clause}
         ORDER BY r.sro_office, r.registration_date, r.doc_number::int
@@ -106,10 +134,62 @@ def load_queue(building: str = "kalpataru", sro_filter: str | None = None) -> li
     return rows
 
 
+_MISSING_UNITS_DIR = PROJECT_ROOT / "exports" / "qa_independent_audit"
+
+
+def load_missing_units_queue(building: str = "kalpataru") -> list[dict]:
+    """Apartments with zero DB records where the independent QA audit
+    (scripts/qa_independent_audit.py --search-missing) found a raw Index II .txt
+    capture on disk naming this building, but the doc was never (or couldn't be)
+    inserted -- e.g. its only source is an xls results-grid row (no Index II
+    financial detail) so it still needs a real per-doc capture to verify and enrich.
+
+    Requires exports/qa_independent_audit/missing_units_found_{building}.json to exist
+    (run `python scripts/qa_independent_audit.py` then `--search-missing` first).
+    """
+    key = {"kalpataru": "kalpataru_radiance", "imperial_heights": "imperial_heights"}.get(building, building)
+    path = _MISSING_UNITS_DIR / f"missing_units_found_{key}.json"
+    if not path.exists():
+        print(f"  [missing-units] {path} not found -- run qa_independent_audit.py "
+              f"then --search-missing first.")
+        return []
+    found = json.loads(path.read_text(encoding="utf-8"))
+
+    seen: set[tuple] = set()
+    rows = []
+    for u in found:
+        for c in u.get("raw_candidates", []):
+            dkey = (c["doc_no"], c["year"], c.get("sro_norm"))
+            if dkey in seen:
+                continue
+            seen.add(dkey)
+            rows.append({
+                'doc': c['doc_no'],
+                'sro': c['sro_raw'] or '',
+                'year': c['year'],
+                'wing': u['wing'] or '',
+                'unit': (u['unit_number'] or '').rstrip(',').strip(),
+                'date': '',
+                'gap': f"never captured ({c['raw_kind']})",
+                'rent': '', 'start': '', 'end': '',
+            })
+    rows.sort(key=lambda r: (r['sro'], r['year'], r['doc']))
+    return rows
+
+
 def safe_label(s: str) -> str:
     return re.sub(r'[^a-zA-Z0-9_-]', '_', s)[:40]
 
 
+
+
+_DEVA_RE   = re.compile(r'[ऀ-ॿ]')
+_DEVA_CITY = {'मुंबई': 'Mumbai', 'बोरिवली': 'Borivali', 'ठाणे': 'Thane', 'पुणे': 'Pune'}
+
+def _normalise_sro(s: str) -> str:
+    for deva, en in _DEVA_CITY.items():
+        s = s.replace(deva, en)
+    return s
 
 
 def _load_sro_options(page) -> list[dict]:
@@ -135,13 +215,14 @@ def _pick_sro(page, sro_text: str) -> str | None:
     5. If still no match, print numbered list and let operator type index.
     Returns the matched option text, or None on give-up.
     """
-    m_num = re.search(r'(\d+)\s*$', sro_text.strip())
+    sro_norm = _normalise_sro(sro_text.strip())
+    m_num = re.search(r'(\d+)\s*$', sro_norm)
     if not m_num:
         return None
     num = m_num.group(1)
     # Extract locality word — first capitalised word that isn't Joint/Sub/S/R
-    m_loc = re.search(r'\b(Mumbai|Borivali|Thane|Pune|Nashik|Aurangabad)\b', sro_text, re.I)
-    locality = m_loc.group(1).lower() if m_loc else ""
+    m_loc = re.search(r'\b(Mumbai|Borivali|Thane|Pune|Nashik|Aurangabad)\b', sro_norm, re.I)
+    locality = m_loc.group(1) if m_loc else ""
 
     options = _load_sro_options(page)
     if not options:
@@ -150,11 +231,11 @@ def _pick_sro(page, sro_text: str) -> str | None:
 
     num_re = re.compile(r'(?<!\d)' + re.escape(num) + r'(?!\d)')
 
-    # Pass 1: locality + number
+    # Pass 1: city name immediately followed by the number (e.g. "Mumbai 10" not "Borivali 10")
     if locality:
+        tight_re = re.compile(re.escape(locality) + r'\s+' + re.escape(num) + r'(?!\d)', re.I)
         for opt in options:
-            tl = opt['t'].lower()
-            if locality in tl and num_re.search(opt['t']):
+            if tight_re.search(opt['t']):
                 page.locator(_SEL_SRO).select_option(value=opt['v'])
                 return opt['t']
 
@@ -185,30 +266,26 @@ def _pick_sro(page, sro_text: str) -> str | None:
         print("  Invalid — enter a number from the list.")
 
 
-def navigate_to_doc_tab(page) -> None:
-    """One-time setup: dismiss popup, activate the Document Number tab, select eRegistration + district."""
-    # Close landing popup if present
+def navigate_to_doc_tab(page, reg_type: str = "eRegistration") -> None:
+    """Setup: dismiss popup, activate Document Number tab, select registration type + district."""
     try:
         page.get_by_role("link", name="Close").click(timeout=4000)
         page.wait_for_timeout(300)
     except Exception:
         pass
-    # Click Document Number tab
     try:
         page.get_by_role("link", name="दस्त निहाय/Document Number").click(timeout=6000)
         page.wait_for_timeout(500)
     except Exception:
         print("  [nav] doc-number tab not found — may already be active")
-    # eRegistration radio
     try:
-        page.get_by_role("radio", name="eRegistration").check(timeout=4000)
+        page.get_by_role("radio", name=reg_type).check(timeout=4000)
         page.wait_for_timeout(300)
     except Exception:
-        pass
-    # District
+        print(f"  [nav] radio {reg_type!r} not found")
     try:
         page.locator(_SEL_DISTRICT).select_option(IGR_DISTRICT)
-        page.wait_for_timeout(800)   # SRO dropdown reloads after district change
+        page.wait_for_timeout(800)
     except Exception as e:
         print(f"  [nav] district select failed: {e}")
 
@@ -317,14 +394,31 @@ def main() -> int:
                     help='which building to queue (default: kalpataru)')
     ap.add_argument('--sro', default=None, metavar='NAME',
                     help='filter queue to a specific SRO (partial match, e.g. "Mumbai 18")')
+    ap.add_argument('--deva-only', action='store_true',
+                    help='only process records whose SRO is in Devanagari script')
+    ap.add_argument('--source', default='gaps', choices=['gaps', 'missing-units'],
+                    help="'gaps' (default): tenancy records missing rent/dates from the DB. "
+                         "'missing-units': apartments with zero DB records that the independent "
+                         "QA audit found a raw doc for on disk (needs qa_independent_audit.py "
+                         "--search-missing to have been run first)")
     args = ap.parse_args()
 
     snap_subdir = _SNAPSHOT_DIR.get(args.building, 'igr_index2_snapshots')
     snapshot_root = PROJECT_ROOT / "exports" / snap_subdir
 
-    queue = load_queue(args.building, args.sro)
+    if args.source == 'missing-units':
+        queue = load_missing_units_queue(args.building)
+        if args.sro:
+            queue = [r for r in queue if args.sro.lower() in r['sro'].lower()]
+    else:
+        queue = load_queue(args.building, args.sro)
+    if args.deva_only:
+        queue = [r for r in queue if _DEVA_RE.search(r['sro'])]
     if not queue:
-        print("No tenancy records missing rent with a known SRO — nothing to do.")
+        msg = ("No apartments with a raw doc pending capture — nothing to do."
+               if args.source == 'missing-units' else
+               "No tenancy records missing rent with a known SRO — nothing to do.")
+        print(msg)
         return 0
 
     print_queue(queue, args.skip)
@@ -366,15 +460,16 @@ def main() -> int:
         page.goto(args.url, timeout=60000, wait_until='domcontentloaded')
         page.wait_for_timeout(1500)
 
-        # One-time: dismiss popup, click doc-number tab, select district
-        navigate_to_doc_tab(page)
-
         for idx, r in enumerate(remaining):
-            abs_num = args.skip + idx + 1
-            total   = len(queue)
+            abs_num  = args.skip + idx + 1
+            total    = len(queue)
+            is_deva  = bool(_DEVA_RE.search(r['sro']))
+            reg_type = "Regular" if is_deva else "eRegistration"
+
+            navigate_to_doc_tab(page, reg_type)
 
             print(f"┌── Doc {abs_num}/{total} ─────────────────────────────────────────")
-            print(f"│  SRO  {r['sro']}  ·  Year {r['year']}  ·  Doc {r['doc']}")
+            print(f"│  SRO  {r['sro']}  ·  Year {r['year']}  ·  Doc {r['doc']}  [{reg_type}]")
             print(f"│  Flat {r['wing'] or '?'} {r['unit']}  (registered {r['date']})")
             print(f"└────────────────────────────────────────────────────────────────")
 
@@ -397,13 +492,12 @@ def main() -> int:
             save_page(context, page, out_dir, prefix, written, captures)
             print()
 
-            # Reload fresh form for next doc
+            # Reload fresh form for next doc (navigate_to_doc_tab runs at top of next iteration)
             page = next((pg for pg in context.pages if not pg.is_closed()), None)
             if page is None:
                 break
             page.goto(args.url, timeout=60000, wait_until='domcontentloaded')
             page.wait_for_timeout(1500)
-            navigate_to_doc_tab(page)
 
         context.close()
         browser.close()
