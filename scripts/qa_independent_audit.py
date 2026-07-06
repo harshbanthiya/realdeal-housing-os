@@ -91,7 +91,7 @@ KNOWN_OTHER_BUILDINGS = [
 WING_LETTER_RE = re.compile(
     r"(?:wing|tower)\s*[-–\s]*([ABCDabcd])\b"
     r"|\b([ABCDabcd])\s*[-–\s]*(?:wing|tower)\b"
-    r"|विंग\s*(ए|बी|सी|डी)|(ए|बी|सी|डी)\s*[-–\s]*विंग",
+    r"|(?:विंग|टॉवर)\s*(ए|बी|सी|डी)|(ए|बी|सी|डी)\s*[-–\s]*(?:विंग|टॉवर)",
     re.I,
 )
 _DEVA_WING = {"ए": "A", "बी": "B", "सी": "C", "डी": "D"}
@@ -102,7 +102,7 @@ FLAT_RE = re.compile(
     re.I,
 )
 FLOOR_RE = re.compile(
-    r"(?:Floor No|मजला)\s*[:.]?\s*([0-9A-Za-z]+)"
+    r"(?:Floor No|मजला|माळा\s*(?:नं\.?|क्रमांक|क्र\.?)?)\s*[:.]?\s*([0-9A-Za-z]+)"
     r"|([0-9]+)\s*(?:वा|व्या|था|ला)?\s*मजल",
     re.I,
 )
