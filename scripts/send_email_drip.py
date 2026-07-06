@@ -103,7 +103,9 @@ def render_template(template: str, props: dict) -> str:
     )
     result = subprocess.run(
         ["npx", "tsx", "-e", code],
-        cwd=str(WEB_DIR), capture_output=True, text=True, timeout=30,
+        # ponytail: 90s not 30s — cold `npx tsx` start (esbuild/register) can
+        # blow past 30s on the first call of the day and crash the whole batch
+        cwd=str(WEB_DIR), capture_output=True, text=True, timeout=90,
     )
     if result.returncode != 0:
         raise RuntimeError(f"tsx render failed:\n{result.stderr[:800]}")
