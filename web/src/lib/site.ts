@@ -35,6 +35,12 @@ export interface Project {
   highlights: string[];
   isNew?: boolean;
   image?: ProjectImage;
+  /** Long-form page copy (rewritten from the operator's live-site content). */
+  description?: string[];
+  /** e.g. "Ready to move" / "Possession by 2028" — as published on the live site. */
+  status?: string;
+  /** What the residences themselves offer — specs, layouts, finishes. */
+  residences?: string[];
 }
 
 /** Wix CDN heroes — lineage lives in media_assets (wix_url, upload_status='wix_uploaded'). */
@@ -52,6 +58,10 @@ export const projectImages: Record<string, ProjectImage> = {
     alt: "Ekta Tripolis three towers at night over the Goregaon West skyline",
   },
   "bharat-auravistas": {
+    src: "https://static.wixstatic.com/media/44402a_f9cc55a06d81421ca2d3142f42d55b49~mv2.jpg",
+    alt: "Bharat Auravistas tower render, Oshiwara Andheri West",
+  },
+  "bharat-auravistas-showflat": {
     src: "https://static.wixstatic.com/media/77ab1a_5c3ab8a816094afba95cdc259e796085~mv2.jpg",
     alt: "Bharat Auravistas show flat bedroom, Oshiwara Andheri West",
   },
@@ -64,6 +74,15 @@ export const projectImages: Record<string, ProjectImage> = {
 export const projects: Project[] = [
   {
     slug: "imperial-heights",
+    status: "Ready to move",
+    description: [
+      "Imperial Heights sits just off Link Road in Goregaon West, behind the Goregaon bus depot — four 44-storey towers whose columnless apartments give every layout more usable space than the floor plan suggests. Homes range from 2 and 2.5 BHKs through 3, 3.5 and 4 BHK apartments to duplexes and penthouses, many with lavish balconies looking out over the Andheri–Versova skyline and the Madh–Marve creek.",
+      "The address works as hard as the homes: SV Road and the Western Express Highway are minutes away, and the complex itself carries landscaped gardens, a residents' clubhouse, swimming pools, a tennis court, an amphitheatre and a 4-level podium car park with high-speed elevators and round-the-clock security.",
+    ],
+    residences: [
+      "Interiors are finished to a consistent premium spec: imported marble flooring through the living, dining and bedrooms, gypsum-finished walls in low-VOC paint, laminate-finished doors, and smart lighting switches in the living areas and bedrooms. 3 BHKs add a servant's room with attached toilet.",
+      "Kitchens come with granite flooring and platforms, a stainless-steel sink, exhaust and an enclosed utility balcony with PNG and heat detection. Master bathrooms are marble-clad with a rain shower and glass partition; every apartment gets a video door phone at the entrance.",
+    ],
     image: projectImages["imperial-heights"],
     name: "Imperial Heights",
     location: "Goregaon West",
@@ -74,6 +93,15 @@ export const projects: Project[] = [
   },
   {
     slug: "kalpataru-radiance",
+    status: "Ready to move",
+    description: [
+      "Kalpataru Radiance spreads four towers across 4.2 acres of landscaped grounds in Siddharth Nagar, Goregaon West — one of the few complexes in the area where open space, creek views and city skyline all belong to the same address. Apartments span 2, 2.5, 3 and 4 BHK configurations, each planned around light, ventilation and a clean separation of living and sleeping zones.",
+      "Connectivity is the everyday advantage: the newly opened metro station is a five-minute walk, and the Western Express Highway, Link Road and SV Road are all within easy reach, alongside established schools and hospitals. Inside the gates, 15+ amenities include adult and children's swimming pools, a fully equipped clubhouse, tennis and badminton courts, an amphitheatre and five levels of secure parking.",
+    ],
+    residences: [
+      "Every apartment opens through an entrance foyer into living and dining spaces floored in imported marble, with split ACs in the living room and bedrooms, smart lighting-scenario switches, and a video door phone at the entrance. 3 BHKs include a servant's room with attached toilet.",
+      "Kitchens are granite-built with a service platform, enclosed utility balcony and PNG heat detection; master bathrooms carry imported marble to door height with a rain shower and glass partition, premium sanitaryware, and storage water heaters throughout.",
+    ],
     image: projectImages["kalpataru-radiance"],
     name: "Kalpataru Radiance",
     location: "Goregaon West",
@@ -84,6 +112,15 @@ export const projects: Project[] = [
   },
   {
     slug: "ekta-tripolis",
+    status: "Ready to move",
+    description: [
+      "Ekta Tripolis is a trilogy — Skypolis, Caliopolis and Theopolis — of 36-storey residential towers in Goregaon West, built around the idea that a home should do some of the work for you. Apartments come with smart-home automation as standard, and the towers hold a Platinum green-building pre-certification that shows up in cooler interiors and lower running costs.",
+      "The amenity set is led by an infinity pool, the Club Alpha fitness centre and a sky lounge, with 24-hour security and high-speed elevators underneath it all. For buyers and tenants who want a building with presence — the kind you can point out on the skyline — this is it.",
+    ],
+    residences: [
+      "The 2, 2.5 and 3 BHK layouts are open-plan with contemporary interiors and premium finishes; master bedrooms carry ensuite bathrooms, and large balconies frame sweeping views across Goregaon's green belt.",
+      "Modular kitchens with durable countertops and dedicated utility areas come fitted, and every home includes the automation layer — lighting, appliances and access controlled from a single interface — plus 24/7 power backup for the essentials.",
+    ],
     image: projectImages["ekta-tripolis"],
     name: "Ekta Tripolis",
     location: "Goregaon West",
@@ -94,6 +131,15 @@ export const projects: Project[] = [
   },
   {
     slug: "bharat-auravistas",
+    status: "Possession by 2028",
+    description: [
+      "Bharat Auravistas is a 36-storey new-build rising in Oshiwara, Andheri West, offering 3 BHK residences in three sizes — Luxe (1,140 sq ft), Grande (1,275 sq ft) and Royale (1,360 sq ft) — so buyers choose their space rather than settle for one floor plan. Large windows and unobstructed elevations give the homes long views over the city and the green pockets around Oshiwara.",
+      "The location earns its price: the Western Express Highway, the metro and the upcoming Oshiwara railway station are all close, and the tower carries a fully equipped gym, landscaped swimming pool and residents' clubhouse. Developed by Bharat Infrastructure, with possession scheduled by 2028.",
+    ],
+    residences: [
+      "All three configurations are 3 BHKs with open-plan living and dining areas that flow toward the window line, keeping the city view part of daily life rather than a balcony-only event.",
+      "Finishes are contemporary and consistent across the line — the difference between Luxe, Grande and Royale is genuinely just space, which makes comparing them on a site visit unusually straightforward.",
+    ],
     image: projectImages["bharat-auravistas"],
     name: "Bharat Auravistas",
     location: "Oshiwara, Andheri West",
@@ -104,30 +150,7 @@ export const projects: Project[] = [
   },
 ];
 
-export interface Listing {
-  title: string;
-  project: string;
-  location: string;
-  config: string;
-  sqft: string;
-  price: string;
-  type: "sale" | "rent";
-}
-
-export const listings: Listing[] = [
-  // For sale
-  { title: "Bharat Auravistas — Luxe 3 BHK", project: "Bharat Auravistas", location: "Andheri West", config: "3 BHK", sqft: "1140", price: "₹4,59,00,000", type: "sale" },
-  { title: "Exclusive 3.5 BHK — Imperial Heights", project: "Imperial Heights", location: "Goregaon West", config: "3.5 BHK", sqft: "1409", price: "₹5,25,00,000", type: "sale" },
-  { title: "Imperial Heights — 3.5 BHK", project: "Imperial Heights", location: "Goregaon West", config: "3.5 BHK", sqft: "1445", price: "₹4,50,00,000", type: "sale" },
-  { title: "Kalpataru Radiance — 3 BHK", project: "Kalpataru Radiance", location: "Goregaon West", config: "3 BHK", sqft: "1033", price: "₹3,75,00,000", type: "sale" },
-  { title: "Ekta Tripolis — 2.5 BHK", project: "Ekta Tripolis", location: "Goregaon West", config: "2.5 BHK", sqft: "—", price: "On request", type: "sale" },
-  { title: "Kalpataru Radiance — 2 BHK", project: "Kalpataru Radiance", location: "Goregaon West", config: "2 BHK", sqft: "—", price: "On request", type: "sale" },
-  // For rent
-  { title: "Imperial Heights — 4.5 BHK Fully Furnished", project: "Imperial Heights", location: "Goregaon West", config: "4.5 BHK", sqft: "1893", price: "₹2,00,000 / mo", type: "rent" },
-  { title: "Kalpataru Radiance — 3 BHK", project: "Kalpataru Radiance", location: "Goregaon West", config: "3 BHK", sqft: "1017", price: "₹1,10,000 / mo", type: "rent" },
-  { title: "Ekta Tripolis — 2.5 BHK", project: "Ekta Tripolis", location: "Goregaon West", config: "2.5 BHK", sqft: "908", price: "₹90,000 / mo", type: "rent" },
-  { title: "Imperial Heights — 2 BHK Duplex", project: "Imperial Heights", location: "Goregaon West", config: "2 BHK Duplex", sqft: "727", price: "₹85,000 / mo", type: "rent" },
-];
+export { listings, type Listing } from "@/lib/listings";
 
 export const pillars = [
   {

@@ -4,8 +4,9 @@ import { Reveal } from "@/components/reveal";
 import { RevealImage } from "@/components/reveal-image";
 import { company, projects, projectImages, listings, pillars, testimonial } from "@/lib/site";
 
-const featuredSale = listings.filter((l) => l.type === "sale").slice(0, 4);
-const imageForProject = (name: string) => projects.find((p) => p.name === name)?.image;
+const featuredSale = listings.filter((l) => l.type === "sale" && l.featured).slice(0, 4);
+const imageForListing = (l: (typeof listings)[number]) =>
+  l.image ?? projects.find((p) => p.name === l.project)?.image;
 
 export default function Home() {
   return (
@@ -93,13 +94,16 @@ export default function Home() {
           </Reveal>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {featuredSale.map((l, i) => (
-              <Reveal key={l.title} delay={i * 0.05}>
-                <div className="flex h-full flex-col rounded-2xl border border-mist-deep bg-white p-5">
-                  {imageForProject(l.project) ? (
+              <Reveal key={l.slug} delay={i * 0.05}>
+                <Link
+                  href={`/listings/${l.slug}`}
+                  className="group flex h-full flex-col rounded-2xl border border-mist-deep bg-white p-5 transition-colors hover:bg-mist/30"
+                >
+                  {imageForListing(l) ? (
                     <div className="rdh-zoom relative aspect-[4/3] overflow-hidden rounded-lg">
                       <Image
-                        src={imageForProject(l.project)!.src}
-                        alt={imageForProject(l.project)!.alt}
+                        src={imageForListing(l)!.src}
+                        alt={imageForListing(l)!.alt}
                         fill
                         sizes="(max-width: 640px) 100vw, 25vw"
                         className="object-cover"
@@ -108,10 +112,10 @@ export default function Home() {
                   ) : (
                     <div className="aspect-[4/3] rounded-lg border border-dashed border-mist-deep bg-mist/50" />
                   )}
-                  <h3 className="mt-4 text-base font-semibold leading-snug text-teal">{l.title}</h3>
+                  <h3 className="mt-4 text-base font-semibold leading-snug text-teal group-hover:underline">{l.title}</h3>
                   <p className="mt-1 text-xs text-ink/50">{l.location} · {l.config} · {l.sqft} sqft</p>
                   <p className="mt-3 text-lg font-bold text-teal">{l.price}</p>
-                </div>
+                </Link>
               </Reveal>
             ))}
           </div>

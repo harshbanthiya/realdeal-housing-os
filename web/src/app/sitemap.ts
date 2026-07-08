@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getProjects, getBlogPosts } from "@/lib/cms";
+import { listings } from "@/lib/listings";
 import { SITE_URL } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -8,6 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticPaths.map((p) => ({ url: `${SITE_URL}${p}`, changeFrequency: "weekly" as const })),
     ...projects.map((p) => ({ url: `${SITE_URL}/projects/${p.slug}`, changeFrequency: "weekly" as const })),
+    ...listings.map((l) => ({ url: `${SITE_URL}/listings/${l.slug}`, changeFrequency: "weekly" as const })),
     ...posts.map((p) => ({
       url: `${SITE_URL}/blog/${p.slug}`,
       lastModified: p.publishedAt || undefined,

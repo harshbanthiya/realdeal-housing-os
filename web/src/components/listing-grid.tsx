@@ -1,9 +1,11 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Reveal } from "@/components/reveal";
-import { projects, type Listing } from "@/lib/site";
+import { projects } from "@/lib/site";
+import type { Listing } from "@/lib/listings";
 
 function imageFor(l: Listing) {
-  return projects.find((p) => p.name === l.project)?.image;
+  return l.image ?? projects.find((p) => p.name === l.project)?.image;
 }
 
 export function ListingGrid({ items }: { items: Listing[] }) {
@@ -12,8 +14,11 @@ export function ListingGrid({ items }: { items: Listing[] }) {
       {items.map((l, i) => {
         const img = imageFor(l);
         return (
-          <Reveal key={l.title + i} delay={(i % 3) * 0.05}>
-            <div className="flex h-full flex-col rounded-2xl border border-mist-deep bg-white p-5">
+          <Reveal key={l.slug} delay={(i % 3) * 0.05}>
+            <Link
+              href={`/listings/${l.slug}`}
+              className="group flex h-full flex-col rounded-2xl border border-mist-deep bg-white p-5 transition-colors hover:bg-mist/30"
+            >
               <div
                 className={`rdh-zoom relative aspect-[4/3] overflow-hidden rounded-lg ${img ? "" : "border border-dashed border-mist-deep bg-mist/50"}`}
               >
@@ -30,13 +35,15 @@ export function ListingGrid({ items }: { items: Listing[] }) {
                   {l.type === "rent" ? "For rent" : "For sale"}
                 </span>
               </div>
-              <h3 className="mt-4 text-base font-semibold leading-snug text-teal">{l.title}</h3>
+              <h3 className="mt-4 text-base font-semibold leading-snug text-teal group-hover:underline">
+                {l.title}
+              </h3>
               <p className="mt-1 text-xs text-ink/50">
                 {l.location} · {l.config}
                 {l.sqft !== "—" ? ` · ${l.sqft} sqft` : ""}
               </p>
               <p className="mt-3 text-lg font-bold text-teal">{l.price}</p>
-            </div>
+            </Link>
           </Reveal>
         );
       })}

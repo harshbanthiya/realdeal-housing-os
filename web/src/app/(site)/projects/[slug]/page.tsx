@@ -53,7 +53,10 @@ export default async function Page({
           <h1 className="mt-3 text-[clamp(2.4rem,5.5vw,4.5rem)] font-extrabold leading-[1.04] tracking-tight text-teal">
             {p.name}
           </h1>
-          <p className="mt-3 font-mono text-sm text-ink/55">{p.meta}</p>
+          <p className="mt-3 font-mono text-sm text-ink/55">
+            {p.meta}
+            {p.status ? <> · <span className="text-warm">{p.status}</span></> : null}
+          </p>
           {p.image ? (
             <RevealImage
               src={p.image.src}
@@ -77,7 +80,21 @@ export default async function Page({
         <div className="grid gap-12 md:grid-cols-[1.4fr_1fr]">
           <Reveal>
             <h2 className="text-2xl font-bold tracking-tight text-teal">About the property</h2>
-            <p className="mt-5 text-lg leading-relaxed text-ink/70">{p.blurb}</p>
+            {(p.description ?? [p.blurb]).map((para) => (
+              <p key={para.slice(0, 32)} className="mt-5 text-lg leading-relaxed text-ink/70">
+                {para}
+              </p>
+            ))}
+            {p.residences && (
+              <>
+                <h3 className="mt-10 text-xl font-bold tracking-tight text-teal">Inside the residences</h3>
+                {p.residences.map((para) => (
+                  <p key={para.slice(0, 32)} className="mt-4 leading-relaxed text-ink/70">
+                    {para}
+                  </p>
+                ))}
+              </>
+            )}
           </Reveal>
           <Reveal delay={0.1}>
             <div className="rounded-2xl border border-mist-deep bg-mist/40 p-7">
