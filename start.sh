@@ -298,3 +298,7 @@ if [ -n "$WEBHOOK_SECRET" ] && ! lsof -i :8787 >/dev/null 2>&1; then
 else
   echo "Resend webhook receiver already running (or no RESEND_WEBHOOK_SECRET set)."
 fi
+
+# Daily workers (worker_runs / worker_findings → /cockpit/inbox). launchd runs
+# them at 07:30; this fallback guarantees a run on any day the stack starts.
+bash "$PROJECT_ROOT/workers/run_if_due.sh" || echo "Workers run failed — check manually: python3 workers/run_all.py"
