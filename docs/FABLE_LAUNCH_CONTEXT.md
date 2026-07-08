@@ -23,8 +23,8 @@ SEO/blog-ready, Gallery White design system, safe cockpit separation.
 - Placeholder tokens (RERA_VERIFY, PRICE_VERIFY, …) must render visibly, never be faked.
 
 ## Credentials / access needed (BLOCKERS for their steps)
-- [ ] **Wix Headless OAuth Client ID** (Wix dashboard → Settings → Headless) → `WIX_CLIENT_ID`. Needed for live `@wix/data` reads. Site works on fixtures without it.
-- [ ] Wix site ID of the Test site + collection IDs (readable via Wix MCP once pointed at it).
+- [x] **Wix Headless OAuth Client ID** — DONE 2026-07-08. OAuth app "RDH Next.js headless site" created via API on the **Test** site (site ID e8817980-3301-420f-856c-a4cd5184633e); client ID in `web/.env.local`. NOTE: the operator's first manually-created client ID belonged to a different site (its Amenities schema didn't match) — always verify with a sample read.
+- [x] Test-site collections verified: Projects, ProjectFacts, Residences, Amenities, ProjectFAQs, BlogPosts — all `read: ANYONE`, writes CMS_EDITOR+. Added `heroImage` (IMAGE) + `publishedAt` (DATETIME) to BlogPosts (revision 3).
 - [ ] Vercel project + env access, and domain/DNS decision (which domain the new site launches on — NOT realdealhousing.com's Wix site).
 - [ ] Approval to flip `robots` to index.
 
@@ -70,12 +70,16 @@ Publishing workflow: editor edits/publishes in Wix CMS → site revalidates via 
 6. Health: `/` 200 + sitemap.xml 200.
 7. Flip robots to index only with operator approval.
 
+## Publishing workflow (verified end-to-end 2026-07-08)
+Editor sets `status = "published"` (+ `publishedAt`) on a BlogPosts item in the Wix CMS → site picks it up within 5 min (ISR). Projects surface when `draft` is false. Tested live: published a post → rendered on /blog + /blog/[slug] with JSON-LD → reverted to draft. All seeded content remains draft/staging (placeholders unverified) — publishing is a human decision.
+
 ## Next actions
-1. Operator: provide `WIX_CLIENT_ID` + Test-site collection IDs.
-2. Wire `cms.ts` Wix path to real collections; render `/blog` from BlogPosts.
+1. Marketing: verify facts in a BlogPosts item, upload hero image to Wix Media, set status=published.
+2. Migrate the 4 catalogue projects (site.ts fixtures) into the Wix Projects collection when ready — cms.ts already merges CMS-over-fixture by slug.
 3. Prod guard for cockpit when DATABASE_URL absent.
 4. Backup cron (pg_dump + verify) — F-6.
 5. Extend `check_db.sh` to 060 — F-7.
+6. Vercel project + domain decision for deploy.
 
 ## Blockers
 - Wix OAuth Client ID + collection IDs (live CMS reads).
