@@ -55,6 +55,14 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/050_registration_party_detail.sql"
   "$PROJECT_ROOT/schemas/051_registration_qa_dashboard.sql"
   "$PROJECT_ROOT/schemas/052_pan_kyc_enrichment.sql"
+  "$PROJECT_ROOT/schemas/053_building_mode.sql"
+  "$PROJECT_ROOT/schemas/054_idfy_pan_enrichment.sql"
+  "$PROJECT_ROOT/schemas/055_email_drip.sql"
+  "$PROJECT_ROOT/schemas/056_media_intelligence_dam.sql"
+  "$PROJECT_ROOT/schemas/057_brochure_extraction_staging.sql"
+  "$PROJECT_ROOT/schemas/058_brochure_media_extract.sql"
+  "$PROJECT_ROOT/schemas/059_email_bounce_tracking.sql"
+  "$PROJECT_ROOT/schemas/060_fix_registration_doc_uniqueness.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

@@ -25,6 +25,10 @@ export function middleware(req: NextRequest) {
 
   if (req.cookies.get(COOKIE)?.value === token) return NextResponse.next();
 
+  if (pathname.startsWith("/api/")) {
+    return new NextResponse("unauthorized", { status: 401 });
+  }
+
   const url = req.nextUrl.clone();
   url.pathname = "/cockpit/login";
   url.search = pathname && pathname !== "/cockpit" ? `?next=${encodeURIComponent(pathname)}` : "";
@@ -32,5 +36,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cockpit", "/cockpit/:path*"],
+  matcher: ["/cockpit", "/cockpit/:path*", "/api/cockpit/:path*"],
 };
