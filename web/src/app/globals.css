@@ -35,3 +35,35 @@ body {
   background: #1f3d4d;
   color: #fff;
 }
+
+/* ——— Motion II (from design system tokens/motion.css) ——— */
+:root {
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-clip: 1.1s;
+  --img-overscale: 1.12;
+}
+
+/* Image clip reveal — container unclips upward while image settles from overscale */
+.rdh-clip {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path var(--dur-clip) var(--ease-expo);
+}
+.rdh-clip img {
+  transform: scale(var(--img-overscale));
+  transition: transform var(--dur-clip) var(--ease-expo);
+}
+.rdh-clip.is-visible { clip-path: inset(0 0 0 0); }
+.rdh-clip.is-visible img { transform: scale(1); }
+
+/* Hover zoom — listing/project imagery */
+.rdh-zoom { overflow: hidden; }
+.rdh-zoom img { transition: transform 1.2s var(--ease-expo); }
+.rdh-zoom:hover img { transform: scale(1.06); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rdh-clip, .rdh-clip img, .rdh-zoom img {
+    transition: none;
+    transform: none;
+    clip-path: none;
+  }
+}

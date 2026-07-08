@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Reveal } from "@/components/reveal";
 import { PendingChip, Tokenize } from "@/components/placeholder";
+import { RevealImage } from "@/components/reveal-image";
+import { projectImages } from "@/lib/site";
 import { StickyCta } from "@/components/sticky-cta";
 import { project, facts, residences, amenities, faqs } from "@/lib/content";
 
@@ -56,11 +58,18 @@ export default function DlfWestparkPage() {
           </div>
         </Reveal>
         <Reveal delay={0.1}>
-          <div className="mt-14 aspect-[21/9] w-full rounded-2xl border border-dashed border-mist-deep bg-mist/50">
-            <div className="flex h-full items-center justify-center font-mono text-sm text-ink/40">
-              VISUAL_DIRECTION_PENDING — hero photography (no stock; real shoot pending)
-            </div>
-          </div>
+          <figure className="mt-14">
+            <RevealImage
+              src={projectImages["dlf-westpark-andheri-west"].src}
+              alt={projectImages["dlf-westpark-andheri-west"].alt}
+              priority
+              sizes="(max-width: 1152px) 100vw, 1152px"
+              className="aspect-[21/9] w-full rounded-2xl"
+            />
+            <figcaption className="mt-2 text-right font-mono text-[11px] text-ink/40">
+              Artist&rsquo;s impression — from the official project brochure
+            </figcaption>
+          </figure>
         </Reveal>
       </section>
 

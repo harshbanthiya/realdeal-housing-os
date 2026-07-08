@@ -22,7 +22,7 @@
  *                 status, displayOrder
  *   (also seeded: ProjectFacts, Residences, Amenities, ProjectFAQs)
  */
-import { projects as fixtureProjects, type Project } from "@/lib/site";
+import { projects as fixtureProjects, projectImages, type Project } from "@/lib/site";
 
 export interface BlogPost {
   slug: string;
@@ -93,6 +93,7 @@ export async function getProjects(): Promise<Project[]> {
       meta: String(i.microMarket ?? ""),
       blurb: stripHtml(String(i.overview ?? "")),
       highlights: [],
+      image: projectImages[String(i.slug ?? "")],
     }));
     // Published CMS projects override same-slug fixtures; the rest of the
     // fixture catalogue stays until it too is migrated into the CMS.

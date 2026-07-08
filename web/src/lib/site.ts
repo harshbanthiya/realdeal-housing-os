@@ -21,6 +21,11 @@ export const company = {
     "At Real Deal Housing Pvt Ltd, we pride ourselves on expert market knowledge and personalised service to help you find your dream home. With 15 years in Mumbai's real estate market, we specialise in premium projects across Goregaon, Andheri, and Malad — a wide range of options for discerning buyers, from luxurious apartments to spacious family homes.",
 };
 
+export interface ProjectImage {
+  src: string; // static.wixstatic.com CDN URL (uploaded from RDH DATA 2024 archive)
+  alt: string;
+}
+
 export interface Project {
   slug: string;
   name: string;
@@ -29,11 +34,37 @@ export interface Project {
   blurb: string;
   highlights: string[];
   isNew?: boolean;
+  image?: ProjectImage;
 }
+
+/** Wix CDN heroes — lineage lives in media_assets (wix_url, upload_status='wix_uploaded'). */
+export const projectImages: Record<string, ProjectImage> = {
+  "imperial-heights": {
+    src: "https://static.wixstatic.com/media/77ab1a_2fe36223c0714ce1975be611cfec708a~mv2.jpg",
+    alt: "Imperial Heights entrance plaza, Goregaon West",
+  },
+  "kalpataru-radiance": {
+    src: "https://static.wixstatic.com/media/77ab1a_82e97de8f9e243159da10efe0c8ab6c1~mv2.jpg",
+    alt: "Kalpataru Radiance towers with landscaped palms, Goregaon West",
+  },
+  "ekta-tripolis": {
+    src: "https://static.wixstatic.com/media/77ab1a_2f1bc82a42644317b116066e8135f0e3~mv2.jpg",
+    alt: "Ekta Tripolis three towers at night over the Goregaon West skyline",
+  },
+  "bharat-auravistas": {
+    src: "https://static.wixstatic.com/media/77ab1a_5c3ab8a816094afba95cdc259e796085~mv2.jpg",
+    alt: "Bharat Auravistas show flat bedroom, Oshiwara Andheri West",
+  },
+  "dlf-westpark-andheri-west": {
+    src: "https://static.wixstatic.com/media/77ab1a_eae74130f478465aabe8fa7061303407~mv2.jpg",
+    alt: "DLF The Westpark towers, artist's impression, Andheri West",
+  },
+};
 
 export const projects: Project[] = [
   {
     slug: "imperial-heights",
+    image: projectImages["imperial-heights"],
     name: "Imperial Heights",
     location: "Goregaon West",
     meta: "44-storey tower · 2–4.5 BHK",
@@ -43,6 +74,7 @@ export const projects: Project[] = [
   },
   {
     slug: "kalpataru-radiance",
+    image: projectImages["kalpataru-radiance"],
     name: "Kalpataru Radiance",
     location: "Goregaon West",
     meta: "4 towers · 4.2 acres · 2–4 BHK",
@@ -52,6 +84,7 @@ export const projects: Project[] = [
   },
   {
     slug: "ekta-tripolis",
+    image: projectImages["ekta-tripolis"],
     name: "Ekta Tripolis",
     location: "Goregaon West",
     meta: "36 storeys · Skypolis · Caliopolis · Theopolis",
@@ -61,6 +94,7 @@ export const projects: Project[] = [
   },
   {
     slug: "bharat-auravistas",
+    image: projectImages["bharat-auravistas"],
     name: "Bharat Auravistas",
     location: "Oshiwara, Andheri West",
     meta: "36-storey · 3 BHK · Luxe & Grande",

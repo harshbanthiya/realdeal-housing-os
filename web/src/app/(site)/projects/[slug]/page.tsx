@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Reveal } from "@/components/reveal";
+import { RevealImage } from "@/components/reveal-image";
 import { ListingGrid } from "@/components/listing-grid";
 import { projects, listings } from "@/lib/site";
 import { getProject } from "@/lib/cms";
@@ -53,11 +54,21 @@ export default async function Page({
             {p.name}
           </h1>
           <p className="mt-3 font-mono text-sm text-ink/55">{p.meta}</p>
-          <div className="mt-10 aspect-[21/9] w-full rounded-2xl border border-dashed border-mist-deep bg-mist/50">
-            <div className="flex h-full items-center justify-center font-mono text-sm text-ink/40">
-              Project imagery — VISUAL_DIRECTION_PENDING
+          {p.image ? (
+            <RevealImage
+              src={p.image.src}
+              alt={p.image.alt}
+              priority
+              sizes="(max-width: 1152px) 100vw, 1152px"
+              className="mt-10 aspect-[21/9] w-full rounded-2xl"
+            />
+          ) : (
+            <div className="mt-10 aspect-[21/9] w-full rounded-2xl border border-dashed border-mist-deep bg-mist/50">
+              <div className="flex h-full items-center justify-center font-mono text-sm text-ink/40">
+                Project imagery — VISUAL_DIRECTION_PENDING
+              </div>
             </div>
-          </div>
+          )}
         </Reveal>
       </section>
 

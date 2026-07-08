@@ -1,8 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Reveal } from "@/components/reveal";
-import { company, projects, listings, pillars, testimonial } from "@/lib/site";
+import { RevealImage } from "@/components/reveal-image";
+import { company, projects, projectImages, listings, pillars, testimonial } from "@/lib/site";
 
 const featuredSale = listings.filter((l) => l.type === "sale").slice(0, 4);
+const imageForProject = (name: string) => projects.find((p) => p.name === name)?.image;
 
 export default function Home() {
   return (
@@ -31,6 +34,13 @@ export default function Home() {
             </Link>
           </div>
         </Reveal>
+        <RevealImage
+          src={projectImages["ekta-tripolis"].src}
+          alt={projectImages["ekta-tripolis"].alt}
+          priority
+          sizes="(max-width: 1152px) 100vw, 1152px"
+          className="mt-14 aspect-[21/9] w-full rounded-2xl"
+        />
       </section>
 
       {/* New launch banner */}
@@ -58,7 +68,11 @@ export default function Home() {
           {projects.map((p, i) => (
             <Reveal key={p.slug} delay={i * 0.06}>
               <Link href={`/projects/${p.slug}`} className="group block rounded-2xl border border-mist-deep p-7 transition-colors hover:bg-mist/40">
-                <div className="aspect-[16/9] rounded-xl border border-dashed border-mist-deep bg-mist/50" />
+                {p.image ? (
+                  <RevealImage src={p.image.src} alt={p.image.alt} zoom className="aspect-[16/9] rounded-xl" />
+                ) : (
+                  <div className="aspect-[16/9] rounded-xl border border-dashed border-mist-deep bg-mist/50" />
+                )}
                 <h3 className="mt-5 text-xl font-bold text-teal">{p.name}</h3>
                 <p className="mt-1 text-sm text-ink/55">{p.location} · {p.meta}</p>
                 <span className="mt-4 inline-block text-sm font-semibold text-teal group-hover:underline">View project →</span>
@@ -81,7 +95,19 @@ export default function Home() {
             {featuredSale.map((l, i) => (
               <Reveal key={l.title} delay={i * 0.05}>
                 <div className="flex h-full flex-col rounded-2xl border border-mist-deep bg-white p-5">
-                  <div className="aspect-[4/3] rounded-lg border border-dashed border-mist-deep bg-mist/50" />
+                  {imageForProject(l.project) ? (
+                    <div className="rdh-zoom relative aspect-[4/3] overflow-hidden rounded-lg">
+                      <Image
+                        src={imageForProject(l.project)!.src}
+                        alt={imageForProject(l.project)!.alt}
+                        fill
+                        sizes="(max-width: 640px) 100vw, 25vw"
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-[4/3] rounded-lg border border-dashed border-mist-deep bg-mist/50" />
+                  )}
                   <h3 className="mt-4 text-base font-semibold leading-snug text-teal">{l.title}</h3>
                   <p className="mt-1 text-xs text-ink/50">{l.location} · {l.config} · {l.sqft} sqft</p>
                   <p className="mt-3 text-lg font-bold text-teal">{l.price}</p>
