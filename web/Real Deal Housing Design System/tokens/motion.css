@@ -1,0 +1,65 @@
+/* Real Deal Housing — motion tokens.
+   Source of truth: web/src/components/reveal.tsx + sticky-cta.tsx + button hovers. */
+:root {
+  /* The house ease — every reveal uses cubic-bezier(0.22, 1, 0.36, 1) (easeOutQuint-like) */
+  --ease-reveal: cubic-bezier(0.22, 1, 0.36, 1); /* @kind other */
+  --ease-standard: ease; /* @kind other */
+
+  --dur-reveal: 0.75s; /* @kind other */ /* scroll reveals: fade + 26px rise, once */
+  --dur-sticky: 0.3s; /* @kind other */ /* sticky CTA slide in/out */
+  --dur-hover: 0.15s; /* @kind other */ /* color/opacity hovers */
+
+  --reveal-rise: 26px;
+  --reveal-stagger: 0.05s; /* @kind other */ /* per-item delay in grids (0.03–0.07s in source) */
+}
+
+/* Reusable reveal utility — mirrors <Reveal/> (framer-motion) from the codebase.
+   Add .rdh-reveal to an element; add .is-visible via IntersectionObserver (once). */
+.rdh-reveal {
+  opacity: 0;
+  transform: translateY(var(--reveal-rise));
+  transition:
+    opacity var(--dur-reveal) var(--ease-reveal),
+    transform var(--dur-reveal) var(--ease-reveal);
+}
+.rdh-reveal.is-visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .rdh-reveal { opacity: 1; transform: none; transition: none; }
+}
+
+html { scroll-behavior: smooth; }
+
+/* ——— Motion II — extension layer (inspired by luxury-places.ch + Halston;
+       colors/type stay Gallery White). Used by components/motion/. ——— */
+:root {
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */ /* masked lines, clip reveals */
+  --dur-lines: 0.9s; /* @kind other */   /* per-line mask reveal */
+  --dur-clip: 1.1s; /* @kind other */    /* image clip + settle-scale reveal */
+  --dur-kenburns: 7s; /* @kind other */  /* hero slide slow zoom */
+  --dur-count: 1.4s; /* @kind other */   /* stat count-up */
+  --line-stagger: 0.09s; /* @kind other */
+  --img-overscale: 1.12; /* @kind other */ /* start scale of clip-revealed / hovered imagery */
+}
+
+/* Masked line reveal — wrap each line in .rdh-line > .rdh-line-inner */
+.rdh-line { display: block; overflow: hidden; }
+.rdh-line-inner {
+  display: block; transform: translateY(110%);
+  transition: transform var(--dur-lines) var(--ease-expo);
+}
+.is-visible .rdh-line-inner, .rdh-line.is-visible .rdh-line-inner { transform: translateY(0); }
+
+/* Image clip reveal — container clips upward while image settles from overscale */
+.rdh-clip { clip-path: inset(0 0 100% 0); transition: clip-path var(--dur-clip) var(--ease-expo); }
+.rdh-clip > img { transform: scale(var(--img-overscale)); transition: transform var(--dur-clip) var(--ease-expo); }
+.rdh-clip.is-visible { clip-path: inset(0 0 0 0); }
+.rdh-clip.is-visible > img { transform: scale(1); }
+
+/* Hover zoom — listing/project imagery */
+.rdh-zoom { overflow: hidden; }
+.rdh-zoom img { transition: transform 1.2s var(--ease-expo); }
+.rdh-zoom:hover img { transform: scale(1.06); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rdh-line-inner, .rdh-clip, .rdh-clip > img, .rdh-zoom img { transition: none; transform: none; clip-path: none; }
+}

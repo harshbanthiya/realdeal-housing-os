@@ -1,0 +1,13 @@
+<!-- @dsCard group="Colors" viewport="700x150" subtitle="Cockpit status tones — always tint/10 bg + solid fg" name="Status tones" -->
+<!DOCTYPE html>
+<html><head><link rel="stylesheet" href="../styles.css">
+<style>body{margin:0;display:flex;align-items:center;justify-content:center;gap:12px;padding:14px;height:150px;box-sizing:border-box;background:#fff}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:9999px;padding:3px 10px;font-family:var(--font-mono);font-size:11px;font-weight:500}
+.dot{width:8px;height:8px;border-radius:9999px;display:inline-block}
+</style></head><body>
+<span class="pill" style="background:var(--tone-ready-bg);color:var(--tone-ready-fg)"><span class="dot" style="background:var(--teal)"></span>ready</span>
+<span class="pill" style="background:var(--tone-blocked-bg);color:var(--tone-blocked-fg)"><span class="dot" style="background:var(--warm)"></span>3 blockers · go-live locked</span>
+<span class="pill" style="background:var(--tone-review-bg);color:var(--tone-review-fg)"><span class="dot" style="background:var(--amber)"></span>under review</span>
+<span class="pill" style="background:var(--tone-active-bg);color:var(--tone-active-fg)"><span class="dot" style="background:var(--accent)"></span>active</span>
+<span class="pill" style="background:var(--tone-neutral-bg);color:var(--tone-neutral-fg)"><span class="dot" style="background:var(--ink-30)"></span>pending</span>
+</body></html>

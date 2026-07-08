@@ -1,0 +1,19 @@
+<!-- @dsCard group="Motion" viewport="700x150" subtitle="Hovers: solid→opacity .9 · outline→mist fill · links→underline/teal" name="Hover states" -->
+<!DOCTYPE html>
+<html><head><link rel="stylesheet" href="../styles.css">
+<style>body{margin:0;height:150px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:0 28px;background:#fff;font-family:var(--font-sans)}
+.b1{border-radius:9999px;background:var(--teal);color:#fff;padding:12px 22px;font-size:14px;font-weight:600;text-decoration:none;transition:opacity .15s}
+.b1:hover{opacity:.9;color:#fff}
+.b2{border-radius:9999px;border:1px solid var(--mist-deep);color:var(--teal);padding:12px 22px;font-size:14px;font-weight:600;text-decoration:none;transition:background .15s}
+.b2:hover{background:var(--mist)}
+.l1{font-size:14px;font-weight:600;color:var(--teal);text-decoration:none;text-underline-offset:4px}
+.l1:hover{text-decoration:underline}
+.l2{font-size:13.5px;font-weight:500;color:var(--ink-65);text-decoration:none;transition:color .15s}
+.l2:hover{color:var(--teal)}
+</style></head><body>
+<a class="b1" href="#">View listings →</a>
+<a class="b2" href="#">See verified facts</a>
+<a class="l1" href="#">All projects →</a>
+<a class="l2" href="#">Nav item</a>
+<span style="font-family:var(--font-mono);font-size:10px;color:var(--ink-40)">hover each · no press states — keep it quiet</span>
+</body></html>

@@ -1,0 +1,41 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Motion primitives" subtitle="RevealLines · RevealImage · CountUp · Ticker · Parallax — extension layer" -->
+<!DOCTYPE html>
+<html><head>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;height:420px;box-sizing:border-box;padding:20px 24px;background:#fff;overflow:hidden}</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel">
+const { RevealLines, RevealImage, CountUp, Ticker } = window.RealDealHousingDesignSystem_83c048;
+function Demo() {
+  const [k, setK] = React.useState(0);
+  React.useEffect(() => { const t = setInterval(() => setK((v) => v + 1), 4500); return () => clearInterval(t); }, []);
+  return (
+    <div key={k}>
+      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:20,alignItems:"center"}}>
+        <RevealLines as="h2" lines={["Bespoke towers,", "verified calmly."]}
+          style={{fontFamily:"var(--font-sans)",fontSize:40,fontWeight:800,lineHeight:1.05,letterSpacing:"-0.025em",color:"var(--teal)"}} />
+        <RevealImage ratio="16/9" radius={12} src="../../assets/imagery/westpark-exterior.jpg" delay={0.15} />
+      </div>
+      <div style={{marginTop:18,display:"flex",gap:36,fontFamily:"var(--font-sans)"}}>
+        {[[15," yrs","in the market"],[4,"","signature towers"],[3,"","western suburbs"]].map(([v,s,l],i)=>(
+          <div key={i}>
+            <CountUp value={v} suffix={s} style={{fontSize:34,fontWeight:800,letterSpacing:"-0.02em",color:"var(--teal)"}} />
+            <div style={{fontFamily:"var(--font-mono)",fontSize:10,textTransform:"uppercase",letterSpacing:"0.15em",color:"var(--ink-45)"}}>{l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:18,borderTop:"1px solid var(--mist-deep)",borderBottom:"1px solid var(--mist-deep)",padding:"12px 0"}}>
+        <Ticker speed={18} items={["Imperial Heights","Kalpataru Radiance","Ekta Tripolis","DLF Westpark","Bharat Auravistas"]}
+          itemStyle={{fontFamily:"var(--font-sans)",fontSize:22,fontWeight:700,letterSpacing:"-0.02em",color:"var(--teal)"}} />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body></html>

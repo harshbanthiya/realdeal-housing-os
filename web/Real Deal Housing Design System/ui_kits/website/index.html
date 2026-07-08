@@ -1,0 +1,73 @@
+<!-- @dsCard group="Website" viewport="1280x800" name="Marketing website" subtitle="Gallery White — home, listings, Westpark launch, mobile" -->
+<!-- @startingPoint section="Website" subtitle="Gallery White marketing site — interactive click-through" viewport="1280x800" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Deal Housing — Website UI kit</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: #fff; }
+  details summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.RealDealHousingDesignSystem_83c048;
+if (!NS || !NS.WebsiteHome) {
+  document.getElementById("root").innerHTML = '<div style="padding:48px;font-family:monospace;font-size:13px;color:#1f3d4d">design-system bundle compiling — reloading…</div>';
+  const n = +(sessionStorage.getItem("rdh_retry_site") || 0);
+  if (n < 3) { sessionStorage.setItem("rdh_retry_site", n + 1); setTimeout(() => location.reload(), 1500); }
+  throw new Error("bundle not ready");
+}
+sessionStorage.removeItem("rdh_retry_site");
+const { SiteHeader, SiteFooter, WebsiteHome, WebsiteListings, WebsiteWestpark, WebsiteMobile } = NS;
+const { useState } = React;
+
+const SCREENS = {
+  home: { label: "Home", nav: null },
+  buy: { label: "Buy", nav: "Buy" },
+  westpark: { label: "DLF Westpark", nav: null },
+  mobile: { label: "Mobile", nav: null },
+};
+
+function App() {
+  const [screen, setScreen] = useState(() => location.hash.replace("#", "") in SCREENS ? location.hash.replace("#", "") : "home");
+  const go = (s) => { setScreen(s); window.scrollTo(0, 0); try { history.replaceState(null, "", "#" + s); } catch (e) {} };
+
+  return (
+    <div data-screen-label={SCREENS[screen].label}>
+      <SiteHeader active={SCREENS[screen].nav} />
+      {screen === "home" && <WebsiteHome go={go} />}
+      {screen === "buy" && <WebsiteListings />}
+      {screen === "westpark" && <WebsiteWestpark />}
+      {screen === "mobile" && <WebsiteMobile />}
+      {screen !== "mobile" && <SiteFooter />}
+
+      {/* kit screen switcher */}
+      <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 50, display: "flex", gap: 4, borderRadius: 9999, border: "1px solid var(--mist-deep)", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", padding: 4, fontFamily: "var(--font-sans)" }}>
+        {Object.entries(SCREENS).map(([key, s]) => (
+          <button key={key} onClick={() => go(key)}
+            style={{
+              border: "none", borderRadius: 9999, cursor: "pointer", padding: "6px 12px",
+              fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
+              background: screen === key ? "var(--teal)" : "transparent",
+              color: screen === key ? "#fff" : "var(--ink-55)",
+            }}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

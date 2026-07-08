@@ -23,6 +23,7 @@ SPARSEBUNDLE='/Volumes/RDH 5TB/rdh-postgres-data.sparsebundle'
 APFS_VOLUME='/Volumes/RDH_POSTGRES_DATA'
 APFS_PG_DIR="$APFS_VOLUME/postgres"
 ATTACH_LOG="${TMPDIR:-/tmp}/rdh-postgres-hdiutil-attach.log"
+DETACH_LOG="${TMPDIR:-/tmp}/rdh-postgres-hdiutil-detach.log"
 
 # Count macOS metadata junk (.DS_Store and AppleDouble ._*) under a directory, files only.
 junk_count() {
@@ -71,10 +72,63 @@ wait_for_apfs_postgres_mount() {
   return 1
 }
 
+wait_for_sparsebundle_detach() {
+  tries="$1"
+  while [ "$tries" -gt 0 ]; do
+    if ! sparsebundle_attached; then
+      return 0
+    fi
+    sleep 1
+    tries=$((tries - 1))
+  done
+  return 1
+}
+
 clean_sparsebundle_appledouble() {
   # Clean AppleDouble junk that hdiutil can choke on when the bundle lives on exFAT.
   find "$SPARSEBUNDLE" -name "._*" -exec rm -f {} + 2>/dev/null || true
   find "$SPARSEBUNDLE/bands" -name "._*" -exec rm -f {} + 2>/dev/null || true
+}
+
+attach_sparsebundle() {
+  clean_sparsebundle_appledouble
+  if ! hdiutil attach "$SPARSEBUNDLE" -mountpoint "$APFS_VOLUME" >"$ATTACH_LOG" 2>&1; then
+    echo "Explicit mountpoint attach did not complete; retrying default attach..."
+    if ! hdiutil attach "$SPARSEBUNDLE" >>"$ATTACH_LOG" 2>&1; then
+      echo "ERROR: failed to attach sparsebundle $SPARSEBUNDLE" >&2
+      sed 's/^/  /' "$ATTACH_LOG" >&2
+      return 1
+    fi
+  fi
+}
+
+detach_attached_sparsebundle() {
+  devices="$(attached_sparsebundle_devices || true)"
+  if [ -z "$devices" ]; then
+    return 1
+  fi
+
+  root_dev=""
+  for dev in $devices; do
+    root_dev="$dev"
+    break
+  done
+
+  if [ -z "$root_dev" ]; then
+    return 1
+  fi
+
+  rm -f "$DETACH_LOG"
+  echo "Detaching stale sparsebundle device $root_dev..."
+  if ! hdiutil detach "$root_dev" >"$DETACH_LOG" 2>&1; then
+    echo "Normal detach did not complete; retrying forced detach..."
+    if ! hdiutil detach "$root_dev" -force >>"$DETACH_LOG" 2>&1; then
+      sed 's/^/  /' "$DETACH_LOG" >&2
+      return 1
+    fi
+  fi
+
+  wait_for_sparsebundle_detach 10
 }
 
 mount_attached_sparsebundle_devices() {
@@ -130,6 +184,10 @@ print_apfs_mount_diagnostics() {
     echo "Last hdiutil attach output:" >&2
     sed 's/^/  /' "$ATTACH_LOG" >&2
   fi
+  if [ -s "$DETACH_LOG" ]; then
+    echo "Last hdiutil detach output:" >&2
+    sed 's/^/  /' "$DETACH_LOG" >&2
+  fi
 }
 
 # Ensure the APFS sparsebundle holding the live Postgres cluster is mounted and
@@ -146,18 +204,20 @@ ensure_apfs_postgres() {
     fi
 
     rm -f "$ATTACH_LOG"
+    rm -f "$DETACH_LOG"
     if sparsebundle_attached; then
       echo "Sparsebundle is already attached; mounting its APFS volume..."
-    else
-      clean_sparsebundle_appledouble
-      if ! hdiutil attach "$SPARSEBUNDLE" -mountpoint "$APFS_VOLUME" >"$ATTACH_LOG" 2>&1; then
-        echo "Explicit mountpoint attach did not complete; retrying default attach..."
-        if ! hdiutil attach "$SPARSEBUNDLE" >"$ATTACH_LOG" 2>&1; then
-          echo "ERROR: failed to attach sparsebundle $SPARSEBUNDLE" >&2
-          sed 's/^/  /' "$ATTACH_LOG" >&2
+      mount_attached_sparsebundle_devices || true
+      if ! wait_for_apfs_postgres_mount 3; then
+        echo "Attached sparsebundle did not mount; detaching stale image and reattaching..."
+        detach_attached_sparsebundle || {
+          print_apfs_mount_diagnostics
           exit 1
-        fi
+        }
+        attach_sparsebundle || exit 1
       fi
+    else
+      attach_sparsebundle || exit 1
     fi
 
     if ! wait_for_apfs_postgres_mount 5; then

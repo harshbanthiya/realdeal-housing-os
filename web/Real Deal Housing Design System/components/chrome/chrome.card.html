@@ -1,0 +1,27 @@
+<!-- @dsCard group="Components" viewport="1200x560" name="Site chrome" subtitle="SiteHeader · SiteFooter · StickyCta (mobile)" -->
+<!DOCTYPE html>
+<html><head>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:#fff}</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel">
+const { SiteHeader, SiteFooter, StickyCta } = window.RealDealHousingDesignSystem_83c048;
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <div style={{display:"flex",flexDirection:"column",gap:20}}>
+    <SiteHeader active="Buy" />
+    <div style={{display:"flex",gap:20,padding:"0 20px"}}>
+      <div style={{flex:1}}><SiteFooter /></div>
+      <div style={{width:220,position:"relative",height:120,border:"1px solid var(--mist-deep)",borderRadius:12,overflow:"hidden"}}>
+        <div style={{padding:10,fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-40)"}}>mobile sticky CTA ↓</div>
+        <StickyCta />
+      </div>
+    </div>
+  </div>
+);
+</script>
+</body></html>
