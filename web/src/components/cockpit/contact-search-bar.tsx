@@ -17,6 +17,7 @@ export function ContactSearchBar({ defaultQ, sort, dir }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Sync when external navigation changes the search param (e.g. browser back)
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional prop→state sync
   useEffect(() => { setValue(defaultQ); }, [defaultQ]);
 
   const navigate = (q: string) => {

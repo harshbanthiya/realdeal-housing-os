@@ -472,6 +472,7 @@ function ReviewDetail({ item, onJump, towerLetters, onSaved }: {
   // Reset form when item changes
   const itemId = item.recordId;
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on item change
     setWing(item.recoveredWing || (towerLetters[0] ?? ""));
     setFlat(item.recoveredUnit || "");
     setMsg(null);

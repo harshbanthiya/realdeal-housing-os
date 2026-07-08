@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { Reveal } from "@/components/reveal";
 import { ListingGrid } from "@/components/listing-grid";
 import { projects, listings } from "@/lib/site";
+import { getProject } from "@/lib/cms";
+
+export const revalidate = 300; // re-read CMS content every 5 min once Wix is wired
 
 export function generateStaticParams() {
   return projects.map((p) => ({ slug: p.slug }));
@@ -15,9 +18,13 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const p = projects.find((x) => x.slug === slug);
+  const p = await getProject(slug);
   if (!p) return { title: "Project" };
-  return { title: `${p.name} — ${p.location}`, description: p.blurb.slice(0, 160) };
+  return {
+    title: `${p.name} — ${p.location}`,
+    description: p.blurb.slice(0, 160),
+    alternates: { canonical: `/projects/${slug}` },
+  };
 }
 
 export default async function Page({
@@ -26,7 +33,7 @@ export default async function Page({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const p = projects.find((x) => x.slug === slug);
+  const p = await getProject(slug);
   if (!p) notFound();
 
   const related = listings.filter((l) => l.project === p.name);

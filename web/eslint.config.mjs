@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Design-system reference kit (prototyping assets, not app code).
+    "Real Deal Housing Design System/**",
   ]),
 ]);
 

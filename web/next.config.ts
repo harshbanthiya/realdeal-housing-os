@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    // Wix Media Manager CDN — all CMS-served images resolve here.
+    remotePatterns: [{ protocol: "https", hostname: "static.wixstatic.com" }],
+  },
   // Allow the dev server's HMR websocket + /_next/* resources to be requested from the
   // Tailscale hostname/IP, not just localhost. Without this, Next 16 blocks the cross-origin
   // HMR socket and client-side tab navigation (e.g. Unit registry) throws a websocket error.

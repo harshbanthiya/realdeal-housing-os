@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Reveal } from "@/components/reveal";
-import { projects } from "@/lib/site";
+import { getProjects } from "@/lib/cms";
+
+export const revalidate = 300; // re-read CMS content every 5 min once Wix is wired
 
 export const metadata = {
   title: "Projects",
@@ -8,7 +10,8 @@ export const metadata = {
     "Premium Mumbai projects — Imperial Heights, Kalpataru Radiance, Ekta Tripolis (Goregaon West) and Bharat Auravistas (Andheri West).",
 };
 
-export default function Page() {
+export default async function Page() {
+  const projects = await getProjects();
   return (
     <section className="mx-auto max-w-6xl px-6 py-20">
       <Reveal>

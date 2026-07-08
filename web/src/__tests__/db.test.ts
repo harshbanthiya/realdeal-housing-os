@@ -9,6 +9,7 @@
  * a blocker: requires a test-only Postgres instance. See QA report.
  */
 
+import { createHash } from "node:crypto";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 describe("isDbConfigured", () => {
@@ -1132,7 +1133,6 @@ describe("metaCsvFromRows CSV generation", () => {
 
   // Local SHA-256 to verify hashes independently of the function under test
   function sha256(v: string): string {
-    const { createHash } = require("node:crypto");
     return createHash("sha256").update(v).digest("hex");
   }
 

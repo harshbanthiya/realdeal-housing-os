@@ -16,6 +16,12 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  openGraph: {
+    siteName: "Real Deal Housing",
+    type: "website",
+    locale: "en_IN",
+  },
   title: {
     default: "Real Deal Housing — Premium Mumbai Residences",
     template: "%s — Real Deal Housing",
