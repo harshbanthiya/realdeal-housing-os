@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { company } from "@/lib/site";
 
@@ -17,9 +18,14 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-mist-deep/60 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal text-[11px] font-bold text-white">
-            RDH
-          </span>
+          <Image
+            src="/rdh-mark.png"
+            alt=""
+            width={554}
+            height={489}
+            className="h-8 w-auto"
+            priority
+          />
           <span className="text-[15px] font-semibold tracking-tight text-teal">
             {company.name}
           </span>
