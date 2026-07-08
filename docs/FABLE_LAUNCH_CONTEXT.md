@@ -81,6 +81,12 @@ Editor sets `status = "published"` (+ `publishedAt`) on a BlogPosts item in the 
 5. Extend `check_db.sh` to 060 — F-7.
 6. Vercel project + domain decision for deploy.
 
+## Deployed 2026-07-08 (commit 7c6298b)
+- **LIVE**: https://web-gray-seven-44.vercel.app (Vercel project `web`, prj_bpbK8is4jVRISv6QweWGmryoadNX, CLI-linked from `web/.vercel/`). Prod env: WIX_CLIENT_ID, NEXT_PUBLIC_SITE_URL, COCKPIT_AUTH_TOKEN (random; cockpit + /api/cockpit verified 401 in prod).
+- **Imagery**: 5 heroes on Wix CDN (IH entrance, Kalpataru elevation, ET night banner, Bharat show flat, DLF brochure render w/ artist's-impression caption). Sources: `RDH DATA 2024/RDH ALL Footage/ALL PROJECTS/` + `exports/media/dlf-westpark/`. Lineage in media_assets (wix_url, upload_status=wix_uploaded, alt_text, reviewed=true). Upload path: `POST /site-media/v1/files/generate-upload-url` via Wix MCP → curl PUT binary.
+- **Motion**: DS Motion II ported (rdh-clip/rdh-zoom in globals.css, RevealImage component). Home hero, project grids, detail heroes, listing cards all render CDN imagery with dashed fallback.
+- robots stays noindex; site is on a vercel.app URL pending domain decision.
+
 ## Blockers
-- Wix OAuth Client ID + collection IDs (live CMS reads).
-- Vercel/domain/DNS access + approval to deploy.
+- Domain decision + Cloudflare DNS record (CNAME → cname.vercel-dns.com) for the public hostname; then update NEXT_PUBLIC_SITE_URL and flip robots on approval.
+- Local commits not yet pushed to origin (github.com/harshbanthiya/realdeal-housing-os).
