@@ -117,6 +117,53 @@ The 4 remaining are genuinely ambiguous and left for a human: two flats with no 
 one 3-digit flat with no floor (`604` could be floor 60 or floor 6), and doc 6926 where
 `wing_text` says A but the Devanagari says सी (C).
 
+## Source-document QA (both buildings)
+
+`scripts/qa_registration_sources.py` re-derives building, wing and flat for every linked
+registration from the register itself, and never from the DB. Evidence tiers, strongest first:
+
+1. **Index II text capture** — `exports/igr_index2_snapshots{,_imperial_heights}/…_docN_YYYY_r0.txt`
+2. **SearchResult sheet** — `imports/igr Registrations/**/SearchResult*.xls` and `~/Downloads`
+   (UTF-16 HTML; these are the search pages the doc numbers were harvested from)
+3. **`property_description_raw`** — the same register text as stored at ingest
+
+Verdicts: `confirmed`, `CONFLICT` (source contradicts the link), `needs_review` (source can't
+prove it — includes every Devanagari-only description), `no evidence`.
+
+| | Kalpataru | Imperial Heights |
+|---|---|---|
+| confirmed | 76 | 377 |
+| CONFLICT | 194 | 5 |
+| needs_review | 450 | 161 |
+| no source document | 377 | 384 |
+| **linked total** | **1097** | **927** |
+
+All 1571 non-confirmed records are on the human review queue
+(`unit_registration_review_items`, visible through `vw_unit_registration_review_queue`) as
+`source_qa_conflict` / `source_qa_needs_review` / `source_qa_no_document`. Enqueue is
+idempotent on `(record, review_type)`. Full detail: `exports/qa/registration_source_qa.csv`.
+
+The biggest single finding: **175 Kalpataru registrations whose register text names
+"द मिडोस" (The Meadows)**, not Kalpataru Radiance. Per the operator, only records explicitly
+naming Kalpataru Radiance belong to it. They are queued, not deleted.
+
+### Four traps this QA had to learn
+
+- **Doc numbers are not unique.** They restart each year and repeat across SRO offices.
+  `doc 8188/2024` exists in *both* snapshot directories as two different flats in two
+  different buildings. Snapshots are keyed `(building, doc, year)`; sheets `(doc, year, SRO)`.
+  Keying on the doc number alone matched an Ekta Tripolis row to a Kalpataru flat.
+- **The SRO does not identify the building.** Any document may be registered at any SRO
+  office. SRO is part of a document's identity, nothing more.
+- **Party addresses are not property addresses.** "कल्पतरू सिनर्जी" (Kalpataru Synergy) appears
+  in `party_address` — it is the developer's registered office ("Office no. 101, Kalpataru
+  Synergy"), not the flat's building. Only the property description's `Building Name` field
+  is evidence.
+- **The register runs fields together.** `Apartment/Flat No:A/204Shop No:Floor No:12.00Building
+  Name:…` has no commas, and `Floor No:SECOND FLOOR` spells the floor. Parsing must stop at the
+  next field label and understand ordinal words, or the flat token swallows the floor and the
+  building name.
+
 Two things the audit must keep getting right:
 
 - A contact can hold **several relationships to one unit** — phase 6.26 added a `landlord`
