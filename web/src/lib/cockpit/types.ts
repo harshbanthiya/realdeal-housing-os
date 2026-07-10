@@ -50,6 +50,11 @@ export interface UnitTimelineEvent {
   rent?: number; deposit?: number; tenancyStart?: string; tenancyEnd?: string; active?: boolean;
   parties: RegParty[];
 }
+export interface ZapkeyTxn {
+  date: string;
+  type: "sale" | "rent" | "mortgage" | "other";
+}
+
 export interface UnitCell {
   flat: string; floor: number; position: number; tower: string;
   status: "owned" | "tenanted" | "registered" | "unknown";
@@ -58,6 +63,11 @@ export interface UnitCell {
   ownerContactId?: string;
   currentTenant?: string; rent?: number; deposit?: number; tenancyStart?: string; tenancyEnd?: string;
   registrationCount: number;
+  /**
+   * Zapkey's third-party registration index: date + type only, no doc number, no parties,
+   * no price. Shown separately from IGR events — it proves a transaction happened, nothing more.
+   */
+  zapkey: ZapkeyTxn[];
   /** True when floor came from the MyGate directory rather than being inferred from the flat number. */
   floorKnown: boolean;
   /** Lead resident shown on the grid tile: the owner if there is one, else the first tenant. */

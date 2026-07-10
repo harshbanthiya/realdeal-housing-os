@@ -8,7 +8,7 @@ import { enqueueContact, placeRegistrationRecord } from "@/lib/cockpit/actions";
 import { cleanName } from "@/lib/cockpit/units-clean";
 import type {
   UnitRegistry as UnitRegistryData, UnitCell, UnitTimelineEvent, RegParty,
-  ExpiringLease, UnitReviewItem, Confidence, ProbableContact,
+  ExpiringLease, UnitReviewItem, Confidence, ProbableContact, ZapkeyTxn,
 } from "@/lib/cockpit/types";
 
 const STATUS_META: Record<UnitCell["status"], { label: string; dot: string; cell: string; tone: Tone }> = {
@@ -272,8 +272,51 @@ function UnitDetail({ unit }: { unit: UnitCell }) {
           <Timeline events={unit.events} />
         </div>
       )}
+
+      {unit.zapkey.length > 0 && <ZapkeyPanel txns={unit.zapkey} hasIgr={unit.events.length > 0} />}
+
       <p className="mt-4 text-[11px] text-ink/35">Sourced from IGR registrations (review-gated). Names shown in Devanagari as recorded; romanization is auto-generated — verify before action.</p>
     </Card>
+  );
+}
+
+const ZAP_DOT: Record<ZapkeyTxn["type"], string> = {
+  sale: "bg-teal", rent: "bg-emerald-500", mortgage: "bg-amber-500", other: "bg-mist-deep",
+};
+
+/**
+ * Zapkey's third-party index. Deliberately its own block, not merged into the registration
+ * timeline: these rows carry a date and a type and nothing else — no document number, no
+ * parties, no price — so they must never be mistaken for a parsed IGR registration.
+ */
+function ZapkeyPanel({ txns, hasIgr }: { txns: ZapkeyTxn[]; hasIgr: boolean }) {
+  const counts = txns.reduce<Record<string, number>>((a, t) => ({ ...a, [t.type]: (a[t.type] ?? 0) + 1 }), {});
+  return (
+    <div className="mt-5 rounded-lg border border-dashed border-mist-deep bg-mist/20 p-3.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-ink/45">Zapkey index</div>
+        <span className="text-[11px] text-ink/40">
+          {Object.entries(counts).map(([k, n]) => `${n} ${k}`).join(" · ")}
+        </span>
+      </div>
+      {!hasIgr && (
+        <p className="mt-1.5 text-[11px] text-amber-700">
+          No IGR registration placed on this flat — Zapkey confirms it transacted, but we hold no document number to fetch its Index II with.
+        </p>
+      )}
+      <ul className="mt-2.5 space-y-1.5">
+        {txns.map((t, i) => (
+          <li key={i} className="flex items-center gap-2 text-[12px]">
+            <span className={`h-2 w-2 shrink-0 rounded-full ${ZAP_DOT[t.type]}`} aria-hidden />
+            <span className="tabular-nums text-ink/70">{t.date ? ymd(t.date) : "date unknown"}</span>
+            <span className="capitalize text-ink/50">{t.type}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2.5 text-[11px] text-ink/35">
+        Third-party index (zapkey.com). Date and transaction type only — no parties, price or document number.
+      </p>
+    </div>
   );
 }
 

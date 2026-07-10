@@ -468,6 +468,7 @@ export async function getLaunchCalendar(slug?: string): Promise<CalendarItem[]> 
 // ---------------- unit registry (per-building, per-tower apartment stack) ----------------
 type URegistry = import("./types").UnitRegistry;
 type UCell = import("./types").UnitCell;
+type ZapkeyTxn = import("./types").ZapkeyTxn;
 type UEvent = import("./types").UnitTimelineEvent;
 type RParty = import("./types").RegParty;
 type UReview = import("./types").UnitReviewItem;
@@ -667,6 +668,23 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     (mygateByWingUnit.get(wk) ?? mygateByWingUnit.set(wk, []).get(wk)!).push(pc);
   }
 
+  // Zapkey's transaction index: date + type per flat, no doc number / parties / price. Kept in
+  // its own table for that reason, and rendered apart from IGR events so the two are never
+  // mistaken for each other. Only rows Zapkey resolved to a unit are shown.
+  const zapRows = await readQuery<{ unit_id: string; d: string | null; t: string | null }>(
+    `select z.building_unit_id::text unit_id, z.registration_date::text d, z.transaction_type t
+       from zapkey_transactions z
+       join building_units bu on bu.id = z.building_unit_id
+       join buildings bg on bg.id = bu.building_id
+      where bg.name = $1
+      order by z.registration_date desc nulls last`, [b.name]);
+  const zapByUnit = new Map<string, ZapkeyTxn[]>();
+  for (const z of zapRows) {
+    if (!z.unit_id) continue;
+    const t = (["sale", "rent", "mortgage"].includes(z.t ?? "") ? z.t : "other") as ZapkeyTxn["type"];
+    (zapByUnit.get(z.unit_id) ?? zapByUnit.set(z.unit_id, []).get(z.unit_id)!).push({ date: z.d ?? "", type: t });
+  }
+
   // group registration events by unit key (tower + flat) — handles linked and unlinked records.
   const toEvent = (r: typeof myRecs[number]): UEvent => ({
     date: r.registration_date ?? "", year: r.registration_year ?? (r.registration_date ? Number(r.registration_date.slice(0, 4)) : 0),
@@ -729,6 +747,7 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
       rent: activeLease?.rent, deposit: activeLease?.deposit,
       tenancyStart: activeLease?.tenancyStart, tenancyEnd: activeLease?.tenancyEnd,
       registrationCount: events.length, events, contactMatches: mygateByUnit.get(u.id) ?? [],
+      zapkey: zapByUnit.get(u.id) ?? [],
     });
   }
 
