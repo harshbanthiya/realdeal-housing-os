@@ -24,6 +24,7 @@ APFS_VOLUME='/Volumes/RDH_POSTGRES_DATA'
 APFS_PG_DIR="$APFS_VOLUME/postgres"
 ATTACH_LOG="${TMPDIR:-/tmp}/rdh-postgres-hdiutil-attach.log"
 DETACH_LOG="${TMPDIR:-/tmp}/rdh-postgres-hdiutil-detach.log"
+COMPOSE_LOG="${TMPDIR:-/tmp}/rdh-postgres-compose-up.log"
 
 # Count macOS metadata junk (.DS_Store and AppleDouble ._*) under a directory, files only.
 junk_count() {
@@ -190,6 +191,63 @@ print_apfs_mount_diagnostics() {
   fi
 }
 
+docker_host_mnt_stale_error() {
+  [ -s "$COMPOSE_LOG" ] &&
+    grep -q "error while creating mount source path '/host_mnt/" "$COMPOSE_LOG" &&
+    grep -q ": file exists" "$COMPOSE_LOG"
+}
+
+wait_for_docker_unavailable() {
+  tries="$1"
+  while [ "$tries" -gt 0 ]; do
+    if ! docker info >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+    tries=$((tries - 1))
+  done
+  return 1
+}
+
+wait_for_docker_ready() {
+  tries="$1"
+  while [ "$tries" -gt 0 ]; do
+    if docker info >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+    tries=$((tries - 1))
+  done
+  return 1
+}
+
+repair_docker_host_mnt_bridge() {
+  echo "Docker Desktop host mount bridge is stale after an external-disk eject."
+  echo "Restarting Docker Desktop once to refresh /host_mnt file sharing..."
+  docker compose --env-file .env down >/dev/null 2>&1 || true
+
+  if command -v osascript >/dev/null 2>&1; then
+    osascript -e 'quit app "Docker"' >/dev/null 2>&1 || true
+    wait_for_docker_unavailable 45 || true
+  fi
+
+  if ! command -v open >/dev/null 2>&1; then
+    echo "ERROR: cannot reopen Docker Desktop automatically; macOS open command not found." >&2
+    return 1
+  fi
+
+  open -a Docker >/dev/null 2>&1 || {
+    echo "ERROR: failed to reopen Docker Desktop with: open -a Docker" >&2
+    return 1
+  }
+
+  echo "Waiting for Docker Desktop to become ready..."
+  wait_for_docker_ready 90 || {
+    echo "ERROR: Docker Desktop did not become ready after restart." >&2
+    return 1
+  }
+}
+
 # Ensure the APFS sparsebundle holding the live Postgres cluster is mounted and
 # populated BEFORE Docker starts. Critical safety: if the volume is missing or
 # empty, Docker would bind-mount an empty dir and Postgres would initialise a
@@ -263,17 +321,35 @@ cd "$DOCKER_DIR"
 # Postgres entrypoint, so each attempt re-cleans from a stopped Postgres.
 ATTEMPT=1
 MAX_ATTEMPTS=3
+DOCKER_HOST_MNT_REPAIRED=0
 while : ; do
   docker compose --env-file .env rm -sf postgres >/dev/null 2>&1 || true
   preflight_clean
   echo "Starting Postgres (attempt $ATTEMPT of $MAX_ATTEMPTS)..."
-  if docker compose --env-file .env up -d --wait --wait-timeout 90 postgres; then
+  rm -f "$COMPOSE_LOG"
+  set +e
+  docker compose --env-file .env up -d --wait --wait-timeout 90 postgres >"$COMPOSE_LOG" 2>&1
+  COMPOSE_STATUS=$?
+  set -e
+  cat "$COMPOSE_LOG"
+  if [ "$COMPOSE_STATUS" -eq 0 ]; then
     break
+  fi
+  if docker_host_mnt_stale_error && [ "$DOCKER_HOST_MNT_REPAIRED" -eq 0 ]; then
+    DOCKER_HOST_MNT_REPAIRED=1
+    repair_docker_host_mnt_bridge || exit 1
+    echo "Retrying Postgres after Docker Desktop host mount refresh..."
+    continue
   fi
   if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
     echo "ERROR: Postgres did not become healthy after $MAX_ATTEMPTS attempts." >&2
-    echo "This is usually exFAT AppleDouble junk regenerating under data/postgres." >&2
-    echo "See README.md (AppleDouble / exFAT) for durable fix options." >&2
+    if docker_host_mnt_stale_error; then
+      echo "Docker Desktop still has stale /host_mnt file-sharing entries." >&2
+      echo "Quit Docker Desktop completely, reopen it, then run ./start.sh again." >&2
+    else
+      echo "This is usually exFAT AppleDouble junk regenerating under data/postgres." >&2
+      echo "See README.md (AppleDouble / exFAT) for durable fix options." >&2
+    fi
     exit 1
   fi
   echo "Postgres unhealthy; recreating and retrying after re-clean..."
