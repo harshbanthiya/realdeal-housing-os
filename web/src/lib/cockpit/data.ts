@@ -12,7 +12,7 @@ import { facts as dlfFacts } from "@/lib/content";
 import type { Tone } from "@/components/ui/primitives";
 import { isDbConfigured, readQuery } from "@/lib/db";
 import { recoverWingUnit, joinPartyNames } from "./units-clean";
-import { buildCandidate, findMatches, unitKey, toUnitContact, dedupeContacts, type Candidate } from "./contact-match";
+import { buildCandidate, findMatches, unitKey, toUnitContact, dedupeContacts, type Candidate, type ProbableContact } from "./contact-match";
 import type {
   Mode, Building, ReviewItem, AgentEvent, Blocker, Person, Keyword,
   Campaign, Fact, WebPage, AgentTask, KanbanTask, CalendarItem, LaunchStream,
@@ -485,6 +485,21 @@ const MAX_FLOOR = 55; // IH goes to 51F, Kalpataru ~38 sanctioned; cap guards ba
 // Flat-number scheme (per brochure / IGR variants): compact parser rows use
 // floor+stack for 1-31 (`291` -> floor 29, unit 1), while older raw imports can
 // use zero-padded unit suffixes (`2706` -> floor 27, unit 6; `803` -> floor 8, unit 3).
+// Prefer the floor stored on building_units (backfilled from the MyGate directory, which
+// knows the real floor of every occupied flat) over guessing from the flat number. Kalpataru
+// numbers flats floor*10+position, so deriveFloorPos misreads "301" as floor 3 / unit 01 and
+// collides it with flat 31 — the 30th floor then renders empty. Verified across all 625
+// MyGate flats: position = flat - floor*10, 1..5 in wing A and 1..6 in B/C/D.
+function floorPos(unitNumber: string, dbFloor: string | null): { floor: number; pos: number; known: boolean } {
+  const fl = Number(dbFloor);
+  if (dbFloor && Number.isInteger(fl) && fl >= 1 && fl <= MAX_FLOOR) {
+    const n = Number(String(unitNumber).replace(/\D/g, "")) || 0;
+    const pos = n - fl * 10;
+    if (pos >= 1 && pos <= 12) return { floor: fl, pos, known: true };
+  }
+  return { ...deriveFloorPos(unitNumber), known: false };
+}
+
 function deriveFloorPos(u: string): { floor: number; pos: number } {
   const n = Number(String(u).replace(/\D/g, "")) || 0;
   const raw = String(u).replace(/\D/g, "");
@@ -577,15 +592,15 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
   }));
 
   // Order by record count DESC so the dedup below keeps the unit that has records.
-  const bunits = await readQuery<{ id: string; wing: string | null; unit_number: string | null; bn: string }>(
-    `select bu.id::text, bu.wing, bu.unit_number, b.name bn,
+  const bunits = await readQuery<{ id: string; wing: string | null; unit_number: string | null; floor: string | null; bn: string }>(
+    `select bu.id::text, bu.wing, bu.unit_number, bu.floor, b.name bn,
             count(r.id) recs
        from building_units bu
        join buildings b on b.id = bu.building_id
        left join unit_registration_records r on r.building_unit_id = bu.id
       where bu.canonical_status = 'active'
         and (bu.metadata->>'offgrid') is distinct from 'true'
-      group by bu.id, bu.wing, bu.unit_number, b.name
+      group by bu.id, bu.wing, bu.unit_number, bu.floor, b.name
       order by recs desc`);
   // Deduplicate: IGR ingest creates a building_unit per record, so the same flat can appear
   // twice. Keep the first encountered per wing+unit_number key (DB order = creation order).
@@ -616,6 +631,34 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
   const igrContactByUnit = new Map<string, string>();
   for (const m of igrPartyMatches) {
     if (!igrContactByUnit.has(m.building_unit_id)) igrContactByUnit.set(m.building_unit_id, m.contact_id);
+  }
+
+  // Current residents from MyGate (owner/tenant + family), keyed by building_unit_id.
+  // These are directly unit-linked (not name-guessed), so they render as strong matches
+  // with phone + WhatsApp actions. building_unit_id is globally unique, so no per-building filter needed.
+  const mgRel = await readQuery<{ unit_id: string; wing: string | null; unit_number: string | null; role: string; mrole: string; name: string; phone: string | null; contact_id: string }>(
+    `select r.building_unit_id::text unit_id, bu.wing, bu.unit_number, r.relationship_type role,
+            coalesce(r.raw_context->>'mygate_role', r.relationship_type) mrole,
+            c.full_name name, coalesce(c.whatsapp_number, c.phone_primary) phone, c.id::text contact_id
+       from contact_property_relationships r
+       join contacts c on c.id = r.contact_id
+       join building_units bu on bu.id = r.building_unit_id
+       join buildings bg on bg.id = bu.building_id
+      where c.metadata->>'mygate_unit' is not null and r.building_unit_id is not null
+        and bg.name = $1
+      order by (r.relationship_type='owner') desc, c.full_name`, [b.name]);
+  const mygateByUnit = new Map<string, ProbableContact[]>();     // keyed by building_unit_id
+  const mygateByWingUnit = new Map<string, ProbableContact[]>(); // keyed by "wing|unit_number"
+  for (const m of mgRel) {
+    const pc: ProbableContact = {
+      name: /_family$/.test(m.mrole) ? `${m.name} · family` : m.name,
+      role: m.role === "owner" ? "owner" : "tenant",
+      confidence: "strong", source: "contact",
+      phone: m.phone ?? undefined, contactId: m.contact_id, unitMatch: true,
+    };
+    (mygateByUnit.get(m.unit_id) ?? mygateByUnit.set(m.unit_id, []).get(m.unit_id)!).push(pc);
+    const wk = `${m.wing ?? ""}|${m.unit_number ?? ""}`;
+    (mygateByWingUnit.get(wk) ?? mygateByWingUnit.set(wk, []).get(wk)!).push(pc);
   }
 
   // group registration events by unit key (tower + flat) — handles linked and unlinked records.
@@ -665,34 +708,46 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
       : currentOwner ? "owned"
       : events.length ? "registered" : "unknown";
     const resolvedContactId = relOwner?.contactId ?? (lastOwn && igrContactId ? igrContactId : undefined);
-    const fp = deriveFloorPos(flat);
+    const fp = floorPos(flat, u.floor);
+    // mgRel is ordered owner-first, so the lead resident is the owner when one is on record.
+    // Family members are suffixed "· name" upstream; strip that for the compact grid tile.
+    const mg = mygateByUnit.get(u.id) ?? [];
+    const lead = mg[0];
+    const resident = lead ? { name: lead.name.replace(/ · family$/, ""), role: lead.role } : undefined;
     units.push({
-      flat, floor: fp.floor, position: fp.pos, tower,
+      flat, floor: fp.floor, position: fp.pos, tower, floorKnown: fp.known, resident,
       status, currentOwner, ownerContact: Boolean(resolvedContactId),
       ownerContactId: resolvedContactId,
       ownerSince: lastOwn?.date, lastPrice: lastOwn?.consideration,
       currentTenant: activeLease ? partyNames(activeLease, ["lessee", "tenant"]) || undefined : undefined,
       rent: activeLease?.rent, deposit: activeLease?.deposit,
       tenancyStart: activeLease?.tenancyStart, tenancyEnd: activeLease?.tenancyEnd,
-      registrationCount: events.length, events, contactMatches: [],
+      registrationCount: events.length, events, contactMatches: mygateByUnit.get(u.id) ?? [],
     });
   }
 
-  const towersMap = new Map<string, { letter: string; floors: number; perFloor: number; count: number }>();
-  for (const u of myUnits) {
-    const t = towerLetter(u.wing); if (!t) continue;
-    const fp = deriveFloorPos(String(u.unit_number));
-    const cur = towersMap.get(t) ?? { letter: t, floors: 0, perFloor: 0, count: 0 };
-    cur.floors = Math.max(cur.floors, fp.floor);
-    cur.perFloor = Math.max(cur.perFloor, fp.pos);
-    cur.count += 1; towersMap.set(t, cur);
-  }
   // Authoritative apartments/floor per the brochure/operator: Wing A = 5, B/C/D/E = 6.
   // (Deriving from max unit-position overshoots: a few odd flats end in 7-9, e.g. shops/podium.)
   const TOWER_PER_FLOOR: Record<string, number> = { A: 5, B: 6, C: 6, D: 6, E: 6 };
+  // Tower height comes from flats whose floor we KNOW; a bad heuristic parse must not stretch
+  // the grid to a floor that does not exist. Fall back to derived floors only if none are known.
+  const towersMap = new Map<string, { letter: string; floors: number; derived: number; perFloor: number; count: number }>();
+  for (const u of units) {
+    const t = u.tower; if (!t) continue;
+    const cur = towersMap.get(t) ?? { letter: t, floors: 0, derived: 0, perFloor: 0, count: 0 };
+    if (u.floorKnown) cur.floors = Math.max(cur.floors, u.floor);
+    cur.derived = Math.max(cur.derived, u.floor);
+    cur.perFloor = Math.max(cur.perFloor, u.position);
+    cur.count += 1; towersMap.set(t, cur);
+  }
   const towers = [...towersMap.values()].sort((a, z) => a.letter.localeCompare(z.letter))
-    .map((t) => ({ letter: t.letter, label: `Tower ${t.letter}`, floors: Math.min(Math.max(t.floors, 1), MAX_FLOOR),
-                   unitsPerFloor: TOWER_PER_FLOOR[t.letter] ?? Math.min(Math.max(t.perFloor, 4), 12), unitCount: t.count }));
+    .map((t) => {
+      const floors = Math.min(Math.max(t.floors || t.derived, 1), MAX_FLOOR);
+      const unitsPerFloor = TOWER_PER_FLOOR[t.letter] ?? Math.min(Math.max(t.perFloor, 4), 12);
+      const unplaced = units.filter((u) => u.tower === t.letter &&
+        (u.floor > floors || u.position > unitsPerFloor)).length;
+      return { letter: t.letter, label: `Tower ${t.letter}`, floors, unitsPerFloor, unitCount: t.count, unplaced };
+    });
   const overallPerFloor = towers.reduce((m, t) => Math.max(m, t.unitsPerFloor), 6);
 
   const withReg = units.filter((u) => u.registrationCount > 0);
@@ -741,7 +796,11 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
       tenantPans: pansByRole(r.parties, ["lessee", "tenant"]).join(", "),
       docNumber: r.doc_number ?? "—", sro: r.sro_office ?? undefined,
       confidence: rec.confidence, descriptionRaw: r.property_description_raw ?? undefined,
-      contactMatches: candidates.length ? findMatches(parties, candidates, rec.wing, rec.unit, b.name) : [],
+      // MyGate current residents for this unit first, then name-matched registration contacts.
+      contactMatches: dedupeContacts([
+        mygateByWingUnit.get(`${rec.wing}|${rec.unit}`) ?? [],
+        candidates.length ? findMatches(parties, candidates, rec.wing, rec.unit, b.name) : [],
+      ], 6),
     };
   });
 
@@ -760,7 +819,8 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
         ...activeLease.flatMap((e) => romanParties(e.parties, ["lessee", "tenant"], "tenant")),
       ];
       const named = parties.length ? findMatches(parties, candidates, u.tower, flatDigits, b.name) : [];
-      u.contactMatches = dedupeContacts([direct, named], 4);
+      // MyGate current residents (seeded at push) first — they're unit-linked, keep them.
+      u.contactMatches = dedupeContacts([u.contactMatches, direct, named], 6);
     }
   }
 

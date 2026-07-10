@@ -58,11 +58,15 @@ export interface UnitCell {
   ownerContactId?: string;
   currentTenant?: string; rent?: number; deposit?: number; tenancyStart?: string; tenancyEnd?: string;
   registrationCount: number;
+  /** True when floor came from the MyGate directory rather than being inferred from the flat number. */
+  floorKnown: boolean;
+  /** Lead resident shown on the grid tile: the owner if there is one, else the first tenant. */
+  resident?: { name: string; role: "owner" | "tenant" };
   events: UnitTimelineEvent[];
   /** Probable phone/email for this flat: direct sheet lookup + name-matched parties (may be empty). */
   contactMatches: ProbableContact[];
 }
-export interface UnitTower { letter: string; label: string; floors: number; unitsPerFloor: number; unitCount: number }
+export interface UnitTower { letter: string; label: string; floors: number; unitsPerFloor: number; unitCount: number; unplaced: number }
 export interface ExpiringLease {
   wing: string; unit: string; daysRemaining: number;
   rent?: number; deposit?: number;

@@ -119,7 +119,48 @@ def main() -> int:
             if not show_all and len(rows) > 15:
                 print(f"  … {len(rows)-15} more (--all)")
 
-    clean = not (missing_unit or dup_unit or missing_res or wrong_role)
+    # --- grid placement, mirroring web/src/lib/cockpit/data.ts floorPos() ---------------
+    # The Unit Registry lays flats out at (floor, flat - floor*10). Two flats landing on one
+    # slot means one is invisible; that is what made tower A's 30th floor look empty.
+    PER_FLOOR = {"A": 5, "B": 6, "C": 6, "D": 6}
+    grid_rows = db_rows(f"""
+        SELECT regexp_replace(upper(wing),'.*([A-Z])\\s*$','\\1'),
+               regexp_replace(unit_number,'\\D','','g'), coalesce(floor,'')
+        FROM building_units
+        WHERE building_id='{BUILDING_ID}' AND canonical_status='active'
+          AND (metadata->>'offgrid') IS DISTINCT FROM 'true';""")
+    slots: dict[str, dict[tuple[int, int], str]] = defaultdict(dict)
+    collisions, offgrid = [], defaultdict(int)
+    top: dict[str, int] = defaultdict(int)
+    for w, d, fl in grid_rows:
+        w, d, fl = w.strip(), d.strip(), fl.strip()
+        if not d or w not in PER_FLOOR:
+            continue
+        if not fl.isdigit():
+            offgrid[w] += 1
+            continue
+        f = int(fl)
+        p = int(d) - f * 10
+        if not 1 <= p <= PER_FLOOR[w]:
+            offgrid[w] += 1
+            continue
+        if (f, p) in slots[w]:
+            collisions.append(f"{w} floor {f} pos {p}: {slots[w][(f,p)]} vs {d}")
+        slots[w][(f, p)] = d
+        top[w] = max(top[w], f)
+
+    print("\ngrid placement (as the Unit Registry lays it out)")
+    print("  wing  floors  flats  boxes  empty  off-grid")
+    for w in sorted(PER_FLOOR):
+        boxes = top[w] * PER_FLOOR[w]
+        print(f"   {w}     {top[w]:>3}   {len(slots[w]):>4}   {boxes:>4}   {boxes-len(slots[w]):>4}   {offgrid[w]:>4}")
+    print(f"  collisions {len(collisions)}")
+    for c in (collisions if show_all else collisions[:10]):
+        print(f"    {c}")
+    print("  empty boxes are flats MyGate does not list (unoccupied); off-grid units keep a"
+          "\n  null floor and are placed by the data.ts heuristic instead.")
+
+    clean = not (missing_unit or dup_unit or missing_res or wrong_role or collisions)
     print("\nEVERY APARTMENT TOUCHED" if clean else "\nGAPS FOUND — see above")
     return 0 if clean else 1
 

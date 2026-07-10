@@ -41,13 +41,23 @@ function expiringTone(end?: string): Tone {
 }
 
 export function UnitRegistry({ data }: { data: UnitRegistryData }) {
-  const towers = data.towers.length ? data.towers : [{ letter: "", label: "All units", floors: 1, unitsPerFloor: 6, unitCount: data.units.length }];
+  const towers = data.towers.length ? data.towers : [{ letter: "", label: "All units", floors: 1, unitsPerFloor: 6, unitCount: data.units.length, unplaced: 0 }];
   const [tower, setTower] = useState(towers[0]?.letter ?? "");
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<"stack" | "review">("stack");
 
   const tUnits = useMemo(() => data.units.filter((u) => u.tower === tower), [data.units, tower]);
-  const byPos = useMemo(() => { const m = new Map<string, UnitCell>(); for (const u of tUnits) m.set(`${u.floor}-${u.position}`, u); return m; }, [tUnits]);
+  // A unit whose floor is known (MyGate) always wins its slot; only guessed placements
+  // may collide, and when they do they must not evict the real flat.
+  const byPos = useMemo(() => {
+    const m = new Map<string, UnitCell>();
+    for (const u of tUnits) {
+      const k = `${u.floor}-${u.position}`;
+      const prev = m.get(k);
+      if (!prev || (u.floorKnown && !prev.floorKnown)) m.set(k, u);
+    }
+    return m;
+  }, [tUnits]);
   const sel = selected ? data.units.find((u) => `${u.tower}-${u.flat}` === selected) ?? null : null;
   const tMeta = towers.find((t) => t.letter === tower) ?? towers[0];
 
@@ -115,7 +125,10 @@ export function UnitRegistry({ data }: { data: UnitRegistryData }) {
           <div className="grid gap-6 lg:grid-cols-[1fr_440px]">
             {/* building stack */}
             <Card className="overflow-hidden p-0">
-              <div className="border-b border-mist px-4 py-2 text-[12px] text-ink/45">{tMeta.label} · {tMeta.floors} floors × {perFloor}/floor (inferred grid)</div>
+              <div className="border-b border-mist px-4 py-2 text-[12px] text-ink/45">
+                {tMeta.label} · {tMeta.floors} floors × {perFloor}/floor · {tMeta.unitCount} units
+                {tMeta.unplaced > 0 && <span className="text-amber-700"> · {tMeta.unplaced} off-grid</span>}
+              </div>
               <div className="max-h-[620px] overflow-y-auto p-3">
                 {floors.map((fl) => (
                   <div key={fl} className="flex items-center gap-2 border-b border-mist/60 py-1.5 last:border-0">
@@ -125,13 +138,26 @@ export function UnitRegistry({ data }: { data: UnitRegistryData }) {
                         const u = byPos.get(`${fl}-${pos}`);
                         const meta = STATUS_META[u?.status ?? "unknown"];
                         const key = u ? `${u.tower}-${u.flat}` : "";
+                        const who = u?.resident;
                         return (
                           <button key={pos} onClick={() => u && setSelected(key)} disabled={!u}
-                            title={u ? `Flat ${u.flat} — ${meta.label}` : "no unit"}
-                            aria-label={u ? `Flat ${u.flat}, ${meta.label}` : "empty"}
-                            className={`h-9 rounded-md border text-[11px] font-medium tabular-nums transition ${meta.cell} ${
+                            title={u ? `Flat ${u.flat} — ${who ? `${who.name} (${who.role})` : meta.label}` : "no unit"}
+                            aria-label={u ? `Flat ${u.flat}, ${who ? `${who.name}, ${who.role}` : meta.label}` : "empty"}
+                            className={`flex h-14 flex-col justify-center overflow-hidden rounded-md border px-1.5 text-[11px] font-medium transition ${meta.cell} ${
                               u ? "cursor-pointer hover:ring-2 hover:ring-teal/40" : "cursor-default opacity-50"} ${selected === key ? "ring-2 ring-teal" : ""}`}>
-                            {u ? u.flat : ""}
+                            {u && (
+                              <>
+                                <span className="tabular-nums leading-tight">{u.flat}</span>
+                                {who ? (
+                                  <>
+                                    <span className="truncate text-[10px] font-normal leading-tight opacity-90">{who.name}</span>
+                                    <span className="text-[9px] uppercase tracking-wide opacity-60">{who.role}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-[9px] uppercase tracking-wide opacity-50">no contact</span>
+                                )}
+                              </>
+                            )}
                           </button>
                         );
                       })}

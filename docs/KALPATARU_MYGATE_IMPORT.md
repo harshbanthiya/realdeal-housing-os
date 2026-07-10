@@ -39,6 +39,38 @@ Unit Registry renders them (`mgRel` in `web/src/lib/cockpit/data.ts` keys on
 `contacts.metadata->>'mygate_unit'`, which both the loader's insert and its name-match
 update set).
 
+## The grid: floors are looked up, not guessed
+
+Kalpataru numbers flats `floor*10 + position` — verified against all 625 MyGate flats, no
+exceptions, position 1–5 in wing A and 1–6 in B/C/D.
+
+`deriveFloorPos()` in `data.ts` guessed floor from the flat number and tried the "standard"
+scheme first, reading **`301` as floor 3 / unit 01**. Flat 301 then collided with flat 31 in
+the grid's `byPos` map, one overwrote the other, and tower A's 30th floor rendered empty
+while floors 1–3 looked overfull. Every `X01`–`X05` flat was misplaced.
+
+MyGate knows the real floor, so `backfill_kalpataru_floors.py` writes it to
+`building_units.floor` and `floorPos()` prefers it, falling back to the heuristic only for
+the 24 IGR flats MyGate does not list. On a collision the known-floor unit wins its slot.
+
+Current tally (`audit_kalpataru_mygate.py` checks this and fails on any collision):
+
+| wing | floors | flats | boxes | empty | off-grid |
+|---|---|---|---|---|---|
+| A | 31 | 134 | 155 | 21 | 4 |
+| B | 31 | 169 | 186 | 17 | 4 |
+| C | 31 | 162 | 186 | 24 | 7 |
+| D | 31 | 160 | 186 | 26 | 9 |
+
+Zero collisions, and **every placed flat carries a contact name and role** on its tile
+(owner if one is on record, else the first tenant).
+
+The 88 empty boxes are not a bug: MyGate lists only occupied flats, and several floors
+genuinely have 4 rather than 5–6 apartments. The grid draws `floors × units-per-floor`, so
+slots with no flat stay blank. The off-grid count is IGR rows whose flat number does not fit
+the scheme (`D-1160145068`, `A-832` from "83, Along with 2 Car Parking"); they keep a null
+floor and are surfaced in the tower header rather than silently dropped.
+
 Two things the audit must keep getting right:
 
 - A contact can hold **several relationships to one unit** — phase 6.26 added a `landlord`
