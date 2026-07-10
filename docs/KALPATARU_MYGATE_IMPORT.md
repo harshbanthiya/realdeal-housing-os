@@ -23,7 +23,13 @@ the next step; nothing here writes active relationships.
 - `scripts/dedupe_kalpataru_units.py` — one-shot unit merge, already committed. Safe to
   re-run (it will find 0 duplicate groups).
 
-Source data: `captures/mygate_directory/building_*.json` (wings A–D).
+Source data: `captures/mygate_directory/building_*.json` — committed to the repo, so the
+import replays from a clean clone. 626 flats across wings A–D (all occupied), 1572 resident
+records, plus a one-flat society office. Contains names, MyGate user ids, flat, floor and
+owner/tenant role; no phone numbers.
+
+`captures/mygate_flows/` is the raw HTTP capture the directory was pulled from. It is
+**gitignored and must stay that way** — 132 of those files contain live MyGate auth JWTs.
 
 ## The idempotency bug, and what actually fixed it
 
