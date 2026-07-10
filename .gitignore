@@ -178,3 +178,6 @@ scripts/__pycache__/
 
 # Per-machine Claude Code settings (local only) -- all .claude dirs, anywhere in the repo.
 **/.claude/
+
+# Raw MyGate HTTP session captures — contain live auth JWTs, never commit
+captures/mygate_flows/

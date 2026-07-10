@@ -1,0 +1,34 @@
+{
+  "buildingid": "5eb58af2c4fda21e02ed7cbe",
+  "buildingname": "Society Office",
+  "es": "0",
+  "message": "success",
+  "userid": 8965039,
+  "total": 1,
+  "r2rlimit": 5,
+  "flats": [
+    {
+      "blockname": "Block name",
+      "bname": "Society Office",
+      "flatid": "5eb58b3ac4fda21e0255a09d",
+      "fname": "Sejal",
+      "floor": 0,
+      "opted_number": false,
+      "residents": [
+        {
+          "rid": 14474536,
+          "r_user_id": 8733067,
+          "rtypeid": "O",
+          "rtypename": "Owner",
+          "rimgurl": "https://d2zhww740pmd8m.cloudfront.net/8eebdb7310cc68b224f900c19877e78aa9e251e5738d4892c1655d1d5a71f7eb.png",
+          "is_default_rimgurl": 1,
+          "rname": "Akash Pandey",
+          "opted_in": true,
+          "profession": null,
+          "mg_profession": null,
+          "specialization": null
+        }
+      ]
+    }
+  ]
+}
