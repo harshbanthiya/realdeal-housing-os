@@ -485,17 +485,23 @@ const MAX_FLOOR = 55; // IH goes to 51F, Kalpataru ~38 sanctioned; cap guards ba
 // Flat-number scheme (per brochure / IGR variants): compact parser rows use
 // floor+stack for 1-31 (`291` -> floor 29, unit 1), while older raw imports can
 // use zero-padded unit suffixes (`2706` -> floor 27, unit 6; `803` -> floor 8, unit 3).
-// Prefer the floor stored on building_units (backfilled from the MyGate directory, which
-// knows the real floor of every occupied flat) over guessing from the flat number. Kalpataru
-// numbers flats floor*10+position, so deriveFloorPos misreads "301" as floor 3 / unit 01 and
-// collides it with flat 31 — the 30th floor then renders empty. Verified across all 625
-// MyGate flats: position = flat - floor*10, 1..5 in wing A and 1..6 in B/C/D.
+// Prefer the floor stored on building_units over guessing from the flat number. The two
+// buildings number flats differently, and the stored floor makes the scheme decidable:
+//
+//   Kalpataru Radiance   flat = floor*10  + position   (floor 1 flat 1 = 11,  floor 30 = 301)
+//   Imperial Heights     flat = floor*100 + position   (floor 1 flat 1 = 101, floor 10 = 1001)
+//
+// Try both bases. They can never both be valid: the candidates differ by 90*floor, so for
+// any floor >= 1 at most one lands in 1..12. Without this, deriveFloorPos misreads Kalpataru's
+// "301" as floor 3 / unit 01, collides it with flat 31, and the 30th floor renders empty.
 function floorPos(unitNumber: string, dbFloor: string | null): { floor: number; pos: number; known: boolean } {
   const fl = Number(dbFloor);
   if (dbFloor && Number.isInteger(fl) && fl >= 1 && fl <= MAX_FLOOR) {
     const n = Number(String(unitNumber).replace(/\D/g, "")) || 0;
-    const pos = n - fl * 10;
-    if (pos >= 1 && pos <= 12) return { floor: fl, pos, known: true };
+    for (const base of [10, 100]) {
+      const pos = n - fl * base;
+      if (pos >= 1 && pos <= 12) return { floor: fl, pos, known: true };
+    }
   }
   return { ...deriveFloorPos(unitNumber), known: false };
 }

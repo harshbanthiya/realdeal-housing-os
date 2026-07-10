@@ -71,6 +71,52 @@ slots with no flat stay blank. The off-grid count is IGR rows whose flat number 
 the scheme (`D-1160145068`, `A-832` from "83, Along with 2 Car Parking"); they keep a null
 floor and are surfaced in the tower header rather than silently dropped.
 
+## Flat numbering differs per building — never mix them
+
+| building | scheme | floor 1 flat 1 | floor 10 flat 1 |
+|---|---|---|---|
+| Kalpataru Radiance | `floor*10 + position` | `11` | `101` |
+| Imperial Heights | `floor*100 + position` | `101` | `1001` |
+
+`101` therefore means **different apartments in the two buildings**. `floorPos()` in `data.ts`
+tries both bases against the stored floor; they can never both be valid, because the two
+candidates differ by `90*floor`, so for any floor ≥ 1 at most one lands in 1..12.
+
+The IGR register also writes some Kalpataru flats in the `floor*100` form (`2703` = floor 27,
+flat 3 = MyGate's `273`), which is exactly why `unit_text` alone cannot be trusted and
+`floor_text` is required before any flat-number correction.
+
+`audit_kalpataru_registrations.py` asserts no registration is linked to a unit of another
+building, and fails if one ever is. Currently zero.
+
+## Registrations ↔ apartments
+
+The old `igr_xls_kalpataru` loader linked records by flat number and landed on the **wrong
+wing** for 681 of them: doc 3950 stores `tower: B`, its Devanagari reads "विंग बी ब्रीलीयंस",
+and it was linked to wing A flat 173. The record's own `raw_context.tower` and `wing_text`
+agree with each other in 591 of 597 records, and on the 422 mislinked records whose Devanagari
+names a wing inside a flat clause, the description backed the recovered wing 421 times and the
+linked wing once.
+
+`relink_kalpataru_registrations.py` moved 700 records onto the right apartment (old id kept in
+`raw_context.relink_prev_unit_id`, so it is reversible; 59 party-contact matches followed).
+`create_missing_kalpataru_units.py` first created 52 apartments that have registrations but no
+MyGate resident — vacant flats MyGate never listed, which is why the grid had 88 empty boxes.
+
+Result:
+
+| verdict | before | after |
+|---|---|---|
+| correctly linked | 293 | **993** |
+| mislinked | 704 | **4** |
+| unlinked but resolvable | 169 | 169 |
+| unclear | 127 | 127 |
+| land / development-rights / OC deeds (no flat) | 224 | 224 |
+
+The 4 remaining are genuinely ambiguous and left for a human: two flats with no active unit,
+one 3-digit flat with no floor (`604` could be floor 60 or floor 6), and doc 6926 where
+`wing_text` says A but the Devanagari says सी (C).
+
 Two things the audit must keep getting right:
 
 - A contact can hold **several relationships to one unit** — phase 6.26 added a `landlord`
@@ -121,10 +167,10 @@ now ranks `active` first and re-points relationships (not just registrations) at
 
 Twelve rows remain `canonical_status='duplicate'`, correctly:
 - 8 (A-603, A-902, C-601, D-803, …) have no relationships and no MyGate flat.
-- 4 are a **separate, pre-existing phase 6.24 merge that looks wrong**: `A-604 → A-64`,
-  `C-801 → C-81`, `C-804 → C-84`, `D-701 → D-71`. A digit was stripped; 604 and 64 are
-  different flats. They carry no relationships and MyGate lists no such flats, so nothing is
-  broken today, but the merge rule that produced them is worth auditing before it runs again.
+- 4 are the phase 6.24 merges `A-604 → A-64`, `C-801 → C-81`, `C-804 → C-84`, `D-701 → D-71`.
+  These are **correct**: `604` is floor 6 position 04 under the IGR register's `floor*100`
+  scheme, which is the same apartment MyGate calls `64`. (An earlier revision of this doc
+  called them a bug that "stripped a digit". That was wrong.)
 
 ### 2. `name_to_contact()` fed on its own output (the real cause)
 
