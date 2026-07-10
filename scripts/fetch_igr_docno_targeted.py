@@ -18,6 +18,11 @@ Usage:
   # (run qa_independent_audit.py then --search-missing first):
   python scripts/fetch_igr_docno_targeted.py --source missing-units --building imperial_heights
   python scripts/fetch_igr_docno_targeted.py --source missing-units --building kalpataru --apply
+
+  # Registrations attached to no apartment — mortgage deeds whose description names the land,
+  # not a flat. Only the Index II's own "Apartment/Flat No" line can place them.
+  python scripts/fetch_igr_docno_targeted.py --source unlinked --building kalpataru
+  python scripts/fetch_igr_docno_targeted.py --source unlinked --building kalpataru --apply
 """
 from __future__ import annotations
 
@@ -135,6 +140,50 @@ def load_queue(building: str = "kalpataru", sro_filter: str | None = None) -> li
 
 
 _MISSING_UNITS_DIR = PROJECT_ROOT / "exports" / "qa_independent_audit"
+
+
+def load_unlinked_queue(building: str = "kalpataru", sro_filter: str | None = None) -> list[dict]:
+    """Registrations still attached to NO apartment, ordered oldest-first.
+
+    These are mostly mortgage deeds whose property description names the land, not a flat,
+    so no text parsing can place them: only the Index II's own "Apartment/Flat No" line can.
+    Each already carries doc number + year + SRO, which is exactly what the document search
+    needs. Records with an Index II capture already on disk are excluded — re-fetching them
+    would tell us nothing new.
+    """
+    bldg_where = _BUILDING_FILTER.get(building, _BUILDING_FILTER["kalpataru"])
+    sro_clause = f"AND r.sro_office ILIKE '%{sro_filter}%'" if sro_filter else ""
+    _, out = run_psql(f"""
+        SELECT r.doc_number, r.sro_office,
+               COALESCE(EXTRACT(year FROM r.registration_date)::int, r.registration_year)::int,
+               COALESCE(r.wing_text, ''), COALESCE(r.unit_text, ''),
+               r.registration_date::text, COALESCE(r.transaction_category, '-')
+        FROM unit_registration_records r
+        JOIN buildings b ON b.id = r.building_id
+        WHERE {bldg_where}
+          AND r.building_unit_id IS NULL
+          AND COALESCE(r.doc_number,'') <> ''
+          AND COALESCE(r.sro_office,'') <> ''
+          AND r.doc_number NOT LIKE 'SAMPLE%%'
+          {sro_clause}
+        ORDER BY r.registration_date;""")
+
+    snap_dir = PROJECT_ROOT / "exports" / _SNAPSHOT_DIR.get(building, 'igr_index2_snapshots')
+    captured = {m.group(1) + "/" + m.group(2)
+                for p in snap_dir.rglob("capture_*_doc*_r*.txt")
+                if (m := re.search(r"_doc(\d+)_(\d{4})_r\d+\.txt$", p.name))}
+
+    rows = []
+    for c in (ln.split("|") for ln in out.strip().splitlines() if ln.strip()):
+        if len(c) < 7:
+            continue
+        doc, sro, year = c[0].strip(), c[1].strip(), c[2].strip()
+        if f"{doc}/{year}" in captured:
+            continue
+        rows.append({'doc': doc, 'sro': sro, 'year': year,
+                     'wing': c[3].strip(), 'unit': c[4].strip(), 'date': c[5].strip(),
+                     'gap': f"unlinked ({c[6].strip()})", 'rent': '', 'start': '', 'end': ''})
+    return rows
 
 
 def load_missing_units_queue(building: str = "kalpataru") -> list[dict]:
@@ -396,7 +445,7 @@ def main() -> int:
                     help='filter queue to a specific SRO (partial match, e.g. "Mumbai 18")')
     ap.add_argument('--deva-only', action='store_true',
                     help='only process records whose SRO is in Devanagari script')
-    ap.add_argument('--source', default='gaps', choices=['gaps', 'missing-units'],
+    ap.add_argument('--source', default='gaps', choices=['gaps', 'missing-units', 'unlinked'],
                     help="'gaps' (default): tenancy records missing rent/dates from the DB. "
                          "'missing-units': apartments with zero DB records that the independent "
                          "QA audit found a raw doc for on disk (needs qa_independent_audit.py "
@@ -410,14 +459,16 @@ def main() -> int:
         queue = load_missing_units_queue(args.building)
         if args.sro:
             queue = [r for r in queue if args.sro.lower() in r['sro'].lower()]
+    elif args.source == 'unlinked':
+        queue = load_unlinked_queue(args.building, args.sro)
     else:
         queue = load_queue(args.building, args.sro)
     if args.deva_only:
         queue = [r for r in queue if _DEVA_RE.search(r['sro'])]
     if not queue:
-        msg = ("No apartments with a raw doc pending capture — nothing to do."
-               if args.source == 'missing-units' else
-               "No tenancy records missing rent with a known SRO — nothing to do.")
+        msg = {"missing-units": "No apartments with a raw doc pending capture — nothing to do.",
+               "unlinked": "No unlinked registrations left to capture — nothing to do.",
+               }.get(args.source, "No tenancy records missing rent with a known SRO — nothing to do.")
         print(msg)
         return 0
 

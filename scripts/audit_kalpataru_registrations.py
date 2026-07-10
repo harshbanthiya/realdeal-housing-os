@@ -80,6 +80,7 @@ UNIT_DIGITS = nz(f"regexp_replace(coalesce(bu.unit_number,''),'{BS}D','','g')")
 BU_WING_LETTER = nz(f"regexp_replace(upper(wing),'.*([A-Z]){BS}s*$','{BS}1')")
 BU_UNIT_DIGITS = nz(f"regexp_replace(unit_number,'{BS}D','','g')")
 DOC_NUMBER = nz("coalesce(r.doc_number,'')")
+LINK_EVIDENCE = nz("coalesce(r.raw_context->>'link_evidence','')")
 TOWER = nz("coalesce(r.raw_context->>'tower','')")
 PARTY_NAME = nz("replace(coalesce(nullif(p.party_name_english,''), p.party_name_raw, ''), chr(31), ' ')")
 BU_FILTER_WING = f"regexp_replace(upper(bu.wing),'.*([A-Z]){BS}s*$','{BS}1')"
@@ -156,7 +157,7 @@ def main() -> int:
                r.id::text, {one_line('r.wing_text')}, {one_line('r.unit_text')},
                {one_line('r.floor_text')},
                {one_line('r.property_description_raw')},
-               {WING_LETTER}, {UNIT_DIGITS}, {DOC_NUMBER}, {TOWER})
+               {WING_LETTER}, {UNIT_DIGITS}, {DOC_NUMBER}, {TOWER}, {LINK_EVIDENCE})
         FROM unit_registration_records r
         LEFT JOIN building_units bu ON bu.id=r.building_unit_id
         WHERE r.building_id='{BUILDING_ID}';""")
@@ -175,7 +176,7 @@ def main() -> int:
     mislinked, unclear, unlinked_ok, not_in_mygate = [], [], [], []
     name_confirms = name_contradicts = 0
 
-    for rid, wt, ut, ft, desc, lw, ld, doc, tower in rows:
+    for rid, wt, ut, ft, desc, lw, ld, doc, tower, link_ev in rows:
         rid = rid.strip()
         w = wing_of(wt, desc, tower)
         fl = floor_of(ft, desc)
@@ -188,6 +189,11 @@ def main() -> int:
             # number we failed to resolve, or is linked to a unit despite naming no flat.
             if not u and not ld:
                 verdict["no_flat"] += 1
+                continue
+            # Placed from Zapkey's index (date + transaction type), not from its own text:
+            # the deed names the land, so there is nothing here to reconcile against.
+            if link_ev.startswith("zapkey"):
+                verdict["zapkey_placed"] += 1
                 continue
             verdict["unclear"] += 1
             unclear.append(f"doc {doc or '—'}  wing={w or '?'} unit_text={ut or '—'!r} floor={ft or '—'} "
@@ -240,9 +246,10 @@ def main() -> int:
     total = sum(verdict.values())
     print("Kalpataru Radiance — registration ↔ apartment audit")
     print(f"  registrations        {total}")
-    for k in ("ok", "mislinked", "unlinked", "unclear", "no_flat"):
+    for k in ("ok", "mislinked", "unlinked", "unclear", "no_flat", "zapkey_placed"):
         print(f"  {k:<20} {verdict[k]}")
     print("  (no_flat = deeds over land / development rights / OC that name no apartment)")
+    print("  (zapkey_placed = deed names no flat; placed via Zapkey date+type, on the confirm kanban)")
     if verdict["mislinked"]:
         print(f"\n  of the mislinked: party names back the RECOVERED flat in {name_confirms}, "
               f"the LINKED flat in {name_contradicts}, inconclusive in "
