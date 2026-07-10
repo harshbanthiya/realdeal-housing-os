@@ -20,8 +20,34 @@ the next step; nothing here writes active relationships.
 ## Scripts
 
 - `scripts/load_kalpataru_mygate.py` — the loader. `--dry-run` prints counts and rolls back.
+- `scripts/audit_kalpataru_mygate.py` — unit-by-unit reconciliation of the JSON against the
+  DB. **This is the regression check.** Exits non-zero if any flat is untouched.
 - `scripts/dedupe_kalpataru_units.py` — one-shot unit merge, already committed. Safe to
   re-run (it will find 0 duplicate groups).
+- `scripts/repair_kalpataru_duplicate_units.py` — one-shot, already committed. Restored 14
+  flats the first (buggy) dedupe stranded.
+
+## Reconciliation
+
+```
+python3 scripts/audit_kalpataru_mygate.py
+```
+
+Current result: **625/625 flats fully reconciled, 1571/1571 residents linked, 0 role
+mismatches.** Every apartment in every wing has at least one contact with a role, and the
+Unit Registry renders them (`mgRel` in `web/src/lib/cockpit/data.ts` keys on
+`contacts.metadata->>'mygate_unit'`, which both the loader's insert and its name-match
+update set).
+
+Two things the audit must keep getting right:
+
+- A contact can hold **several relationships to one unit** — phase 6.26 added a `landlord`
+  row alongside an existing `owner` row for the same person (C-84, Suryakant Sohoni).
+  Collect a set of roles per contact, never overwrite, and treat `landlord` as satisfying
+  MyGate's `owner`.
+- The UI only renders units with `canonical_status='active'` and `offgrid` not true, so the
+  audit filters the same way. A unit that exists but is flagged `duplicate` is invisible,
+  which is a real gap, not a false positive.
 
 Source data: `captures/mygate_directory/building_*.json` — committed to the repo, so the
 import replays from a clean clone. 626 flats across wings A–D (all occupied), 1572 resident
@@ -52,6 +78,21 @@ merge, not a delete: re-point those 10 registrations at the keeper, then drop th
 
 An `id` tie-breaker was also added to the `ORDER BY` as a guard against future
 duplicates reappearing from IGR loads.
+
+**The first version of that merge picked the wrong keeper.** It ranked on relationship
+count alone, but in 14 of the 17 pairs the messy row carried the relationships while the
+clean row was the one phase 6.24 had marked `canonical_status='active'`. So the merge kept
+the row flagged `duplicate`, deleted the active one, and those 14 flats dropped out of the
+Unit Registry with 36 relationships stranded on invisible rows. `dedupe_kalpataru_units.py`
+now ranks `active` first and re-points relationships (not just registrations) at the keeper;
+`repair_kalpataru_duplicate_units.py` restored the 14.
+
+Twelve rows remain `canonical_status='duplicate'`, correctly:
+- 8 (A-603, A-902, C-601, D-803, …) have no relationships and no MyGate flat.
+- 4 are a **separate, pre-existing phase 6.24 merge that looks wrong**: `A-604 → A-64`,
+  `C-801 → C-81`, `C-804 → C-84`, `D-701 → D-71`. A digit was stripped; 604 and 64 are
+  different flats. They carry no relationships and MyGate lists no such flats, so nothing is
+  broken today, but the merge rule that produced them is worth auditing before it runs again.
 
 ### 2. `name_to_contact()` fed on its own output (the real cause)
 
