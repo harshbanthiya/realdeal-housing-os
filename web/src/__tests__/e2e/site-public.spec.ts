@@ -188,6 +188,34 @@ test.describe("Listing detail", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Social & video
+// ---------------------------------------------------------------------------
+
+test.describe("Social & video", () => {
+  test("footer links YouTube, Instagram and Facebook", async ({ page }) => {
+    await page.goto("/");
+    const footer = page.locator("footer");
+    await expect(footer.locator('a[href*="youtube.com/@RealDealHousing"]')).toBeVisible();
+    await expect(footer.locator('a[href*="instagram.com/realdealhousing_mumbai"]')).toBeVisible();
+    await expect(footer.locator('a[href*="facebook.com/realdealhousingpvtltd"]')).toBeVisible();
+  });
+
+  test("building page shows walkthrough videos; facade loads iframe on click", async ({ page }) => {
+    await page.goto("/projects/imperial-heights");
+    await expect(page.getByRole("heading", { name: /walk through imperial heights/i })).toBeVisible();
+    const facade = page.locator('button[aria-label^="Play video"]').first();
+    await expect(facade).toBeVisible();
+    // no YouTube iframe before interaction (perf guarantee)
+    await expect(page.locator('iframe[src*="youtube"]')).toHaveCount(0);
+    await facade.click();
+    await expect(page.locator('iframe[src*="youtube-nocookie.com"]')).toHaveCount(1);
+    // VideoObject structured data present
+    const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
+    expect(jsonLd).toContain("VideoObject");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Blog — building-keyword content
 // ---------------------------------------------------------------------------
 

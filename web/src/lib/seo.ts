@@ -19,4 +19,5 @@ export const orgJsonLd = {
     addressCountry: "IN",
   },
   areaServed: company.areas.map((a) => ({ "@type": "Place", name: `${a}, Mumbai` })),
+  sameAs: Object.values(company.socials),
 };

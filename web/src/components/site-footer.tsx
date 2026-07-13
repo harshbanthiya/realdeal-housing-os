@@ -31,6 +31,11 @@ export function SiteFooter() {
               <div>Email: <a href={`mailto:${company.email}`} className="hover:text-white">{company.email}</a></div>
               <div className="text-white/55">{company.address}</div>
             </div>
+            <div className="mt-5 flex gap-5 text-sm text-white/75">
+              <a href={company.socials.youtube} rel="noopener" target="_blank" className="hover:text-white">YouTube</a>
+              <a href={company.socials.instagram} rel="noopener" target="_blank" className="hover:text-white">Instagram</a>
+              <a href={company.socials.facebook} rel="noopener" target="_blank" className="hover:text-white">Facebook</a>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-10 text-sm">
             <div>

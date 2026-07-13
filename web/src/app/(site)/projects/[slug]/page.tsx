@@ -5,7 +5,8 @@ import { Reveal } from "@/components/reveal";
 import { RevealImage } from "@/components/reveal-image";
 import { ListingGrid } from "@/components/listing-grid";
 import { NeighborhoodMap } from "@/components/neighborhood-map";
-import { projects, listings, mapBuildings } from "@/lib/site";
+import { YouTubeEmbed } from "@/components/youtube-embed";
+import { projects, listings, mapBuildings, buildingVideos, company } from "@/lib/site";
 import { getProject } from "@/lib/cms";
 
 export const revalidate = 300; // re-read CMS content every 5 min once Wix is wired
@@ -111,6 +112,47 @@ export default async function Page({
           </Reveal>
         </div>
       </section>
+
+      {/* Video walkthroughs */}
+      {(buildingVideos[p.slug] ?? []).length > 0 && (
+        <section className="mx-auto max-w-6xl px-6 pb-20">
+          <Reveal>
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <h2 className="text-2xl font-bold tracking-tight text-teal">
+                Walk through {p.name} on video
+              </h2>
+              <a
+                href={company.socials.youtube}
+                rel="noopener"
+                target="_blank"
+                className="text-sm font-semibold text-teal hover:underline"
+              >
+                All tours on YouTube →
+              </a>
+            </div>
+          </Reveal>
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            {buildingVideos[p.slug].map((v) => (
+              <YouTubeEmbed key={v.id} id={v.id} title={v.title} />
+            ))}
+          </div>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(
+                buildingVideos[p.slug].map((v) => ({
+                  "@context": "https://schema.org",
+                  "@type": "VideoObject",
+                  name: v.title,
+                  thumbnailUrl: `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`,
+                  embedUrl: `https://www.youtube-nocookie.com/embed/${v.id}`,
+                  publisher: { "@type": "Organization", name: company.name },
+                }))
+              ),
+            }}
+          />
+        </section>
+      )}
 
       {/* Neighborhood */}
       {mapBuildings.some((b) => b.slug === p.slug) && (

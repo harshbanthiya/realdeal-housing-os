@@ -19,6 +19,11 @@ export const company = {
   address:
     "173/135 Ground Floor, Motilal Nagar, Near Post Office, Siddhart Nagar, Goregaon West, Mumbai 400104",
   areas: ["Goregaon", "Andheri", "Malad"],
+  socials: {
+    youtube: "https://www.youtube.com/@RealDealHousing",
+    instagram: "https://www.instagram.com/realdealhousing_mumbai/",
+    facebook: "https://www.facebook.com/realdealhousingpvtltd",
+  },
   about:
     "At Real Deal Housing Pvt Ltd, we pride ourselves on expert market knowledge and personalised service to help you find your dream home. With 15 years in Mumbai's real estate market, we specialise in premium projects across Goregaon, Andheri, and Malad — a wide range of options for discerning buyers, from luxurious apartments to spacious family homes.",
 };
@@ -88,6 +93,21 @@ export const mapBuildings: MapBuilding[] = [
     href: "/dlf-westpark-andheri-west",
   },
 ];
+
+/** YouTube walkthrough tours per building (channel: @RealDealHousing). */
+export const buildingVideos: Record<string, { id: string; title: string }[]> = {
+  "imperial-heights": [
+    { id: "ZR0WXq_CQ4k", title: "Exclusive 4.5 BHK Fully Furnished Apartment for Sale — Home Tour" },
+    { id: "IWDvHayCAUs", title: "Fully Furnished 2 BHK Duplex for Rent — Home Tour" },
+  ],
+  "ekta-tripolis": [
+    { id: "-MOxDqpL-K0", title: "6.5 BHK Duplex Penthouse for Sale — Raw Apartment Tour" },
+  ],
+  "kalpataru-radiance": [
+    { id: "FLVZh8LFrUM", title: "Luxurious 3 BHK Show Apartment — Complete House Tour" },
+    { id: "H_c1resHf3I", title: "2 BHK Apartment for Sale — Amazing Mumbai City View" },
+  ],
+};
 
 export interface ProjectImage {
   src: string; // static.wixstatic.com CDN URL (uploaded from RDH DATA 2024 archive)
