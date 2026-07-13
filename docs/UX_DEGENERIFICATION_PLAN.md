@@ -90,6 +90,8 @@ Done-ness: `tsc` clean, eslint clean, vitest 310 green, visual check desktop 128
 
 **Same pattern later for IH/Kalpataru/Ekta:** no plate renders exist, so render an SVG *schematic* stack (floor rows from `unit_registry`, availability dots from listings/registrations), click floor → listings filtered to that floor. Positioning payoff: "Every floor known."
 
+> **See also:** `docs/MEDIA-SOCIAL-FUNNEL-PLAN.md` (2026-07-13) — the content-engine charter on top of this design work: imagery/video review pass, social↔listing pipeline + backend, lead funnel/newsletter, AI enhancement/staging/LiDAR, and the Awwwards research agenda. Future session(s); sequenced there.
+
 ## 5. Phase B — roll the grammar out
 
 - **Focus-four scope** (operator 2026-07-13): Ekta Tripolis, Imperial Heights, Kalpataru Radiance, DLF Westpark. Bharat Auravistas removed from homepage (data kept in site.ts; its project page still resolves).
