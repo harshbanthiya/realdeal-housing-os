@@ -17,7 +17,8 @@ sensitive or outward-facing action goes through a review queue first.
 
 ## 2. Current state (verified 2026-07-08)
 
-- Local Postgres is the source of truth; **60 migrations (schemas/001–060)**, ~150 tables.
+- Local Postgres is the source of truth; **62 migrations (schemas/001–062)**, ~150 tables
+  (061 = worker layer, 062 = zapkey transactions; the next free number is 063).
 - `web/`: Next.js 16 + React 19 + Tailwind 4 + Wix SDK + pg + Resend; cockpit at
   `/cockpit/*` (outreach, media, contacts). Vitest + Playwright test setup.
 - Docker stack: Postgres, NocoDB, Adminer, n8n (see `docker/`, `start.sh`).
@@ -37,7 +38,7 @@ sensitive or outward-facing action goes through a review queue first.
   queue is the real bottleneck, not compute.
 - Budget ≈ $0 infra beyond what's running; LLM spend must be tracked and batched.
 - External APIs available-ish: Surepass/IDfy (PAN/mobile/email verify), Wix, Resend.
-  WIX_CLIENT_ID was a known blocker for headless CMS reads (see FABLE_LAUNCH_CONTEXT.md).
+  WIX_CLIENT_ID was a known blocker for headless CMS reads (see LAUNCH_CONTEXT.md).
 - India/Mumbai market; MahaRERA + IGR are the authoritative public registries;
   portal scraping (99acres/MagicBricks/Housing/NoBroker) has ToS risk — manual/
   assisted capture is the default, automation only where terms allow.
@@ -475,7 +476,7 @@ Surepass prod creds (#6), 3 sample 99acres emails (#7), API keys (#10).
 
 ## 15. Blockers
 
-- WIX_CLIENT_ID / headless CMS auth (pre-existing; see FABLE_LAUNCH_CONTEXT.md).
+- WIX_CLIENT_ID / headless CMS auth (pre-existing; see LAUNCH_CONTEXT.md).
 - Surepass/IDfy production credentials + signed purpose policy before any real API verification.
 - n8n credential rotation (hygiene debt).
 - Operator review bandwidth — mitigated by unified inbox, but real.
@@ -552,7 +553,8 @@ start.sh fallback), /cockpit/inbox shipped. Nothing committed to git yet this pa
 1. Commit the worker layer (schemas/061, workers/, web inbox page, start.sh hook, this doc).
 2. Operator: grant Full Disk Access to /usr/bin/python3 so the 07:30 launchd run works unattended; drop first real files into `imports/market_inbox/`.
 3. Burn down the 5,981-item review backlog: add bulk-triage tooling for `import_review_items` (4,097 stale) — likely a guarded bulk script + NocoDB view, not one-by-one.
-4. Migration 062: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5 (renumbered from old plan).
+4. Migration 063: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5
+   (was penciled as 062, but 061/062 are now worker_layer/zapkey — use 063).
 5. First LLM worker (content_scout drafting SEO briefs for the 7 uncovered buildings) once ANTHROPIC_API_KEY is provisioned in `secrets/anthropic_api_key`; add Langfuse service at the same time.
 6. market_watch parse stage: XLS → existing IGR bulk parser; PDF → pdftotext/docling; screenshots → `_llm.py` vision.
 7. Inventory bootstrap: `inventory` has 0 rows — feed it from unit registry + owner outreach so listing_readiness has something to score.
