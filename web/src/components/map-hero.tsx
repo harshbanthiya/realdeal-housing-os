@@ -131,7 +131,10 @@ export function MapHero() {
 
       {/* building facts panel */}
       {building && (
-        <div className="absolute inset-x-4 bottom-4 z-10 border border-mist-deep bg-white p-6 md:inset-x-auto md:bottom-8 md:right-8 md:w-96">
+        <div
+          data-testid="map-building-panel"
+          className="absolute inset-x-4 bottom-4 z-10 border border-mist-deep bg-white p-6 md:inset-x-auto md:bottom-8 md:right-8 md:w-96"
+        >
           <div className="flex items-start justify-between gap-4">
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/55">
               {building.location} · {building.status}
