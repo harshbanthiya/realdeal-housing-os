@@ -220,9 +220,24 @@ test.describe("Social & video", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Blog", () => {
-  test("index lists the Ekta Tripolis guide", async ({ page }) => {
+  test("index lists all four building guides", async ({ page }) => {
     await page.goto("/blog");
-    await expect(page.getByRole("link", { name: /ekta tripolis.*complete guide/i })).toBeVisible();
+    for (const name of [/ekta tripolis/i, /imperial heights/i, /kalpataru radiance/i, /dlf westpark/i]) {
+      await expect(page.getByRole("link", { name }).first()).toBeVisible();
+    }
+  });
+
+  test("each building guide renders with keyword title and internal links", async ({ page }) => {
+    for (const [slug, kw] of [
+      ["imperial-heights-goregaon-west-guide", /imperial heights/i],
+      ["kalpataru-radiance-goregaon-west-guide", /kalpataru radiance/i],
+      ["dlf-westpark-andheri-west-guide", /dlf westpark/i],
+    ] as const) {
+      await page.goto(`/blog/${slug}`);
+      await expect(page.locator("h1")).toContainText(kw);
+      await expect(page).toHaveTitle(kw);
+      await expect(page.locator('article a[href^="/"]').first()).toBeVisible();
+    }
   });
 
   test("post renders with building-keyword title, body and BlogPosting JSON-LD", async ({ page }) => {
