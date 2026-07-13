@@ -110,6 +110,16 @@ test.describe("DLF landing", () => {
     await expect(dialog).toBeHidden();
   });
 
+  test("neighborhood legend renders with OSM categories and toggles", async ({ page }) => {
+    await page.goto("/dlf-westpark-andheri-west");
+    await expect(page.getByText(/explore the neighbourhood/i)).toBeVisible();
+    const transit = page.getByRole("button", { name: /transit/i });
+    await expect(transit).toBeVisible();
+    await transit.click();
+    await expect(transit).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByText(/openstreetmap contributors/i)).toBeVisible();
+  });
+
   test("sticky WhatsApp CTA present", async ({ page }) => {
     await page.goto("/dlf-westpark-andheri-west");
     await expect(page.locator('a[href*="wa.me"]').first()).toBeVisible();

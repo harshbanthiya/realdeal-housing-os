@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { Reveal } from "@/components/reveal";
 import { RevealImage } from "@/components/reveal-image";
 import { ListingGrid } from "@/components/listing-grid";
-import { projects, listings } from "@/lib/site";
+import { NeighborhoodMap } from "@/components/neighborhood-map";
+import { projects, listings, mapBuildings } from "@/lib/site";
 import { getProject } from "@/lib/cms";
 
 export const revalidate = 300; // re-read CMS content every 5 min once Wix is wired
@@ -110,6 +111,23 @@ export default async function Page({
           </Reveal>
         </div>
       </section>
+
+      {/* Neighborhood */}
+      {mapBuildings.some((b) => b.slug === p.slug) && (
+        <section className="mx-auto max-w-6xl px-6 pb-20">
+          <Reveal>
+            <h2 className="mb-8 text-2xl font-bold tracking-tight text-teal">
+              Around {p.name}
+            </h2>
+          </Reveal>
+          <NeighborhoodMap
+            slug={p.slug}
+            buildingName={p.name}
+            lat={mapBuildings.find((b) => b.slug === p.slug)!.lat}
+            lng={mapBuildings.find((b) => b.slug === p.slug)!.lng}
+          />
+        </section>
+      )}
 
       {/* Related listings */}
       {related.length > 0 && (

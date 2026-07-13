@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/reveal";
 import { ZoomImage } from "@/components/zoom-image";
+import { NeighborhoodMap } from "@/components/neighborhood-map";
 import { PendingChip, Tokenize } from "@/components/placeholder";
 import { RevealImage } from "@/components/reveal-image";
 import { projectImages } from "@/lib/site";
@@ -141,6 +142,14 @@ export default function DlfWestparkPage() {
             </figure>
           </div>
         </Reveal>
+        <div className="mt-14">
+          <NeighborhoodMap
+            slug="dlf-westpark"
+            buildingName="DLF Westpark"
+            lat={19.1298}
+            lng={72.8262}
+          />
+        </div>
       </section>
 
       {/* 05 — LIFESTYLE & AMENITIES */}

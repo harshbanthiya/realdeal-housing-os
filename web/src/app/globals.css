@@ -112,6 +112,42 @@ body {
   white-space: nowrap;
 }
 
+/* ——— Neighborhood POI pins ——— */
+.rdh-poi {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rdh-poi-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--poi, #1f3d4d);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(26, 26, 26, 0.3);
+}
+.rdh-poi-label {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e3e8e5;
+  color: #1f3d4d;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.rdh-poi:hover .rdh-poi-label {
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rdh-clip, .rdh-clip img, .rdh-zoom img {
     transition: none;
