@@ -110,7 +110,8 @@ export async function getProject(slug: string): Promise<Project | undefined> {
 }
 
 export async function getBlogPosts(): Promise<BlogPost[]> {
-  if (!WIX_CLIENT_ID) return [];
+  const { fixtureBlogPosts } = await import("@/lib/blog-fixtures");
+  if (!WIX_CLIENT_ID) return fixtureBlogPosts;
   try {
     const wix = await getWixClient();
     const res = await wix.items
@@ -130,9 +131,12 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
         seoDescription: String(i.seoDescription ?? i.excerpt ?? ""),
       }))
     );
-    return posts.sort((a, b) => (b.publishedAt || "").localeCompare(a.publishedAt || ""));
+    // Published CMS posts override same-slug fixtures; fixtures fill the rest.
+    const cmsSlugs = new Set(posts.map((p) => p.slug));
+    const merged = [...posts, ...fixtureBlogPosts.filter((p) => !cmsSlugs.has(p.slug))];
+    return merged.sort((a, b) => (b.publishedAt || "").localeCompare(a.publishedAt || ""));
   } catch (err) {
-    console.error("[cms] Wix BlogPosts read failed, none shown:", err);
-    return [];
+    console.error("[cms] Wix BlogPosts read failed, using fixtures:", err);
+    return fixtureBlogPosts;
   }
 }

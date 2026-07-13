@@ -17,6 +17,9 @@
 :root {
   --background: #ffffff;
   --foreground: #1a1a1a;
+  /* Gallery White is a deliberately light theme: pin native UI (form controls,
+     scrollbars, popups) to light even when the OS/browser prefers dark. */
+  color-scheme: light;
 }
 
 html {

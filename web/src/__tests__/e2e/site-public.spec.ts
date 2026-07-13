@@ -188,6 +188,30 @@ test.describe("Listing detail", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Blog — building-keyword content
+// ---------------------------------------------------------------------------
+
+test.describe("Blog", () => {
+  test("index lists the Ekta Tripolis guide", async ({ page }) => {
+    await page.goto("/blog");
+    await expect(page.getByRole("link", { name: /ekta tripolis.*complete guide/i })).toBeVisible();
+  });
+
+  test("post renders with building-keyword title, body and BlogPosting JSON-LD", async ({ page }) => {
+    await page.goto("/blog/ekta-tripolis-goregaon-west-guide");
+    await expect(page).toHaveTitle(/ekta tripolis.*goregaon west/i);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("h1")).toContainText(/ekta tripolis/i);
+    // body content + internal links to the building page and inventory
+    await expect(page.getByText(/skypolis, caliopolis and theopolis/i).first()).toBeVisible();
+    await expect(page.locator('a[href="/projects/ekta-tripolis"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/buy"]').first()).toBeVisible();
+    const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
+    expect(jsonLd).toContain("BlogPosting");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // SEO surfaces
 // ---------------------------------------------------------------------------
 
