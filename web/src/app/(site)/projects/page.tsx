@@ -38,8 +38,8 @@ export default async function Page() {
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2">
         {projects.map((p, i) => (
-          <Reveal key={p.slug} delay={i * 0.06}>
-            <Link href={`/projects/${p.slug}`} className="group block rounded-2xl border border-mist-deep p-7 transition-colors hover:bg-mist/40">
+          <Reveal key={p.slug} delay={i * 0.06} className="h-full">
+            <Link href={`/projects/${p.slug}`} className="group flex h-full flex-col rounded-2xl border border-mist-deep p-7 transition-colors hover:bg-mist/40">
               {p.image ? (
                 <RevealImage src={p.image.src} alt={p.image.alt} zoom className="aspect-[16/9] rounded-xl" />
               ) : (
@@ -47,7 +47,7 @@ export default async function Page() {
               )}
               <h2 className="mt-5 text-xl font-bold text-teal">{p.name}</h2>
               <p className="mt-1 text-sm text-ink/55">{p.location} · {p.meta}</p>
-              <span className="mt-4 inline-block text-sm font-semibold text-teal group-hover:underline">View project →</span>
+              <span className="mt-auto inline-block pt-4 text-sm font-semibold text-teal group-hover:underline">View project →</span>
             </Link>
           </Reveal>
         ))}

@@ -14,7 +14,7 @@ export function ListingGrid({ items }: { items: Listing[] }) {
       {items.map((l, i) => {
         const img = imageFor(l);
         return (
-          <Reveal key={l.slug} delay={(i % 3) * 0.05}>
+          <Reveal key={l.slug} delay={(i % 3) * 0.05} className="h-full">
             <Link
               href={`/listings/${l.slug}`}
               className="group flex h-full flex-col rounded-2xl border border-mist-deep bg-white p-5 transition-colors hover:bg-mist/30"
@@ -35,14 +35,14 @@ export function ListingGrid({ items }: { items: Listing[] }) {
                   {l.type === "rent" ? "For rent" : "For sale"}
                 </span>
               </div>
-              <h3 className="mt-4 text-base font-semibold leading-snug text-teal group-hover:underline">
+              <p className="mt-4 text-xl font-extrabold tracking-tight text-teal">{l.price}</p>
+              <h3 className="mt-1.5 text-[15px] font-semibold leading-snug text-teal group-hover:underline">
                 {l.title}
               </h3>
-              <p className="mt-1 text-xs text-ink/50">
+              <p className="mt-2 font-mono text-[11px] uppercase tracking-wide text-ink/50">
                 {l.location} · {l.config}
                 {l.sqft !== "—" ? ` · ${l.sqft} sqft` : ""}
               </p>
-              <p className="mt-3 text-lg font-bold text-teal">{l.price}</p>
             </Link>
           </Reveal>
         );

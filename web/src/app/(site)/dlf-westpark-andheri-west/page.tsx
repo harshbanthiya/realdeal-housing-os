@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Reveal } from "@/components/reveal";
+import { ZoomImage } from "@/components/zoom-image";
 import { PendingChip, Tokenize } from "@/components/placeholder";
 import { RevealImage } from "@/components/reveal-image";
 import { projectImages } from "@/lib/site";
@@ -38,8 +40,8 @@ export default function DlfWestparkPage() {
             {project.heroTagline}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-ink/60">
-            <span>Pricing <PendingChip token="PRICE_VERIFY" /></span>
-            <span>RERA <PendingChip token="RERA_VERIFY" /></span>
+            <span>Pricing on request</span>
+            <span>MahaRERA PR1181012500079 · Phase 1 complete</span>
             <span>Micro-market · {project.microMarket}</span>
           </div>
           <div className="mt-10 flex flex-wrap gap-4">
@@ -49,12 +51,12 @@ export default function DlfWestparkPage() {
             >
               Request details
             </a>
-            <a
-              href="#facts"
+            <Link
+              href="/dlf-westpark-andheri-west/plans"
               className="rounded-full border border-mist-deep px-6 py-3.5 text-sm font-semibold text-teal transition-colors hover:bg-mist"
             >
-              See verified facts
-            </a>
+              Explore floor plans →
+            </Link>
           </div>
         </Reveal>
         <Reveal delay={0.1}>
@@ -93,10 +95,11 @@ export default function DlfWestparkPage() {
                 Built by DLF — verified before it&rsquo;s published.
               </h2>
               <p className="self-end text-ink/65">
-                Developer and full project particulars remain under review (
-                <PendingChip token="VERIFY" />). We show DLF as the named
-                developer based on operator confirmation, and will replace every
-                pending marker with a sourced fact before anything goes live.
+                Phase 1 is developed by Peegen Builders and Developers Pvt. Ltd. —
+                a DLF and Trident Realty joint venture — under MahaRERA
+                PR1181012500079, per the official brochure. Pricing and
+                possession remain marked <PendingChip token="VERIFY" /> until
+                individually confirmed.
               </p>
             </div>
           </Reveal>
@@ -124,13 +127,18 @@ export default function DlfWestparkPage() {
                 <li>· Retail &amp; lifestyle — <PendingChip token="VERIFY" /></li>
               </ul>
             </div>
-            <div className="aspect-square rounded-2xl border border-dashed border-mist-deep bg-mist/50">
-              <div className="flex h-full items-center justify-center text-center font-mono text-sm text-ink/40">
-                Map card — Transit / Schools / Retail
-                <br />
-                (static; live embed deferred)
-              </div>
-            </div>
+            <figure>
+              <ZoomImage
+                src="/dlf/building-connectivity-map-p4.jpg"
+                alt="DLF Westpark connectivity map, Andheri West"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="aspect-square overflow-hidden rounded-2xl border border-mist-deep bg-white"
+                imgClassName="object-contain"
+              />
+              <figcaption className="mt-2 text-right font-mono text-[11px] text-ink/40">
+                Connectivity map — official brochure, not to scale · click to enlarge
+              </figcaption>
+            </figure>
           </div>
         </Reveal>
       </section>
@@ -170,26 +178,29 @@ export default function DlfWestparkPage() {
       <section className="mx-auto max-w-6xl px-6 py-24">
         <Reveal>
           <Eyebrow n="06" label="Residences" />
-          <h2 className="text-3xl font-bold tracking-tight text-teal md:text-4xl">
-            Configurations
-          </h2>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <h2 className="text-3xl font-bold tracking-tight text-teal md:text-4xl">
+              Configurations
+            </h2>
+            <Link href="/dlf-westpark-andheri-west/plans" className="text-sm font-semibold text-teal hover:underline">
+              Floor-by-floor explorer →
+            </Link>
+          </div>
         </Reveal>
         <div className="mt-10 divide-y divide-mist-deep border-y border-mist-deep">
           {residences.map((r, i) => (
             <Reveal key={r.config} delay={i * 0.05}>
-              <div className="grid items-center gap-4 py-6 md:grid-cols-[1.4fr_1fr_1fr_auto]">
+              <div className="grid items-center gap-4 py-6 md:grid-cols-[1fr_1.1fr_1.4fr_auto]">
                 <div className="text-lg font-semibold text-teal">{r.config}</div>
                 <div className="text-sm text-ink/60">
-                  Carpet area · <PendingChip token={r.carpetArea} />
+                  Carpet area · <Tokenize text={r.carpetArea} />
                 </div>
-                <div className="text-sm text-ink/60">
-                  Price · <PendingChip token={r.price} />
-                </div>
+                <div className="text-sm text-ink/55">{r.description}</div>
                 <a
                   href="#enquiry"
                   className="justify-self-start rounded-full border border-mist-deep px-4 py-2 text-xs font-semibold text-teal transition-colors hover:bg-mist md:justify-self-end"
                 >
-                  Request details
+                  Pricing on request
                 </a>
               </div>
             </Reveal>
@@ -203,17 +214,28 @@ export default function DlfWestparkPage() {
           <Eyebrow n="07" label="Gallery" />
         </Reveal>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {["Façade", "Interiors", "Amenity deck", "Views", "Lobby", "Walkthrough video"].map(
-            (label, i) => (
-              <Reveal key={label} delay={i * 0.04}>
-                <div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-mist-deep bg-mist/50 text-center font-mono text-xs text-ink/40">
-                  {label}
-                  <br />
-                  VISUAL_DIRECTION_PENDING
-                </div>
-              </Reveal>
-            )
-          )}
+          {[
+            { src: "/dlf/building-building-exterior-all-towers-p2.jpg", alt: "DLF Westpark — all four towers, exterior render", label: "Façade — all towers" },
+            { src: "/dlf/building-pool-and-landscape-overview-p3.jpg", alt: "DLF Westpark pool and landscape overview render", label: "Pool & landscape" },
+            { src: "/dlf/building-eco-deck-pool-p46.jpg", alt: "DLF Westpark eco-deck swimming pool render", label: "Eco-deck pool" },
+            { src: "/dlf/show-apartment-living-1.jpg", alt: "DLF Westpark show apartment living room", label: "Show apartment — living" },
+            { src: "/dlf/show-apartment-master-bedroom.jpg", alt: "DLF Westpark show apartment master bedroom", label: "Show apartment — master bedroom" },
+            { src: "/dlf/show-apartment-kitchen-1.jpg", alt: "DLF Westpark show apartment kitchen", label: "Show apartment — kitchen" },
+          ].map((g, i) => (
+            <Reveal key={g.src} delay={i * 0.04}>
+              <figure>
+                <ZoomImage
+                  src={g.src}
+                  alt={g.alt}
+                  sizes="(max-width: 640px) 100vw, 33vw"
+                  className="aspect-[4/3] overflow-hidden rounded-xl border border-mist-deep"
+                />
+                <figcaption className="mt-2 font-mono text-[10px] uppercase tracking-wide text-ink/40">
+                  {g.label} · brochure / show flat · click to enlarge
+                </figcaption>
+              </figure>
+            </Reveal>
+          ))}
         </div>
       </section>
 
@@ -337,6 +359,7 @@ export default function DlfWestparkPage() {
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     operator_confirmed: { label: "Confirmed", cls: "bg-teal/10 text-teal" },
+    brochure_verified: { label: "Brochure-verified", cls: "bg-teal/10 text-teal" },
     pending_review: { label: "Under review", cls: "bg-warm/10 text-warm" },
     pending: { label: "Pending", cls: "bg-mist text-ink/50" },
   };

@@ -1,9 +1,21 @@
+import Image from "next/image";
 import Link from "next/link";
 import { company } from "@/lib/site";
 
 export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-mist-deep bg-teal text-white/90">
+      {/* Sea Link band — grayscale + teal multiply = duotone (Pixabay, free license) */}
+      <div className="relative h-44 overflow-hidden md:h-56">
+        <Image
+          src="/mumbai-sea-link.jpg"
+          alt="Bandra–Worli Sea Link, Mumbai"
+          fill
+          sizes="100vw"
+          className="object-cover grayscale"
+        />
+        <div className="absolute inset-0 bg-teal/60 mix-blend-multiply" />
+      </div>
       <div className="mx-auto max-w-6xl px-6 py-14">
         <div className="flex flex-col gap-10 md:flex-row md:justify-between">
           <div className="max-w-sm">

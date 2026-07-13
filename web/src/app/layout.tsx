@@ -23,11 +23,11 @@ export const metadata: Metadata = {
     locale: "en_IN",
   },
   title: {
-    default: "Real Deal Housing — Premium Mumbai Residences",
+    default: "Real Deal Housing — Flats in Goregaon West & Andheri West | Ekta Tripolis, Imperial Heights, Kalpataru Radiance, DLF Westpark",
     template: "%s — Real Deal Housing",
   },
   description:
-    "Real Deal Housing — a calmer, verification-first way to evaluate premium Mumbai residences.",
+    "2, 3 & 4 BHK flats for sale and rent in Ekta Tripolis, Imperial Heights and Kalpataru Radiance, Goregaon West, plus the DLF Westpark launch in Andheri West. 15 years of building-by-building expertise, every fact verified.",
   robots: { index: false, follow: false }, // remove when domain goes live
 };
 

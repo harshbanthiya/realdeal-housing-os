@@ -10,6 +10,8 @@ export const company = {
   name: "Real Deal Housing",
   legalName: "Real Deal Housing Private Limited",
   tagline: "Your Future Home Is Right Here",
+  /** Editorial hero statement, one array item per display line. */
+  heroStatement: ["Few buildings.", "Every floor known."],
   years: 15,
   phone: "+91 829 129 3889",
   phoneHref: "tel:+918291293889",
@@ -20,6 +22,72 @@ export const company = {
   about:
     "At Real Deal Housing Pvt Ltd, we pride ourselves on expert market knowledge and personalised service to help you find your dream home. With 15 years in Mumbai's real estate market, we specialise in premium projects across Goregaon, Andheri, and Malad — a wide range of options for discerning buyers, from luxurious apartments to spacious family homes.",
 };
+
+/**
+ * Map-hero buildings — the four focus towers. Coordinates: OSM/Nominatim where
+ * verified; unverified ones carry coordsVerified=false and render a PIN_VERIFY
+ * token until the operator confirms the pin. Future 5th pin: "Kalpataru Vial"
+ * (operator to confirm exact name + location).
+ */
+export interface MapBuilding {
+  slug: string;
+  name: string;
+  location: string;
+  status: string;
+  lat: number;
+  lng: number;
+  coordsVerified: boolean;
+  facts: string[];
+  href: string;
+}
+
+export const mapBuildings: MapBuilding[] = [
+  {
+    slug: "ekta-tripolis",
+    name: "Ekta Tripolis",
+    location: "Goregaon West",
+    status: "Ready to move",
+    // OSM labels this footprint "Kalpataru Radiance" but operator confirmed it's Ekta Tripolis (2026-07-13)
+    lat: 19.15706,
+    lng: 72.84116,
+    coordsVerified: true,
+    facts: ["36 storeys × 3 towers", "2, 2.5 & 3 BHK · smart homes", "RERA-approved"],
+    href: "/projects/ekta-tripolis",
+  },
+  {
+    slug: "imperial-heights",
+    name: "Imperial Heights",
+    location: "Goregaon West",
+    status: "Ready to move",
+    lat: 19.15187,
+    lng: 72.84022,
+    coordsVerified: true,
+    facts: ["44 storeys", "2–4.5 BHK · duplexes & penthouses", "Off Link Road"],
+    href: "/projects/imperial-heights",
+  },
+  {
+    slug: "kalpataru-radiance",
+    name: "Kalpataru Radiance",
+    location: "Goregaon West",
+    status: "Ready to move",
+    lat: 19.1602,
+    lng: 72.8371,
+    coordsVerified: false,
+    facts: ["4 towers · 4.2 acres", "2–4 BHK", "5 min to metro"],
+    href: "/projects/kalpataru-radiance",
+  },
+  {
+    slug: "dlf-westpark",
+    name: "DLF Westpark",
+    location: "Andheri West",
+    status: "Now previewing",
+    lat: 19.1298,
+    lng: 72.8262,
+    coordsVerified: false,
+    facts: ["4 towers (T02–T05)", "3–5 BHK · duplexes & studios", "D.N. Nagar / Link Road"],
+    href: "/dlf-westpark-andheri-west",
+  },
+];
 
 export interface ProjectImage {
   src: string; // static.wixstatic.com CDN URL (uploaded from RDH DATA 2024 archive)

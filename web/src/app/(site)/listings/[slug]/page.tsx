@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Reveal } from "@/components/reveal";
-import { RevealImage } from "@/components/reveal-image";
+import { ZoomImage } from "@/components/zoom-image";
 import { ListingGrid } from "@/components/listing-grid";
 import { listings } from "@/lib/listings";
 import { projects, company } from "@/lib/site";
@@ -70,12 +70,11 @@ export default async function Page({
           <p className="mt-4 text-2xl font-bold text-teal">{l.price}</p>
         </Reveal>
         {l.image && (
-          <RevealImage
+          <ZoomImage
             src={l.image.src}
             alt={l.image.alt}
-            priority
             sizes="(max-width: 1152px) 100vw, 1152px"
-            className="mt-10 aspect-[16/9] w-full rounded-2xl md:aspect-[21/9]"
+            className="mt-10 aspect-[16/9] w-full overflow-hidden rounded-2xl md:aspect-[21/9]"
           />
         )}
       </section>
