@@ -1,0 +1,20 @@
+<!-- @dsCard group="Motion" viewport="700x170" subtitle="One ease — cubic-bezier(.22,1,.36,1) · 0.75s fade+rise, once, staggered" name="Reveal system" -->
+<!DOCTYPE html>
+<html><head><link rel="stylesheet" href="../styles.css">
+<style>body{margin:0;height:170px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 28px;background:#fff;font-family:var(--font-sans)}
+.demo{flex:1;border:1px solid var(--mist-deep);border-radius:12px;padding:14px;font-size:13px;font-weight:600;color:var(--teal)}
+.demo span{display:block;margin-top:4px;font-family:var(--font-mono);font-weight:400;font-size:10px;color:var(--ink-45)}
+</style></head><body>
+<div class="demo rdh-reveal" style="transition-delay:0s">Fade + 26px rise<span>0.75s · once</span></div>
+<div class="demo rdh-reveal" style="transition-delay:.12s">Staggered 30–70ms<span>delay: i × 0.05s</span></div>
+<div class="demo rdh-reveal" style="transition-delay:.24s">House ease<span>cubic-bezier(.22,1,.36,1)</span></div>
+<script>
+requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  document.querySelectorAll('.rdh-reveal').forEach(el=>el.classList.add('is-visible'));
+}));
+setInterval(()=>{
+  document.querySelectorAll('.rdh-reveal').forEach(el=>el.classList.remove('is-visible'));
+  setTimeout(()=>document.querySelectorAll('.rdh-reveal').forEach(el=>el.classList.add('is-visible')),350);
+},4000);
+</script>
+</body></html>

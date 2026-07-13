@@ -1,0 +1,51 @@
+/* Real Deal Housing — typography tokens (Gallery White).
+   Montserrat carries everything; IBM Plex Mono is reserved for data tokens,
+   eyebrow numerals, pills and provisional/placeholder values. */
+:root {
+  --font-sans: 'Montserrat', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Display / headings (values from the site source) */
+  --text-hero: clamp(2.6rem, 6.5vw, 5.5rem);      /* h1, weight 800, lh 1.02, tracking tight */
+  --text-h2: clamp(1.875rem, 3vw, 2.25rem);       /* 30–36px, weight 700 */
+  --text-h3: 1.25rem;                              /* 20px, weight 700 */
+  --text-statement: clamp(1.5rem, 2.5vw, 1.875rem);/* big editorial paragraph, weight 500 */
+  --text-quote: 1.75rem;                           /* testimonial, weight 500 */
+
+  /* Body & UI */
+  --text-lg: 1.125rem;      /* lede paragraphs */
+  --text-body: 1rem;
+  --text-sm: 0.875rem;
+  --text-nav: 13.5px;
+  --text-btn: 0.875rem;     /* buttons: 14px semibold */
+  --text-xs: 0.75rem;
+  --text-pill: 11px;        /* mono pills */
+  --text-micro: 10px;       /* mono uppercase micro-labels */
+
+  --leading-hero: 1.02;
+  --leading-tight: 1.1;
+  --leading-snug: 1.375;
+  --leading-body: 1.625;
+
+  --tracking-tight: -0.025em;
+  --tracking-eyebrow: 0.18em;  /* uppercase eyebrows */
+  --tracking-label: 0.15em;    /* mono micro-labels */
+  --tracking-wide: 0.05em;     /* uppercase pills */
+
+  --weight-extrabold: 800;
+  --weight-bold: 700;
+  --weight-semibold: 600;
+  --weight-medium: 500;
+  --weight-regular: 400;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--teal); }
+a:hover { color: var(--teal-soft); }

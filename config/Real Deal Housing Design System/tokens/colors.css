@@ -1,0 +1,67 @@
+/* Real Deal Housing — Gallery White color tokens.
+   Base values copied verbatim from web/src/app/globals.css (@theme). */
+:root {
+  /* Base palette (from codebase) */
+  --teal: #1f3d4d;            /* brand anchor — headlines, primary buttons, dark sections */
+  --teal-soft: #2c5364;
+  --ink: #1a1a1a;             /* body text */
+  --mist: #eef1ef;            /* soft warm-grey surface */
+  --mist-deep: #e3e8e5;       /* borders, deeper surface */
+  --warm: #c2493d;            /* single warm accent — eyebrow ticks, blocked states, WhatsApp CTA */
+  --accent: #3e82b0;          /* informational blue */
+  --amber: #b6862c;           /* review / caution */
+  --white: #ffffff;
+
+  /* Logo facet palette (sampled from assets/rdh-logo.png — decorative only,
+     never for UI chrome; max one warm accent per viewport) */
+  --facet-crimson: #b8202e;
+  --facet-red: #d92632;
+  --facet-pink: #e8506e;
+  --facet-magenta: #e0116e;
+  --facet-orange: #e87b28;
+  --facet-blue: #2d7dd2;
+  --facet-sky: #7ec8e3;
+  --facet-navy: #2c4251;      /* logo house body / wordmark */
+
+  /* Ink opacity steps (the codebase uses text-ink/NN everywhere) */
+  --ink-70: rgba(26, 26, 26, 0.7);
+  --ink-65: rgba(26, 26, 26, 0.65);
+  --ink-55: rgba(26, 26, 26, 0.55);
+  --ink-50: rgba(26, 26, 26, 0.5);
+  --ink-45: rgba(26, 26, 26, 0.45);
+  --ink-40: rgba(26, 26, 26, 0.4);
+  --ink-30: rgba(26, 26, 26, 0.3);
+
+  /* On-teal (white opacity steps used in dark sections) */
+  --on-teal-90: rgba(255, 255, 255, 0.9);
+  --on-teal-75: rgba(255, 255, 255, 0.75);
+  --on-teal-65: rgba(255, 255, 255, 0.65);
+  --on-teal-55: rgba(255, 255, 255, 0.55);
+  --on-teal-45: rgba(255, 255, 255, 0.45);
+  --on-teal-border: rgba(255, 255, 255, 0.15);
+
+  /* Semantic aliases */
+  --background: #ffffff;
+  --foreground: var(--ink);
+  --surface-page: var(--white);
+  --surface-soft: rgba(238, 241, 239, 0.4);   /* bg-mist/40 section bands */
+  --surface-card: var(--white);
+  --surface-dark: var(--teal);
+  --border-default: var(--mist-deep);
+  --border-subtle: rgba(227, 232, 229, 0.6);
+  --text-heading: var(--teal);
+  --text-body: var(--ink-65);
+  --text-muted: var(--ink-50);
+  --text-faint: var(--ink-40);
+  --cta-primary: var(--teal);
+  --cta-warm: var(--warm);
+
+  /* Status tones (cockpit Pill/Dot) */
+  --tone-ready-bg: rgba(31, 61, 77, 0.1);   --tone-ready-fg: var(--teal);
+  --tone-blocked-bg: rgba(194, 73, 61, 0.1);--tone-blocked-fg: var(--warm);
+  --tone-review-bg: rgba(182, 134, 44, 0.1);--tone-review-fg: var(--amber);
+  --tone-active-bg: rgba(62, 130, 176, 0.1);--tone-active-fg: var(--accent);
+  --tone-neutral-bg: var(--mist);           --tone-neutral-fg: var(--ink-55);
+}
+
+::selection { background: var(--teal); color: #fff; }
