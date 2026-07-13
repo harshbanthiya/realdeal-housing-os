@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS idfy_pan_results (
     idfy_name_on_card   TEXT,
     idfy_pan_type       TEXT,           -- 'P'=individual, 'C'=company, etc.
     idfy_pan_status     TEXT,           -- 'E'=existing/valid, others=issues
+    idfy_phone          TEXT,           -- normalized full phone/mobile when IDfy returns one
+    idfy_email          TEXT,           -- normalized email when IDfy returns one
+    idfy_contact_details JSONB DEFAULT '{}'::jsonb,
     idfy_raw_response   JSONB,
     credits_used        INT DEFAULT 3,
     error_message       TEXT,
@@ -17,6 +20,12 @@ CREATE TABLE IF NOT EXISTS idfy_pan_results (
     phase               TEXT DEFAULT '6.26',
     UNIQUE (party_pan)
 );
+
+ALTER TABLE idfy_pan_results
+  ADD COLUMN IF NOT EXISTS idfy_name_on_card TEXT,
+  ADD COLUMN IF NOT EXISTS idfy_phone TEXT,
+  ADD COLUMN IF NOT EXISTS idfy_email TEXT,
+  ADD COLUMN IF NOT EXISTS idfy_contact_details JSONB DEFAULT '{}'::jsonb;
 
 CREATE TABLE IF NOT EXISTS idfy_name_match_results (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -56,7 +65,11 @@ CREATE OR REPLACE VIEW vw_idfy_pan_queue AS
 SELECT DISTINCT ON (p.party_pan)
     p.id                    AS party_id,
     p.party_pan,
-    p.party_name_english    AS igr_name,
+    COALESCE(
+      NULLIF(p.party_name_english, p.party_pan),
+      NULLIF(p.party_name_normalized, p.party_pan),
+      NULLIF(p.party_name_raw, p.party_pan)
+    )                       AS igr_name,
     p.party_type,
     p.party_role
 FROM unit_registration_parties p
