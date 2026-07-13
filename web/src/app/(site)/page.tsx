@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Reveal } from "@/components/reveal";
 import { RevealImage } from "@/components/reveal-image";
 import { MapHero } from "@/components/map-hero";
+import { CountUp } from "@/components/count-up";
 import { company, projects, projectImages, listings, pillars, testimonial } from "@/lib/site";
 
 const featuredSale = listings.filter((l) => l.type === "sale" && l.featured).slice(0, 4);
@@ -60,7 +61,7 @@ export default function Home() {
           ].map((s, i) => (
             <Reveal key={s.label} delay={i * 0.05}>
               <div className="border-t border-mist-deep py-6 md:py-8">
-                <div className="text-5xl font-extrabold tracking-tight text-teal md:text-6xl">{s.n}</div>
+                <CountUp value={s.n} className="block text-5xl font-extrabold tracking-tight text-teal md:text-6xl" />
                 <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.15em] text-ink/55">{s.label}</div>
               </div>
             </Reveal>

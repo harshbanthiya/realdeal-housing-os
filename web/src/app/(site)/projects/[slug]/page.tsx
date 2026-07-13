@@ -43,6 +43,20 @@ export default async function Page({
 
   return (
     <article>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "/" },
+              { "@type": "ListItem", position: 2, name: "Projects", item: "/projects" },
+              { "@type": "ListItem", position: 3, name: p.name },
+            ],
+          }),
+        }}
+      />
       <section className="mx-auto max-w-6xl px-6 pt-16 md:pt-24">
         <Reveal>
           <Link href="/projects" className="text-sm font-medium text-ink/50 hover:text-teal">

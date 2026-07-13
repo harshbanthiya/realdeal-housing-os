@@ -144,6 +144,20 @@ export default async function Page({
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "/" },
+              { "@type": "ListItem", position: 2, name: l.type === "rent" ? "Rent" : "Buy", item: l.type === "rent" ? "/rent" : "/buy" },
+              { "@type": "ListItem", position: 3, name: l.title },
+            ],
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
             "@type": "RealEstateListing",
             name: l.title,
             description: l.description.join(" "),

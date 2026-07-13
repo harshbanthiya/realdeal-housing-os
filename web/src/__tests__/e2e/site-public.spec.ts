@@ -178,6 +178,17 @@ test.describe("Listing detail", () => {
     expect(await page.locator("body").innerText()).toContain("₹");
     const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
     expect(jsonLd).toContain("RealEstateListing");
+    expect(jsonLd).toContain("BreadcrumbList");
+  });
+
+  test("project page carries BreadcrumbList JSON-LD; home stats animate to values", async ({ page }) => {
+    await page.goto("/projects/imperial-heights");
+    const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join("");
+    expect(jsonLd).toContain("BreadcrumbList");
+    await page.goto("/");
+    const stat = page.locator('span[aria-label="15+"]');
+    await stat.scrollIntoViewIfNeeded();
+    await expect(stat).toHaveText("15+", { timeout: 10_000 });
   });
 
   test("hero image lightbox opens", async ({ page }) => {
