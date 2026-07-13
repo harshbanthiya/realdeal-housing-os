@@ -60,14 +60,27 @@ export function NeighborhoodMap({
         home.innerHTML = `<span class="rdh-pin-dot"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 14V5l4-2v11M6 14V3l6 2v9" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 14h14" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="rdh-pin-label">${buildingName}</span>`;
         new maplibregl.Marker({ element: home, anchor: "bottom" }).setLngLat([lng, lat]).addTo(map);
 
-        // category pins
+        // category pins — tooltip via maplibre popup (hover on desktop, tap on touch)
         for (const cat of POI_CATEGORIES) {
           markersRef.current[cat.key] = (pois[cat.key] ?? []).map((p) => {
             const dot = document.createElement("div");
             dot.className = "rdh-poi";
             dot.style.setProperty("--poi", cat.color);
-            dot.innerHTML = `<span class="rdh-poi-dot"></span><span class="rdh-poi-label">${p.name}</span>`;
-            return new maplibregl.Marker({ element: dot }).setLngLat([p.lng, p.lat]).addTo(map);
+            dot.setAttribute("role", "button");
+            dot.setAttribute("aria-label", `${p.name} (${cat.label})`);
+            dot.innerHTML = `<span class="rdh-poi-dot"></span>`;
+            const popup = new maplibregl.Popup({
+              offset: 10,
+              closeButton: false,
+              className: "rdh-popup",
+            }).setText(p.name);
+            const marker = new maplibregl.Marker({ element: dot })
+              .setLngLat([p.lng, p.lat])
+              .setPopup(popup) // toggles on click/tap
+              .addTo(map);
+            dot.addEventListener("mouseenter", () => popup.isOpen() || marker.togglePopup());
+            dot.addEventListener("mouseleave", () => popup.isOpen() && marker.togglePopup());
+            return marker;
           });
         }
       },
@@ -83,15 +96,23 @@ export function NeighborhoodMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, lat, lng]);
 
+  // visibility is derived from state so toggles stay correct even if the map
+  // finishes loading after the user has already clicked categories
+  useEffect(() => {
+    for (const cat of POI_CATEGORIES) {
+      const show = active.has(cat.key);
+      for (const m of markersRef.current[cat.key] ?? []) {
+        m.getElement().style.display = show ? "" : "none";
+        if (!show && m.getPopup()?.isOpen()) m.togglePopup();
+      }
+    }
+  }, [active, ready]);
+
   const toggle = (key: string) => {
     setActive((prev) => {
       const next = new Set(prev);
-      const on = next.has(key);
-      if (on) next.delete(key);
+      if (next.has(key)) next.delete(key);
       else next.add(key);
-      for (const m of markersRef.current[key] ?? []) {
-        m.getElement().style.display = on ? "none" : "";
-      }
       return next;
     });
   };

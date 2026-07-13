@@ -118,14 +118,15 @@ export default function DlfWestparkPage() {
               </h2>
               <p className="mt-5 text-ink/65">
                 Positioned in one of Mumbai&rsquo;s most established western
-                micro-markets. Exact addressing, distances and connectivity
-                times are human-reviewable and stay <PendingChip token="VERIFY" />{" "}
-                until confirmed.
+                micro-markets. Everything below sits within ~1.5 km of the
+                project (OpenStreetMap data — explore it on the map). Exact
+                project addressing stays <PendingChip token="VERIFY" /> until
+                confirmed.
               </p>
               <ul className="mt-6 space-y-2 text-sm text-ink/60">
-                <li>· Commute &amp; metro access — <PendingChip token="VERIFY" /></li>
-                <li>· Schools &amp; institutions — <PendingChip token="VERIFY" /></li>
-                <li>· Retail &amp; lifestyle — <PendingChip token="VERIFY" /></li>
+                <li>· Commute &amp; metro — D.N. Nagar &amp; Versova (Line 1) and Lower Oshiwara (Line 2A) metro stations; Link Road on the doorstep</li>
+                <li>· Schools &amp; institutions — Holy Cross Convent, A.H. Wadia High School, Cosmopolitan Education Society</li>
+                <li>· Retail &amp; lifestyle — Infinity Mall and Crystal Plaza, with Versova&rsquo;s café belt close by</li>
               </ul>
             </div>
             <figure>

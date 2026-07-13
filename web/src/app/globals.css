@@ -127,25 +127,22 @@ body {
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(26, 26, 26, 0.3);
 }
-.rdh-poi-label {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  background: rgba(255, 255, 255, 0.95);
+.rdh-poi { cursor: pointer; }
+
+/* maplibre popup, Gallery White chip styling */
+.rdh-popup .maplibregl-popup-content {
+  background: rgba(255, 255, 255, 0.97);
   border: 1px solid #e3e8e5;
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.12);
   color: #1f3d4d;
   font-family: var(--font-mono), monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.08em;
-  padding: 2px 7px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
+  padding: 4px 9px;
 }
-.rdh-poi:hover .rdh-poi-label {
-  opacity: 1;
+.rdh-popup .maplibregl-popup-tip {
+  border-top-color: #e3e8e5;
 }
 
 @media (prefers-reduced-motion: reduce) {
