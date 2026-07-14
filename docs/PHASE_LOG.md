@@ -106,3 +106,9 @@ website-architecture pivot** (Next.js `web/` + Wix Headless, see ROADMAP §5).
   (`<AmbientVideo>` + Ekta view loop on homepage, DAM lineage); `/cockpit/content`
   attach/lifecycle UI + `scripts/manage_listing_content.py`; About manifesto section.
   Task D/E resolved as decision memos in MEDIA-SOCIAL-FUNNEL-PLAN §E.
+- **SITE LAUNCHED 2026-07-14** (bcbaf00→50de5db): realdealhousing.com live on Vercel
+  (Cloudflare Domain Connect), robots INDEXED, canonicals everywhere, security headers,
+  sitemap in GSC. Headless backend migrated Test → premium Wix site (collections + 24
+  items + OAuth client 4dc6aca5…; amenities = `ProjectAmenities` there). Ambient loop on
+  Wix CDN + VideoObject JSON-LD. Left: www CNAME (still old Wix), old-URL redirect map,
+  push to origin. See LAUNCH_CONTEXT.

@@ -28,7 +28,8 @@ sensitive or outward-facing action goes through a review queue first.
   media DAM (056), brochure extraction staging (057/058).
 - Website: production deploy done, real listings catalogue + detail pages,
   Gallery White design system in `web/` (follow it). realdealhousing.com Wix
-  editor site is OFF-LIMITS; Wix "Test" site is the staging CMS.
+  editor site's PAGES are off-limits, but its dashboard/CMS/media is now the live
+  headless backend (2026-07-14); Wix "Test" site is a media archive — never delete.
 - Review-gated everything: `*_review_items` tables + `review_action_log` pattern
   is established across all pipelines.
 
@@ -545,12 +546,15 @@ score — itself a key insight).
 
 ## 17. Resume here
 
-**State:** Stars crawl done (§4). Architecture decided (§5). **Worker layer BUILT
-and live (§15A)** — migration 061 applied, 5 workers running daily (launchd +
-start.sh fallback), /cockpit/inbox shipped. Nothing committed to git yet this pass.
+**State (2026-07-14):** Worker layer live + committed (a5ece2f). **SITE IS LIVE +
+INDEXED on realdealhousing.com** (Vercel; headless backend = premium Wix site — see
+LAUNCH_CONTEXT "DOMAIN LIVE" + migration sections). Media/social/funnel plan executed
+(migration 063: listing_content/subscribers/email_suppression; newsletter double-opt-in;
+/cockpit/content; ambient loop). UX de-generification essentially done.
 
 **Next task (in order):**
-1. Commit the worker layer (schemas/061, workers/, web inbox page, start.sh hook, this doc).
+1. LAUNCH_CONTEXT blockers: operator fixes www CNAME → Vercel; GSC redirect map for old
+   Wix URLs; push local commits to origin.
 2. Operator: grant Full Disk Access to /usr/bin/python3 so the 07:30 launchd run works unattended; drop first real files into `imports/market_inbox/`.
 3. Burn down the 5,981-item review backlog: add bulk-triage tooling for `import_review_items` (4,097 stale) — likely a guarded bulk script + NocoDB view, not one-by-one.
 4. Migration 064: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5

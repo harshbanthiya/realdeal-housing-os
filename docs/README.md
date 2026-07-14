@@ -18,7 +18,10 @@ is the stable map you keep open while editing those. Claude memory (`MEMORY.md`
 index) mirrors `PHASE_LOG.md`; prefer whichever is already in context.
 
 ## Standing constraints (always apply)
-- realdealhousing.com Wix **editor** site is OFF-LIMITS; Wix "Test" site is staging CMS.
+- **realdealhousing.com serves the Next.js site from Vercel** (live 2026-07-14, indexed).
+  The premium Wix site's **dashboard/CMS/media is the headless backend** (edit freely);
+  its old editor PAGES and the editor-era `Amenities` collection stay untouched. The Wix
+  "Test" site is a media archive — never delete it (live site hot-links its files).
 - Review-gate everything: pipelines write `*_review_items` + `review_action_log`; no
   canonical writes without human approval. Masked views for PII.
 - PAN never in web/Wix/LLM prompts unless the task needs it and it's access-logged.
