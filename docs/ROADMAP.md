@@ -553,8 +553,8 @@ start.sh fallback), /cockpit/inbox shipped. Nothing committed to git yet this pa
 1. Commit the worker layer (schemas/061, workers/, web inbox page, start.sh hook, this doc).
 2. Operator: grant Full Disk Access to /usr/bin/python3 so the 07:30 launchd run works unattended; drop first real files into `imports/market_inbox/`.
 3. Burn down the 5,981-item review backlog: add bulk-triage tooling for `import_review_items` (4,097 stale) — likely a guarded bulk script + NocoDB view, not one-by-one.
-4. Migration 063: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5
-   (was penciled as 062, but 061/062 are now worker_layer/zapkey — use 063).
+4. Migration 064: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5
+   (063 is now media_social_funnel — listing_content/subscribers/email_suppression, 2026-07-14).
 5. First LLM worker (content_scout drafting SEO briefs for the 7 uncovered buildings) once ANTHROPIC_API_KEY is provisioned in `secrets/anthropic_api_key`; add Langfuse service at the same time.
 6. market_watch parse stage: XLS → existing IGR bulk parser; PDF → pdftotext/docling; screenshots → `_llm.py` vision.
 7. Inventory bootstrap: `inventory` has 0 rows — feed it from unit registry + owner outreach so listing_readiness has something to score.

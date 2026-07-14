@@ -4,6 +4,7 @@ import { Reveal } from "@/components/reveal";
 import { RevealImage } from "@/components/reveal-image";
 import { MapHero } from "@/components/map-hero";
 import { CountUp } from "@/components/count-up";
+import { AmbientVideo } from "@/components/ambient-video";
 import { company, projects, projectImages, listings, pillars, testimonial } from "@/lib/site";
 
 const featuredSale = listings.filter((l) => l.type === "sale" && l.featured).slice(0, 4);
@@ -68,6 +69,14 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* ——— 2b · FULL-BLEED — ambient loop, the view from an Ekta flat ——— */}
+      <AmbientVideo
+        src="/ekta-view-loop.mp4"
+        poster="/ekta-view-poster.jpg"
+        caption="The view from Ekta Tripolis · Goregaon West"
+        className="h-[52vh] md:h-[70vh]"
+      />
 
       {/* ——— 3 · THE BUILDINGS — full-bleed chapters ——— */}
       <section>

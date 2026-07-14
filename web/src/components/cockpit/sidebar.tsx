@@ -60,6 +60,12 @@ export function Sidebar({ buildings }: { buildings: Building[] }) {
         >
           Media
         </Link>
+        <Link
+          href="/cockpit/content"
+          className={`mt-0.5 flex items-center gap-2 rounded-lg px-3 py-2 font-medium ${path === "/cockpit/content" ? "bg-white text-teal shadow-[0_0_0_1px_var(--color-mist-deep)]" : "text-ink/65 hover:bg-white/60"}`}
+        >
+          Content
+        </Link>
 
         <div className="mt-5 mb-2 px-3 font-mono text-[10px] uppercase tracking-[0.15em] text-ink/40">
           Buildings · {buildings.length}

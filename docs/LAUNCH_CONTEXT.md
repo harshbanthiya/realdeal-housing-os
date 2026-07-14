@@ -38,7 +38,7 @@ SEO/blog-ready, Gallery White design system, safe cockpit separation.
 - **F-2 FIXED** (2026-07-08): `scripts/apply_schema.sh` stopped at 052; schemas 053–060 exist. List extended.
 - **F-3**: No sitemap/robots/canonical/OG/JSON-LD. FIXED this pass (sitemap.ts, robots.ts, metadataBase, org JSON-LD). robots stays noindex until launch.
 - **F-4**: Reveal motion didn't respect prefers-reduced-motion. FIXED via `MotionConfig reducedMotion="user"` in (site) layout.
-- **F-5 OPEN**: email outbound safety (unsubscribe/suppression/webhook verification) incomplete — bulk send remains human-gated; not launch-blocking for the website.
+- **F-5 PARTIAL** (2026-07-14): newsletter side closed — migration 063 `subscribers` + `email_suppression`, double-opt-in signup (footer + listing pages), `/newsletter/confirm` + `/newsletter/unsubscribe` routes; every sender must check `email_suppression`. Still open: Resend webhook signature verification + wiring drip-contact unsubscribes into the same suppression table. Bulk send remains human-gated. NOTE: `/api/subscribe` needs DATABASE_URL, so prod (Vercel) returns an honest 503 fallback until launch storage is decided.
 - **F-6 OPEN**: backups — last logical backup ~2026-06-08; PII/PAN lives locally. Needs a scheduled pg_dump + verification job.
 - **F-7 OPEN**: `check_db.sh` validates an older contract; extend after 053–060 apply cleanly.
 
@@ -57,6 +57,11 @@ Publishing workflow: editor edits/publishes in Wix CMS → site revalidates via 
 
 ## Changes made
 - 2026-07-08: created this doc; middleware matcher fix; apply_schema.sh 053–060; `src/lib/cms.ts` adapter + env example entries; sitemap/robots/JSON-LD/metadataBase; MotionConfig reduced motion. Tests/lint/typecheck run — see below.
+
+- 2026-07-14: media/social/funnel pass — migration 063; newsletter double-opt-in flow
+  (smoke-tested end-to-end locally); `<AmbientVideo>` + Ekta view loop on homepage;
+  `/cockpit/content` listing-content panel; About manifesto section; apply_schema.sh
+  extended to 063 (F-2 follow-up: 061/062 were also missing).
 
 ## Tests run
 - 2026-07-08: `tsc --noEmit` clean · ESLint 0 errors (design-system reference dir excluded; 11 warnings remain) · vitest 310/310 pass · `next build` succeeds (sitemap.xml, robots.txt, SSG project pages w/ 5m ISR) · live prod-server check: `/api/cockpit/*` → 401 unauthenticated, `/cockpit` → 307 login, sitemap 200, robots disallow-all.

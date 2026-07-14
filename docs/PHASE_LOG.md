@@ -100,3 +100,9 @@ website-architecture pivot** (Next.js `web/` + Wix Headless, see ROADMAP §5).
 - **Tower D MyGate load**: 107 screenshots + WhatsApp xlsx → 518 pending rels; 26 wing-D units created.
 - **Zapkey transaction index** (migration 062): apiv2.zapkey.com/listing (Cloudflare,
   browser-only); covers 63 flats IGR has no doc for. Trust unit number, not floor/tower.
+- **Media/social/funnel executed 2026-07-14**: migration 063 (`listing_content`,
+  `subscribers`, `email_suppression`); double-opt-in newsletter (footer + listing pages,
+  confirm/unsubscribe routes, F-5 newsletter side closed); ambient video pilot
+  (`<AmbientVideo>` + Ekta view loop on homepage, DAM lineage); `/cockpit/content`
+  attach/lifecycle UI + `scripts/manage_listing_content.py`; About manifesto section.
+  Task D/E resolved as decision memos in MEDIA-SOCIAL-FUNNEL-PLAN §E.

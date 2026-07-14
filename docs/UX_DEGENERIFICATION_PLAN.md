@@ -90,6 +90,8 @@ Done-ness: `tsc` clean, eslint clean, vitest 310 green, visual check desktop 128
 
 **Same pattern later for IH/Kalpataru/Ekta:** no plate renders exist, so render an SVG *schematic* stack (floor rows from `unit_registry`, availability dots from listings/registrations), click floor → listings filtered to that floor. Positioning payoff: "Every floor known."
 
+**SHIPPED 2026-07-14:** DLF floor-plan explorer live (commit 4a47c25). Homepage full-bleed moment restored as an **ambient video loop** ("The view from Ekta Tripolis", `<AmbientVideo>` poster-first facade). About page got the manifesto section ("We publish facts, not promises" + 3 numbered principles). Newsletter signup in footer + listing pages. Remaining from this plan: Gemini alt-text batch (§5), Ekta/DLF map-pin verification + hero copy pick (operator), schematic floor stacks for IH/Kalpataru/Ekta.
+
 > **See also:** `docs/MEDIA-SOCIAL-FUNNEL-PLAN.md` (2026-07-13) — the content-engine charter on top of this design work: imagery/video review pass, social↔listing pipeline + backend, lead funnel/newsletter, AI enhancement/staging/LiDAR, and the Awwwards research agenda. Future session(s); sequenced there.
 
 ## 5. Phase B — roll the grammar out

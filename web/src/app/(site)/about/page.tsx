@@ -25,6 +25,47 @@ export default function Page() {
         </Reveal>
       </section>
 
+      {/* Manifesto — "We publish facts, not promises" promoted to brand level (UX plan §5) */}
+      <section className="border-t border-mist-deep">
+        <div className="mx-auto max-w-4xl px-6 py-24">
+          <Reveal>
+            <p className="inline-flex items-center gap-2 border border-mist-deep px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-ink/60">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-warm" />
+              How we publish
+            </p>
+            <h2 className="mt-8 text-[clamp(2rem,4vw,3rem)] font-extrabold uppercase leading-[1.08] tracking-tight text-teal">
+              We publish facts,
+              <br />
+              not promises.
+            </h2>
+          </Reveal>
+          <div className="mt-12">
+            {[
+              {
+                title: "Verified before published",
+                body: "Every figure on this site traces to a source — RERA filings, registration records, or the developer's own documents. Anything unverified renders as a visible pending placeholder, never a guess.",
+              },
+              {
+                title: "Few buildings, total depth",
+                body: "We don't cover Mumbai. We cover a handful of buildings in Goregaon and Andheri West and know them floor by floor — registrations, layouts, who's selling and what it last traded at.",
+              },
+              {
+                title: "A person, not a portal",
+                body: "Launch pricing moves weekly and every flat has a story. The site gets you the facts; a phone call gets you the rest.",
+              },
+            ].map((row, i) => (
+              <Reveal key={row.title} delay={i * 0.05}>
+                <div className="grid gap-3 border-t border-mist-deep py-8 md:grid-cols-[80px_1fr_1.6fr] md:gap-8 md:py-10">
+                  <div className="font-mono text-sm text-warm">0{i + 1}</div>
+                  <h3 className="text-xl font-bold text-teal">{row.title}</h3>
+                  <p className="text-[15px] leading-relaxed text-ink/65">{row.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="border-t border-mist-deep bg-teal text-white">
         <div className="mx-auto max-w-4xl px-6 py-24 text-center">
           <Reveal>

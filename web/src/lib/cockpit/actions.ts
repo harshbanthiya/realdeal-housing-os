@@ -434,3 +434,76 @@ export async function approveMediaAsset(input: {
     raw: out,
   };
 }
+
+const CONTENT_ROLES = new Set(["reel", "story", "tour", "photo_set", "ambient_loop", "thumbnail"]);
+const CONTENT_STATUSES = new Set(["draft", "scheduled", "posted", "retired"]);
+const CONTENT_PLATFORMS = new Set(["instagram", "youtube", "facebook", "site"]);
+
+/** Attach a reviewed media asset to a listing slug (listing_content, migration 063). */
+export async function attachListingContent(input: {
+  mediaAssetId: string;
+  listingSlug: string;
+  role: string;
+  notes?: string;
+  apply?: boolean;
+}): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+
+  if (!UUID_RE.test(input.mediaAssetId)) return { ...base, message: "Invalid media asset id." };
+  if (!/^[a-z0-9][a-z0-9-]{1,80}$/.test(input.listingSlug)) return { ...base, message: "Invalid listing slug." };
+  if (!CONTENT_ROLES.has(input.role)) return { ...base, message: `Invalid role: ${input.role}` };
+
+  const argv = [
+    "attach",
+    "--media-asset-id", input.mediaAssetId,
+    "--listing-slug", input.listingSlug,
+    "--role", input.role,
+    "--notes", input.notes ?? "",
+  ];
+  if (apply) argv.push("--apply");
+
+  const { code, out } = await runScript("manage_listing_content.py", argv);
+  const ok = code === 0 && !/not found/i.test(out);
+  return {
+    ...base,
+    ok,
+    applied: ok && apply,
+    message: ok ? headline(out) : out.split("\n")[0] || "Attach failed.",
+    fields: parseLabeledOutput(out),
+    raw: out,
+  };
+}
+
+/** Move a listing_content row through draft → scheduled → posted (with permalink). */
+export async function setListingContentStatus(input: {
+  id: string;
+  status: string;
+  platform?: string;
+  postUrl?: string;
+  apply?: boolean;
+}): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+
+  if (!UUID_RE.test(input.id)) return { ...base, message: "Invalid listing_content id." };
+  if (!CONTENT_STATUSES.has(input.status)) return { ...base, message: `Invalid status: ${input.status}` };
+  if (input.platform && !CONTENT_PLATFORMS.has(input.platform)) return { ...base, message: `Invalid platform: ${input.platform}` };
+  if (input.postUrl && !/^(https?:\/\/|\/)/.test(input.postUrl)) return { ...base, message: "Invalid post URL." };
+
+  const argv = ["set-status", "--id", input.id, "--status", input.status];
+  if (input.platform) argv.push("--platform", input.platform);
+  if (input.postUrl) argv.push("--post-url", input.postUrl);
+  if (apply) argv.push("--apply");
+
+  const { code, out } = await runScript("manage_listing_content.py", argv);
+  const ok = code === 0 && !/not found/i.test(out);
+  return {
+    ...base,
+    ok,
+    applied: ok && apply,
+    message: ok ? headline(out) : out.split("\n")[0] || "Update failed.",
+    fields: parseLabeledOutput(out),
+    raw: out,
+  };
+}

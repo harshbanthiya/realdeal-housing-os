@@ -95,6 +95,8 @@ media/
 !web/public/**/*.gif
 !web/public/**/*.webp
 !web/public/**/*.svg
+# web-ready ambient loops are published site assets, not private footage
+!web/public/**/*.mp4
 
 # Contact/client data files
 *.csv

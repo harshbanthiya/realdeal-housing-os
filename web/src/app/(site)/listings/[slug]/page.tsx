@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Reveal } from "@/components/reveal";
 import { ZoomImage } from "@/components/zoom-image";
 import { ListingGrid } from "@/components/listing-grid";
+import { NewsletterForm } from "@/components/newsletter-form";
 import { listings } from "@/lib/listings";
 import { projects, company } from "@/lib/site";
 
@@ -121,6 +122,17 @@ export default async function Page({
               >
                 Call {company.phone}
               </a>
+            </div>
+            <div className="mt-8">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-ink/50">
+                Get new {l.project} listings first
+              </h3>
+              <div className="mt-3">
+                <NewsletterForm
+                  source={`listing:${l.slug}`}
+                  buildingInterest={project ? [project.slug] : []}
+                />
+              </div>
             </div>
           </Reveal>
         </div>

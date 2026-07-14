@@ -63,6 +63,9 @@ SCHEMA_FILES=(
   "$PROJECT_ROOT/schemas/058_brochure_media_extract.sql"
   "$PROJECT_ROOT/schemas/059_email_bounce_tracking.sql"
   "$PROJECT_ROOT/schemas/060_fix_registration_doc_uniqueness.sql"
+  "$PROJECT_ROOT/schemas/061_worker_layer.sql"
+  "$PROJECT_ROOT/schemas/062_zapkey_transactions.sql"
+  "$PROJECT_ROOT/schemas/063_media_social_funnel.sql"
 )
 
 if [ ! -f "$ENV_FILE" ]; then

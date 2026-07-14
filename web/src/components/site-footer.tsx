@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { company } from "@/lib/site";
+import { NewsletterForm } from "@/components/newsletter-form";
 
 export function SiteFooter() {
   return (
@@ -61,6 +62,12 @@ export function SiteFooter() {
               </ul>
             </div>
           </div>
+        </div>
+        <div className="mt-12 border-t border-white/15 pt-8">
+          <div className="mb-3 text-xs uppercase tracking-wider text-white/45">
+            New listings, first
+          </div>
+          <NewsletterForm dark source="footer" />
         </div>
         <div className="mt-12 flex flex-col gap-2 border-t border-white/15 pt-6 text-xs text-white/45 md:flex-row md:items-center md:justify-between">
           <span>© {company.legalName} — staging preview, not for public distribution.</span>

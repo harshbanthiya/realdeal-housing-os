@@ -1,7 +1,7 @@
 # MEDIA, SOCIAL & FUNNEL PLAN
 ### the content engine on top of the good-looking website
 
-*2026-07-13 · charter for one or more FUTURE sessions — nothing here is started. Companion docs: `UX_DEGENERIFICATION_PLAN.md` (design system + what's built), `reference/MEDIA-INTELLIGENCE-SYSTEM.md` (DAM schema in Postgres). Operator wants a dedicated session to figure all this out, including researching how Awwwards-grade sites solve each piece.*
+*2026-07-13 · charter. **2026-07-14 UPDATE: executed** — Task A pilot shipped (ambient loop + `<AmbientVideo>`), Task B backend shipped (migration 063 `listing_content` + `/cockpit/content` + `scripts/manage_listing_content.py`), Task C plumbing shipped (`subscribers`/`email_suppression`, double-opt-in signup on footer + listing pages, confirm/unsubscribe routes — F-5 newsletter side closed). Task D/E resolved as decision memos (§E below). Remaining: bulk transcode more clips, first real social post through the cockpit loop, analytics install pending operator's PostHog answer (ROADMAP §17). Companion docs: `UX_DEGENERIFICATION_PLAN.md`, `reference/MEDIA-INTELLIGENCE-SYSTEM.md`.*
 
 ## 0. What we're sitting on (asset inventory — verified 2026-07-13)
 
@@ -46,22 +46,22 @@ Operator pain: building photos are old/pixelated. Wants: upscale/enhance; virtua
 - **Virtual staging**: research pass — open models (SDXL inpainting) vs staging SaaS (VirtualStagingAI etc.); needs the empty-flat photo set (configuration stock in the DAM model is literally designed for this — see MEDIA-INTELLIGENCE §"Configuration stock").
 - **LiDAR/3D (later)**: iPhone Pro LiDAR apps (Polycam, Scaniverse, RoomPlan API) → floor-accurate 3D scans per flat → embeddable 3D viewer (`<model-viewer>`/Three.js) or auto floor plans. Prereq: one pilot scan of a currently-listed flat.
 
-## E. Research agenda for the session (the Awwwards question)
+## E. Decision memos (resolved 2026-07-14)
 
-How do the best real-estate/architecture sites solve each piece — study before building:
-1. Video-led listing pages without weight (facades, HLS, poster strategies) — e.g. luxury brokerage sites (The Agency, Sotheby's), Halston-style studios.
-2. Social-proof strips on product pages (embed vs screenshot vs API).
-3. Virtual staging disclosure patterns (US MLS listings do this at scale).
-4. 3D/scan viewers in listings (Matterport competitors, open alternatives).
-5. Newsletter/funnels done tastefully (no popups-on-arrival; exit-intent or scroll-depth, per `popups` skill guidance).
-Deliverable of research: a decision memo per topic (adopt/adapt/skip + chosen tool) BEFORE code.
+1. **Video-led listing pages — ADOPT facades, SKIP streaming.** Poster-first `<AmbientVideo>` (IntersectionObserver mount, muted loop, reduced-motion → poster) is the pattern luxury sites use minus their weight. Short loops stay ≤3MB H.264 MP4 served from `web/public/` (pilot: 0.7MB). HLS/AV1 only if we ever ship >30s films outside YouTube — YouTube embeds (already facaded) cover full tours.
+2. **Social-proof strips — ADAPT, no embed SDKs.** Instagram/Facebook official embeds pull ~200KB+ JS and tracking consent baggage. Instead: `listing_content` stores the permalink + our own DAM thumbnail → render a styled outbound "Seen on Instagram/YouTube" card. Revisit oEmbed only if operator wants live like-counts.
+3. **Virtual staging disclosure — ADOPT US MLS practice.** "Virtually staged" label in the visible caption AND alt text, never structure/view/condition edits. `media_assets.virtual_stage_status` already models it. Sharpen/denoise silently; anything additive gets the label.
+4. **3D/scan viewers — DEFER behind a pilot.** One iPhone-Pro LiDAR scan (Polycam or Scaniverse, free tiers) of a currently-listed flat first; embed via `<model-viewer>` if the scan is good. Matterport SKIP (subscription + per-space cost, closed viewer).
+5. **Newsletter taste — ADOPT inline-only.** Footer + listing-sidebar forms (shipped), double-opt-in, honest consent line. NO arrival popups. A scroll-depth prompt is allowed only after analytics prove deep engagement pages.
+6. **Analytics — PostHog cloud, pending operator sign-off** (open question already in ROADMAP §17; free tier, EU cloud if offered). Plausible is the fallback if the operator rejects data-leaves-machine.
+7. **AI enhancement (Task D) — Real-ESRGAN local ADOPT** as the free default upscaler; run the 5-images-per-building bake-off vs Gemini image editing before batching; Topaz/Magnific SKIP unless both fail. Lineage via `media_assets.metadata.enhanced_from`. Staging models: decide only after the bake-off, with the disclosure rail from memo 3.
 
-## F. Sequencing & prerequisites
+## F. Sequencing & prerequisites (status 2026-07-14)
 
-1. **A first** (imagery review) — pure upgrade of what exists, no new backend.
-2. **C's suppression/consent plumbing** before ANY outbound (blocks B's distribution and newsletter sends).
-3. **B backend** (listing_content) — after A proves the transcode/upload pipeline.
-4. **D enhancement** feeds A (better source images); staging/LiDAR are separate pilots.
-5. Analytics choice early — everything above wants measurement.
+1. ✅ **A pilot** — Ekta view ambient loop live on homepage (`web/public/ekta-view-loop.mp4`, DAM row w/ lineage, `<AmbientVideo>` reusable). Next: per-flat tour snippets on listing pages via the same pipeline.
+2. ✅ **C plumbing** — `subscribers` + `email_suppression` + double-opt-in + unsubscribe shipped and smoke-tested. Every future sender MUST check `email_suppression`. No bulk sends yet (still human-gated).
+3. ✅ **B backend** — `listing_content` + cockpit attach/lifecycle UI + guarded script. Posting stays native/human; permalinks recorded after the fact.
+4. **D enhancement** — bake-off pending (memo 7); staging/LiDAR separate pilots.
+5. **Analytics** — blocked on operator's PostHog answer.
 
 Standing constraints apply throughout: truth = Postgres, honest labels, human-gated outbound, realdealhousing.com Wix prod OFF-LIMITS, robots flip only on operator approval.
