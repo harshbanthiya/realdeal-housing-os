@@ -28,7 +28,6 @@ export const metadata: Metadata = {
   },
   description:
     "2, 3 & 4 BHK flats for sale and rent in Ekta Tripolis, Imperial Heights and Kalpataru Radiance, Goregaon West, plus the DLF Westpark launch in Andheri West. 15 years of building-by-building expertise, every fact verified.",
-  robots: { index: false, follow: false }, // remove when domain goes live
 };
 
 export default function RootLayout({

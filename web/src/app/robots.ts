@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo";
 
-// Mirrors the root-layout `robots: noindex` flag: everything stays disallowed
-// until the operator approves indexing at launch. Flip both together.
+// Flipped to index 2026-07-14 (operator-approved, realdealhousing.com live on
+// Vercel). Cockpit/API stay disallowed; layout robots flag flipped together.
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", disallow: "/" },
+    rules: { userAgent: "*", allow: "/", disallow: ["/cockpit", "/api/"] },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
