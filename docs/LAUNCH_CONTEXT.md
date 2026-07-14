@@ -134,6 +134,23 @@ Editor sets `status = "published"` (+ `publishedAt`) on a BlogPosts item in the 
   migration, scriptable). Premium plan: keep for now, decide after.
 - realdealhousing.com Wix editor site: untouched, just no longer receives traffic.
 
+## Headless backend migrated to the premium Wix site (2026-07-14, same day as domain)
+- CMS backend moved Test site → **premium "Real Deal Housing" site** (3c37cbd6-5699-4eae-918a-46d584c42bc3)
+  so its plan quotas (video storage/streaming, CRM/Forms/Automations/email limits) serve the live site.
+- Collections recreated 1:1 (Projects, ProjectFacts, Residences, ProjectFAQs, BlogPosts,
+  EnquiriesPreview) + all 24 items copied with original _ids. EXCEPTION: the premium site
+  already had a live editor-era `Amenities` collection (2024 schema, wired to old pages) —
+  left untouched; ours is **`ProjectAmenities`** there. cms.ts doesn't query amenities yet;
+  when it does, use `ProjectAmenities`.
+- New OAuth client on premium: `4dc6aca5-579e-4392-856d-b0fe93012e91` (in web/.env.local +
+  Vercel prod; deployed + verified, no [cms] errors). The app's secret lives only in the
+  Wix dashboard (not needed for visitor reads). Old Test-site client `bc909fd2-…` still
+  works if rollback is needed.
+- **Do NOT delete the Test site**: the 7 uploaded media files (5 heroes, ambient loop,
+  poster) live in its Media Manager and the live site hot-links their static/video
+  wixstatic URLs. New media should upload to the premium site; migrate the 7 via Import
+  File API only if the Test site is ever retired.
+
 ## Blockers
 - **www.realdealhousing.com still points at Wix** — Cloudflare needs `CNAME www →
   137cde6deba427a3.vercel-dns-017.com` (DNS-only/grey cloud), replacing the Wix record;
