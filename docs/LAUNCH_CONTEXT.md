@@ -92,6 +92,36 @@ Editor sets `status = "published"` (+ `publishedAt`) on a BlogPosts item in the 
 - **Motion**: DS Motion II ported (rdh-clip/rdh-zoom in globals.css, RevealImage component). Home hero, project grids, detail heroes, listing cards all render CDN imagery with dashed fallback.
 - robots stays noindex; site is on a vercel.app URL pending domain decision.
 
+## Production pass (2026-07-14)
+- **WIX_CLIENT_ID fixed** locally + on Vercel prod (`bc909fd2-…`, verified with sample
+  reads of Projects/Amenities/BlogPosts; operator's spare `b3fd8710-…` also works — same
+  Test site — but is unused, can be deleted). CMS reads live in prod, no [cms] errors.
+- **Deployed to production** (dpl_Ev538Gry…, aliased web-gray-seven-44.vercel.app):
+  ambient loop streams from video.wixstatic.com (+VideoObject JSON-LD), poster on Wix CDN
+  with SEO filename (ekta-tripolis-goregaon-west-view.jpg), security headers added
+  (nosniff, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy).
+- **Grade check passed**: all public routes 200; /cockpit 307→login + /api/cockpit 401
+  (fails closed, no DATABASE_URL); /api/subscribe honest 503; sitemap 200; robots still
+  noindex (correct — flipping on a vercel.app URL would index the wrong host; flip only
+  after the domain lands); JSON-LD ×4 on home; blog serves fixture guides (CMS posts are
+  deliberately draft — publishing stays a human decision).
+- Media policy: Wix CDN is canonical for CMS-served media (heroes, video). Files in
+  `web/public/` (skyline/sea-link stock, 55 DLF plan PNGs) are served from Vercel's edge
+  CDN already — migrating them to Wix adds churn, not speed. New media → Wix CDN first.
+
+## Wix Headless capability survey (2026-07-14) — what else to integrate
+| Solution | Verdict | Why / trigger |
+|---|---|---|
+| CMS (Wix Data) | ✅ in use | Projects/Facts/Residences/Amenities/FAQs/BlogPosts on Test site |
+| Media Manager | ✅ in use | upload path proven twice; canonical CDN for site media |
+| Blog (native) | Adapt later | our BlogPosts collection + ISR already covers SEO posts; native Blog adds categories/RSS when volume justifies |
+| **Forms/Submissions → CRM Inbox** | **Adopt next** | replace `/contact` mailto with a real lead capture that lands in Wix CRM/Inbox (operator already lives in Wix dashboard); pairs with our consent rails |
+| **Bookings** | **Adopt when ready** | "Book a site visit" per building/listing — scheduling + reminders without building any backend; needs operator to define visit slots |
+| Members/Auth | Skip | no gated content; buyers won't create accounts |
+| Stores/eCommerce/Pricing Plans | Skip | nothing to sell online; launch pricing is person-to-person by policy |
+| Events | Skip for now | only if launch-weekend events become a channel |
+| Wix-hosted pages (checkout/booking flows) | Adapt | if Bookings adopted, use Wix-hosted booking page first (zero build), embed later |
+
 ## Blockers
 - Domain decision + Cloudflare DNS record (CNAME → cname.vercel-dns.com) for the public hostname; then update NEXT_PUBLIC_SITE_URL and flip robots on approval.
 - Local commits not yet pushed to origin (github.com/harshbanthiya/realdeal-housing-os).
