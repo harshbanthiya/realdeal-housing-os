@@ -2,6 +2,7 @@ import { Reveal } from "@/components/reveal";
 import { siteFaqs } from "@/lib/site";
 
 export const metadata = {
+  alternates: { canonical: "/faq" },
   title: "FAQ",
   description:
     "Common questions about buying and renting premium apartments in Mumbai's Western Suburbs with Real Deal Housing.",

@@ -10,6 +10,7 @@ import { StickyCta } from "@/components/sticky-cta";
 import { project, facts, residences, amenities, faqs } from "@/lib/content";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/dlf-westpark-andheri-west" },
   title: project.seoTitle,
   description: project.seoDescription,
 };

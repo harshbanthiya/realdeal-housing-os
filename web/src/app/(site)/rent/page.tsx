@@ -3,6 +3,7 @@ import { ListingGrid } from "@/components/listing-grid";
 import { listings } from "@/lib/site";
 
 export const metadata = {
+  alternates: { canonical: "/rent" },
   title: "Rent",
   description:
     "Luxury apartments for rent in Imperial Heights, Ekta Tripolis & Kalpataru Radiance — Mumbai's prestigious Western Suburbs.",

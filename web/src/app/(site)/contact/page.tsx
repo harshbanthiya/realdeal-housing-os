@@ -2,6 +2,7 @@ import { Reveal } from "@/components/reveal";
 import { company } from "@/lib/site";
 
 export const metadata = {
+  alternates: { canonical: "/contact" },
   title: "Contact",
   description: "Get in touch with Real Deal Housing — Goregaon West, Mumbai.",
 };

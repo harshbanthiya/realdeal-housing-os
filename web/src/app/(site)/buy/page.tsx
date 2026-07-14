@@ -3,6 +3,7 @@ import { ListingGrid } from "@/components/listing-grid";
 import { listings } from "@/lib/site";
 
 export const metadata = {
+  alternates: { canonical: "/buy" },
   title: "Buy",
   description:
     "Buy premium apartments in Imperial Heights, Ekta Tripolis, Kalpataru Radiance and more across Mumbai's Western Suburbs.",

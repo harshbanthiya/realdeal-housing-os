@@ -6,6 +6,7 @@ import { getProjects } from "@/lib/cms";
 export const revalidate = 300; // re-read CMS content every 5 min once Wix is wired
 
 export const metadata = {
+  alternates: { canonical: "/projects" },
   title: "Projects",
   description:
     "Premium Mumbai projects — Imperial Heights, Kalpataru Radiance, Ekta Tripolis (Goregaon West) and Bharat Auravistas (Andheri West).",

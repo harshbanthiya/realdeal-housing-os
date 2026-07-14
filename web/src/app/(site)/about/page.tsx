@@ -2,6 +2,7 @@ import { Reveal } from "@/components/reveal";
 import { company, testimonial } from "@/lib/site";
 
 export const metadata = {
+  alternates: { canonical: "/about" },
   title: "About",
   description:
     "15 years in Mumbai's real estate market — specialists in Imperial Heights, Ekta Tripolis & Kalpataru Radiance across the Western Suburbs.",

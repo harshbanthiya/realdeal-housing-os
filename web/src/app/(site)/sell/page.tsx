@@ -2,6 +2,7 @@ import { Reveal } from "@/components/reveal";
 import { company } from "@/lib/site";
 
 export const metadata = {
+  alternates: { canonical: "/sell" },
   title: "Sell",
   description:
     "Sell your apartment in the Western Suburbs of Mumbai with trusted agents — 15 years selling premium homes in Imperial Heights, Ekta Tripolis & Kalpataru Radiance.",

@@ -32,6 +32,10 @@ const chapters = [
   },
 ];
 
+export const metadata = {
+  alternates: { canonical: "/" },
+};
+
 /** Mono eyebrow chip — editorial section marker (design system: mono = data/labels). */
 function Eyebrow({ n, label }: { n?: string; label: string }) {
   return (
