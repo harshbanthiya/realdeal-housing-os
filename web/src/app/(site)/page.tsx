@@ -70,12 +70,28 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ——— 2b · FULL-BLEED — ambient loop, the view from an Ekta flat ——— */}
+      {/* ——— 2b · FULL-BLEED — ambient loop, the view from an Ekta flat (Wix CDN) ——— */}
       <AmbientVideo
-        src="/ekta-view-loop.mp4"
-        poster="/ekta-view-poster.jpg"
+        src="https://video.wixstatic.com/video/77ab1a_de8956e8c8674debad018e978b834df1/file"
+        poster="https://static.wixstatic.com/media/77ab1a_d965c181dcb1416f823e2738604950c1~mv2.jpg"
         caption="The view from Ekta Tripolis · Goregaon West"
         className="h-[52vh] md:h-[70vh]"
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "VideoObject",
+            name: "The view from Ekta Tripolis, Goregaon West",
+            description:
+              "Looping aerial view over Goregaon West from an apartment in Ekta Tripolis: the metro flyover and surrounding towers of Mumbai's Western Suburbs.",
+            contentUrl: "https://video.wixstatic.com/video/77ab1a_de8956e8c8674debad018e978b834df1/file",
+            thumbnailUrl: "https://static.wixstatic.com/media/77ab1a_d965c181dcb1416f823e2738604950c1~mv2.jpg",
+            uploadDate: "2026-07-14",
+            duration: "PT5S",
+          }),
+        }}
       />
 
       {/* ——— 3 · THE BUILDINGS — full-bleed chapters ——— */}
