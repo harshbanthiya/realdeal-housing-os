@@ -122,6 +122,24 @@ Editor sets `status = "published"` (+ `publishedAt`) on a BlogPosts item in the 
 | Events | Skip for now | only if launch-weekend events become a channel |
 | Wix-hosted pages (checkout/booking flows) | Adapt | if Bookings adopted, use Wix-hosted booking page first (zero build), embed later |
 
+## DOMAIN LIVE (2026-07-14)
+- **realdealhousing.com now serves the Next.js site from Vercel** (operator applied
+  Cloudflare Domain Connect; apex verified + SSL). NEXT_PUBLIC_SITE_URL=https://realdealhousing.com;
+  **robots flipped to index** (cockpit//api disallowed); canonicals emitted on every page
+  (dynamic pages already had them; static pages added this pass) — also neutralises the
+  web-gray-seven-44.vercel.app duplicate host.
+- OAuth stays on the **Test site** (content backend) — no premium-site client needed for
+  the domain. Optional step 2 recorded below: repurpose the premium site as the headless
+  backend to use its video-storage/CRM/email quotas (new client + collection/media
+  migration, scriptable). Premium plan: keep for now, decide after.
+- realdealhousing.com Wix editor site: untouched, just no longer receives traffic.
+
 ## Blockers
-- Domain decision + Cloudflare DNS record (CNAME → cname.vercel-dns.com) for the public hostname; then update NEXT_PUBLIC_SITE_URL and flip robots on approval.
+- **www.realdealhousing.com still points at Wix** — Cloudflare needs `CNAME www →
+  137cde6deba427a3.vercel-dns-017.com` (DNS-only/grey cloud), replacing the Wix record;
+  then `vercel domains verify www.realdealhousing.com`. Until then www visitors see the
+  old Wix site.
+- Google Search Console: add the domain property + submit sitemap (operator's Google account).
+- Old-Wix-URL redirects: if the old site ranked for URLs that don't exist here, map them
+  (operator to provide top pages, or pull from GSC once connected).
 - Local commits not yet pushed to origin (github.com/harshbanthiya/realdeal-housing-os).
