@@ -152,10 +152,13 @@ Editor sets `status = "published"` (+ `publishedAt`) on a BlogPosts item in the 
   File API only if the Test site is ever retired.
 
 ## Blockers
-- **www.realdealhousing.com still points at Wix** — Cloudflare needs `CNAME www →
-  137cde6deba427a3.vercel-dns-017.com` (DNS-only/grey cloud), replacing the Wix record;
-  then `vercel domains verify www.realdealhousing.com`. Until then www visitors see the
-  old Wix site.
+- **www.realdealhousing.com still points at Wix** (checked again 2026-07-14 after operator
+  edit: still resolves to Cloudflare proxy IPs 172.67.x/104.21.x and serves parastorage/Wix
+  content). In Cloudflare DNS there must be exactly ONE `www` record: type CNAME, name
+  `www`, target `137cde6deba427a3.vercel-dns-017.com`, proxy status **DNS only (grey
+  cloud)** — delete any other `www` A/CNAME rows (old Wix ones point at wixdns.net or Wix
+  IPs). After saving: `cd web && npx vercel domains verify www.realdealhousing.com` →
+  Vercel then 308-redirects www → apex automatically.
 - Google Search Console: add the domain property + submit sitemap (operator's Google account).
 - Old-Wix-URL redirects: if the old site ranked for URLs that don't exist here, map them
   (operator to provide top pages, or pull from GSC once connected).
