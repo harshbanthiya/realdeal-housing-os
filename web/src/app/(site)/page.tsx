@@ -21,7 +21,7 @@ const chapters = [
       meta: `${p.location} · ${p.meta}`,
       image:
         p.slug === "ekta-tripolis"
-          ? { src: "/ekta-aerial-sunset.jpg", alt: "Aerial view of Ekta Tripolis towers at sunset over Goregaon West" }
+          ? { src: "/ekta-towers-night.jpg", alt: "The three Ekta Tripolis towers lit at night over the Goregaon West skyline" }
           : p.image,
     })),
   {
