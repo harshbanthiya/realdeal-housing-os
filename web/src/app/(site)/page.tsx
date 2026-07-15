@@ -23,12 +23,18 @@ const chapters = [
         p.slug === "ekta-tripolis"
           ? { src: "/ekta-towers-night.jpg", alt: "The three Ekta Tripolis towers lit at night over the Goregaon West skyline" }
           : p.image,
+      // Own footage: pool-deck sweep with clubhouse and tower (IMG_1872, graded).
+      video:
+        p.slug === "imperial-heights"
+          ? { src: "/ih-pool-loop.mp4", poster: "/ih-pool-poster.jpg" }
+          : undefined,
     })),
   {
     href: "/dlf-westpark-andheri-west",
     name: "DLF Westpark",
     meta: "Andheri West · 4 towers · 3–5 BHK · now previewing",
     image: projectImages["dlf-westpark-andheri-west"],
+    video: undefined as { src: string; poster: string } | undefined,
   },
 ];
 
@@ -115,7 +121,13 @@ export default function Home() {
         <div className="mt-12">
           {chapters.map((c) => (
             <Link key={c.href} href={c.href} className="group relative block">
-              {c.image ? (
+              {c.video ? (
+                <AmbientVideo
+                  src={c.video.src}
+                  poster={c.video.poster}
+                  className="h-[48vh] w-full md:h-[64vh]"
+                />
+              ) : c.image ? (
                 <RevealImage
                   src={c.image.src}
                   alt={c.image.alt}
