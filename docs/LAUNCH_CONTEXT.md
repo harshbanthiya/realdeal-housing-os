@@ -151,23 +151,19 @@ Editor sets `status = "published"` (+ `publishedAt`) on a BlogPosts item in the 
   wixstatic URLs. New media should upload to the premium site; migrate the 7 via Import
   File API only if the Test site is ever retired.
 
-## Blockers
-- **www STILL on Wix after 2nd operator edit (checked 2026-07-15)**. Root cause is almost
-  certainly the **proxy status, not the record target**: Wix is a Cloudflare-for-SaaS
-  provider, so while the `www` record is **proxied (orange cloud)** Cloudflare routes it to
-  Wix's custom-hostname config regardless of what the CNAME points at. The record must be
-  **DNS only (grey cloud)**. Vercel alternative if the CNAME keeps fighting: a single
-  `A www 76.76.21.21` record, also grey-cloud (per `npx vercel domains inspect`).
-- Old-Wix-URL redirect map: DONE 2026-07-15 — all 29 old sitemap URLs (19 listings, 4
-  projects-1, 6 statics that share paths) 301 via `redirects()` in web/next.config.ts.
-- **www.realdealhousing.com still points at Wix** (checked again 2026-07-14 after operator
-  edit: still resolves to Cloudflare proxy IPs 172.67.x/104.21.x and serves parastorage/Wix
-  content). In Cloudflare DNS there must be exactly ONE `www` record: type CNAME, name
-  `www`, target `137cde6deba427a3.vercel-dns-017.com`, proxy status **DNS only (grey
-  cloud)** — delete any other `www` A/CNAME rows (old Wix ones point at wixdns.net or Wix
-  IPs). After saving: `cd web && npx vercel domains verify www.realdealhousing.com` →
-  Vercel then 308-redirects www → apex automatically.
-- Google Search Console: add the domain property + submit sitemap (operator's Google account).
-- Old-Wix-URL redirects: if the old site ranked for URLs that don't exist here, map them
-  (operator to provide top pages, or pull from GSC once connected).
-- Local commits not yet pushed to origin (github.com/harshbanthiya/realdeal-housing-os).
+## Blockers — status 2026-07-15
+- **www: RESOLVED.** Root cause was the operator's earlier edits landing on the APEX row;
+  the `www` row still had `cdn1.wixdns.net` proxied (orange = routed to Wix via
+  Cloudflare-for-SaaS regardless of target). Fixed: www CNAME → 137cde6deba427a3
+  .vercel-dns-017.com, DNS only. Vercel issued the www cert; www serves the site 200
+  (not a 308 to apex — optional: flip "Redirect to realdealhousing.com" in Vercel
+  dashboard → project web → Domains. Canonicals already point to apex, so SEO-safe as-is).
+- **Old-Wix-URL redirects: DONE** — all 29 old sitemap URLs (19 listings, 4 projects-1,
+  catch-all) 301 via `redirects()` in web/next.config.ts, verified live.
+- **Commits pushed: DONE** (f3c6a2c). NOTE: the GitHub repo is NOT connected to the
+  Vercel project — pushes do NOT auto-deploy; deploy with `cd web && npx vercel --prod`
+  (or operator connects the repo in the Vercel dashboard for auto-deploys).
+- **Google Search Console: OPERATOR** — add the domain property + submit
+  https://realdealhousing.com/sitemap.xml (needs operator's Google account; a
+  google-site-verification TXT already exists in Cloudflare DNS).
+- Wix Forms → CRM lead capture: not started (next feature).
