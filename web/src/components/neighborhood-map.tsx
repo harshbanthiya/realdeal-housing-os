@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import type { Map as MLMap, Marker } from "maplibre-gl";
 import { neighborhoods, POI_CATEGORIES } from "@/lib/neighborhoods";
+import { add3dBuildings } from "@/lib/map3d";
 
 /**
  * Tavalo-style "Explore the neighborhood" — Gallery White basemap, the
@@ -46,13 +47,19 @@ export function NeighborhoodMap({
           container: el,
           style: "https://tiles.openfreemap.org/styles/positron",
           center: [lng, lat],
-          zoom: 13.6,
+          zoom: 13.9,
+          pitch: 42,
+          bearing: -8,
           scrollZoom: false,
           cooperativeGestures: true,
           attributionControl: { compact: true },
         });
         mapRef.current = map;
-        map.on("load", () => !cancelled && setReady(true));
+        map.on("load", () => {
+          if (cancelled) return;
+          add3dBuildings(map);
+          setReady(true);
+        });
 
         // building pin (same glyph as the hero)
         const home = document.createElement("div");

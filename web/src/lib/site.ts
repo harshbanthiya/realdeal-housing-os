@@ -52,10 +52,11 @@ export const mapBuildings: MapBuilding[] = [
     name: "Ekta Tripolis",
     location: "Goregaon West",
     status: "Ready to move",
-    // OSM labels this footprint "Kalpataru Radiance" but operator confirmed it's Ekta Tripolis (2026-07-13)
-    lat: 19.15706,
-    lng: 72.84116,
-    coordsVerified: true,
+    // 8 Siddharth Nagar Rd, Motilal Nagar I — triangulated from operator's Google
+    // Maps screenshot (2026-07-15), ±100m; operator to eyeball-confirm the pin.
+    lat: 19.1544,
+    lng: 72.8421,
+    coordsVerified: false,
     facts: ["36 storeys × 3 towers", "2, 2.5 & 3 BHK · smart homes", "RERA-approved"],
     href: "/projects/ekta-tripolis",
   },
@@ -75,9 +76,11 @@ export const mapBuildings: MapBuilding[] = [
     name: "Kalpataru Radiance",
     location: "Goregaon West",
     status: "Ready to move",
-    lat: 19.1602,
-    lng: 72.8371,
-    coordsVerified: false,
+    // Tower A, 60 Rd Number 13, Motilal Nagar I — OSM building footprint named
+    // "Kalpataru Radiance", corroborated by operator's Google Maps screenshot (2026-07-15).
+    lat: 19.15706,
+    lng: 72.84116,
+    coordsVerified: true,
     facts: ["4 towers · 4.2 acres", "2–4 BHK", "5 min to metro"],
     href: "/projects/kalpataru-radiance",
   },

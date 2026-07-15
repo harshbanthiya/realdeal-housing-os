@@ -50,11 +50,6 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
     ],
     "schools": [
       {
-        "name": "St. Thomas School",
-        "lat": 19.16703,
-        "lng": 72.84983
-      },
-      {
         "name": "IB Patel School",
         "lat": 19.15784,
         "lng": 72.84766
@@ -78,6 +73,11 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "name": "Marble the Arc",
         "lat": 19.15068,
         "lng": 72.83092
+      },
+      {
+        "name": "Vibgyor",
+        "lat": 19.15953,
+        "lng": 72.83614
       }
     ],
     "health": [
@@ -107,12 +107,17 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "lng": 72.8455
       },
       {
-        "name": "Navjeevan Urology and Stone Care Centre",
-        "lat": 19.16601,
-        "lng": 72.85076
+        "name": "Vital Care Centre",
+        "lat": 19.14689,
+        "lng": 72.83115
       }
     ],
     "food": [
+      {
+        "name": "Balaji Rest.",
+        "lat": 19.15465,
+        "lng": 72.8562
+      },
       {
         "name": "Sai Veg World",
         "lat": 19.16481,
@@ -137,11 +142,6 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "name": "Cafe Coffee Day",
         "lat": 19.15146,
         "lng": 72.83192
-      },
-      {
-        "name": "Sweet Corner",
-        "lat": 19.14381,
-        "lng": 72.84261
       }
     ],
     "retail": [
@@ -193,14 +193,14 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "lng": 72.83076
       },
       {
+        "name": "ramraj park",
+        "lat": 19.14204,
+        "lng": 72.84791
+      },
+      {
         "name": "Dr. B. R. Ambedkar Maidan",
         "lat": 19.15683,
         "lng": 72.83874
-      },
-      {
-        "name": "Trikoni Maidan",
-        "lat": 19.15463,
-        "lng": 72.83859
       }
     ]
   },
@@ -396,14 +396,19 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "lng": 72.84955
       },
       {
+        "name": "Ram Mandir",
+        "lat": 19.15102,
+        "lng": 72.85015
+      },
+      {
+        "name": "Oshiwara",
+        "lat": 19.14604,
+        "lng": 72.83395
+      },
+      {
         "name": "Goregaon (West)",
         "lat": 19.15302,
         "lng": 72.83567
-      },
-      {
-        "name": "Lower Malad",
-        "lat": 19.1731,
-        "lng": 72.83648
       },
       {
         "name": "Bangur Nagar",
@@ -412,6 +417,11 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
       }
     ],
     "schools": [
+      {
+        "name": "St. Thomas School",
+        "lat": 19.16703,
+        "lng": 72.84983
+      },
       {
         "name": "IB Patel School",
         "lat": 19.15784,
@@ -436,11 +446,6 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "name": "Marble the Arc",
         "lat": 19.15068,
         "lng": 72.83092
-      },
-      {
-        "name": "Vibgyor",
-        "lat": 19.15953,
-        "lng": 72.83614
       }
     ],
     "health": [
@@ -470,9 +475,9 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "lng": 72.8455
       },
       {
-        "name": "Vardan Nursing Home Pvt.Ltd.",
-        "lat": 19.16543,
-        "lng": 72.83883
+        "name": "Navjeevan Urology and Stone Care Centre",
+        "lat": 19.16601,
+        "lng": 72.85076
       }
     ],
     "food": [
@@ -502,9 +507,9 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "lng": 72.83192
       },
       {
-        "name": "Loco Chino",
-        "lat": 19.1509,
-        "lng": 72.83141
+        "name": "Sweet Corner",
+        "lat": 19.14381,
+        "lng": 72.84261
       }
     ],
     "retail": [
@@ -524,9 +529,9 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "lng": 72.83468
       },
       {
-        "name": "InOrbit Mall",
-        "lat": 19.17294,
-        "lng": 72.83545
+        "name": "National",
+        "lat": 19.14535,
+        "lng": 72.84676
       },
       {
         "name": "Mega Mall",
@@ -551,11 +556,6 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "lng": 72.82916
       },
       {
-        "name": "BMC Forest Theme Garden",
-        "lat": 19.17343,
-        "lng": 72.83319
-      },
-      {
         "name": "Oshiwara Mahada Garden",
         "lat": 19.14974,
         "lng": 72.83076
@@ -564,6 +564,11 @@ export const neighborhoods: Record<string, Record<string, Poi[]>> = {
         "name": "Dr. B. R. Ambedkar Maidan",
         "lat": 19.15683,
         "lng": 72.83874
+      },
+      {
+        "name": "Trikoni Maidan",
+        "lat": 19.15463,
+        "lng": 72.83859
       }
     ]
   },

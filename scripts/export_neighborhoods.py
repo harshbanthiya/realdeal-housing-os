@@ -20,9 +20,9 @@ OVERPASS = "https://overpass-api.de/api/interpreter"
 OUT = Path(__file__).parent.parent / "web" / "src" / "lib" / "neighborhoods.ts"
 
 BUILDINGS = {
-    "ekta-tripolis": (19.15706, 72.84116),
+    "ekta-tripolis": (19.1544, 72.8421),
     "imperial-heights": (19.15187, 72.84022),
-    "kalpataru-radiance": (19.1602, 72.8371),
+    "kalpataru-radiance": (19.15706, 72.84116),
     "dlf-westpark": (19.1298, 72.8262),
 }
 

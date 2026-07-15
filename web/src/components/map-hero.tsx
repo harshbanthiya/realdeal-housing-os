@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { mapBuildings, company } from "@/lib/site";
+import { add3dBuildings } from "@/lib/map3d";
 import type { Map as MLMap } from "maplibre-gl";
 
 /**
@@ -40,7 +41,11 @@ export function MapHero() {
           attributionControl: { compact: true },
         });
         mapRef.current = map;
-        map.on("load", () => !cancelled && setReady(true));
+        map.on("load", () => {
+          if (cancelled) return;
+          add3dBuildings(map);
+          setReady(true);
+        });
 
         // Frame all four buildings in the zone the headline does NOT cover:
         // desktop → right half of the canvas; mobile → bottom ~40%.
