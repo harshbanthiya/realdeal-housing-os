@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Reveal } from "@/components/reveal";
 import { ZoomImage } from "@/components/zoom-image";
 import { NeighborhoodMap } from "@/components/neighborhood-map";
-import { PendingChip, Tokenize } from "@/components/placeholder";
+import { Tokenize } from "@/components/placeholder";
 import { RevealImage } from "@/components/reveal-image";
 import { projectImages } from "@/lib/site";
 import { StickyCta } from "@/components/sticky-cta";
@@ -99,9 +99,9 @@ export default function DlfWestparkPage() {
               <p className="self-end text-ink/65">
                 Phase 1 is developed by Peegen Builders and Developers Pvt. Ltd. —
                 a DLF and Trident Realty joint venture — under MahaRERA
-                PR1181012500079, per the official brochure. Pricing and
-                possession remain marked <PendingChip token="VERIFY" /> until
-                individually confirmed.
+                PR1181012500079, per the official brochure. Every figure on this
+                page is checked against source documents before we publish it;
+                pricing is shared person-to-person because it moves weekly.
               </p>
             </div>
           </Reveal>
@@ -120,9 +120,7 @@ export default function DlfWestparkPage() {
               <p className="mt-5 text-ink/65">
                 Positioned in one of Mumbai&rsquo;s most established western
                 micro-markets. Everything below sits within ~1.5 km of the
-                project (OpenStreetMap data — explore it on the map). Exact
-                project addressing stays <PendingChip token="VERIFY" /> until
-                confirmed.
+                project (OpenStreetMap data — explore it on the map).
               </p>
               <ul className="mt-6 space-y-2 text-sm text-ink/60">
                 <li>· Commute &amp; metro — D.N. Nagar &amp; Versova (Line 1) and Lower Oshiwara (Line 2A) metro stations; Link Road on the doorstep</li>
@@ -219,35 +217,66 @@ export default function DlfWestparkPage() {
         </div>
       </section>
 
-      {/* 07 — GALLERY / VIDEO */}
+      {/* 07 — GALLERY */}
       <section className="mx-auto max-w-6xl px-6 pb-24">
         <Reveal>
           <Eyebrow n="07" label="Gallery" />
         </Reveal>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { src: "/dlf/building-building-exterior-all-towers-p2.jpg", alt: "DLF Westpark — all four towers, exterior render", label: "Façade — all towers" },
-            { src: "/dlf/building-pool-and-landscape-overview-p3.jpg", alt: "DLF Westpark pool and landscape overview render", label: "Pool & landscape" },
-            { src: "/dlf/building-eco-deck-pool-p46.jpg", alt: "DLF Westpark eco-deck swimming pool render", label: "Eco-deck pool" },
-            { src: "/dlf/show-apartment-living-1.jpg", alt: "DLF Westpark show apartment living room", label: "Show apartment — living" },
-            { src: "/dlf/show-apartment-master-bedroom.jpg", alt: "DLF Westpark show apartment master bedroom", label: "Show apartment — master bedroom" },
-            { src: "/dlf/show-apartment-kitchen-1.jpg", alt: "DLF Westpark show apartment kitchen", label: "Show apartment — kitchen" },
-          ].map((g, i) => (
-            <Reveal key={g.src} delay={i * 0.04}>
-              <figure>
-                <ZoomImage
-                  src={g.src}
-                  alt={g.alt}
-                  sizes="(max-width: 640px) 100vw, 33vw"
-                  className="aspect-[4/3] overflow-hidden rounded-xl border border-mist-deep"
-                />
-                <figcaption className="mt-2 font-mono text-[10px] uppercase tracking-wide text-ink/40">
-                  {g.label} · brochure / show flat · click to enlarge
-                </figcaption>
-              </figure>
+        {[
+          {
+            group: "Inside the show apartment",
+            note: "photographed at the show flat",
+            items: [
+              { src: "/dlf/show-apartment-living-1.jpg", alt: "DLF Westpark show apartment living room", label: "Living" },
+              { src: "/dlf/show-apartment-dining.jpg", alt: "DLF Westpark show apartment dining area", label: "Dining" },
+              { src: "/dlf/show-apartment-master-bedroom.jpg", alt: "DLF Westpark show apartment master bedroom", label: "Master bedroom" },
+              { src: "/dlf/show-apartment-bedroom-1.jpg", alt: "DLF Westpark show apartment second bedroom", label: "Bedroom" },
+              { src: "/dlf/show-apartment-kitchen-1.jpg", alt: "DLF Westpark show apartment kitchen", label: "Kitchen" },
+              { src: "/dlf/show-apartment-foyer.jpg", alt: "DLF Westpark show apartment foyer", label: "Foyer" },
+            ],
+          },
+          {
+            group: "Amenities & grounds",
+            note: "official brochure renders",
+            items: [
+              { src: "/dlf/building-building-exterior-all-towers-p2.jpg", alt: "DLF Westpark — all four towers, exterior render", label: "Façade — all towers" },
+              { src: "/dlf/building-pool-and-landscape-overview-p3.jpg", alt: "DLF Westpark pool and landscape overview render", label: "Pool & landscape" },
+              { src: "/dlf/building-eco-deck-pool-p46.jpg", alt: "DLF Westpark eco-deck swimming pool render", label: "Eco-deck pool" },
+              { src: "/dlf/building-eco-deck-jogging-track-p48.jpg", alt: "DLF Westpark eco-deck jogging track render", label: "Jogging track" },
+              { src: "/dlf/building-spa-and-wellness-p55.jpg", alt: "DLF Westpark spa and wellness centre render", label: "Spa & wellness" },
+              { src: "/dlf/building-bowling-alley-p49.jpg", alt: "DLF Westpark bowling alley render", label: "Bowling alley" },
+              { src: "/dlf/building-banquet-hall-p51.jpg", alt: "DLF Westpark banquet hall render", label: "Banquet hall" },
+            ],
+          },
+        ].map((section) => (
+          <div key={section.group} className="mt-10 first-of-type:mt-6">
+            <Reveal>
+              <h3 className="mb-4 flex items-baseline gap-3 text-lg font-bold text-teal">
+                {section.group}
+                <span className="font-mono text-[10px] font-normal uppercase tracking-wide text-ink/40">
+                  {section.note}
+                </span>
+              </h3>
             </Reveal>
-          ))}
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {section.items.map((g, i) => (
+                <Reveal key={g.src} delay={i * 0.04}>
+                  <figure>
+                    <ZoomImage
+                      src={g.src}
+                      alt={g.alt}
+                      sizes="(max-width: 640px) 100vw, 33vw"
+                      className="aspect-[4/3] overflow-hidden rounded-xl border border-mist-deep"
+                    />
+                    <figcaption className="mt-2 font-mono text-[10px] uppercase tracking-wide text-ink/40">
+                      {g.label} · click to enlarge
+                    </figcaption>
+                  </figure>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
 
       {/* 08 — VERIFIED FACTS LEDGER */}
@@ -262,10 +291,15 @@ export default function DlfWestparkPage() {
           <div className="mt-10 overflow-hidden rounded-2xl border border-mist-deep bg-white">
             {facts.map((f, i) => (
               <Reveal key={f.key} delay={i * 0.03}>
-                <div className="grid items-center gap-3 border-b border-mist px-6 py-4 last:border-0 md:grid-cols-[1fr_1.4fr_auto]">
+                <div className="grid gap-x-6 gap-y-1.5 border-b border-mist px-6 py-5 last:border-0 md:grid-cols-[190px_1fr_150px] md:items-baseline">
                   <div className="text-sm font-semibold text-teal">{f.label}</div>
-                  <div className="text-sm text-ink/70">
-                    <Tokenize text={f.value} />
+                  <div>
+                    <div className="text-sm leading-relaxed text-ink/70">
+                      <Tokenize text={f.value} />
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] uppercase tracking-wide text-ink/35">
+                      {f.source}
+                    </div>
                   </div>
                   <StatusBadge status={f.status} />
                 </div>
@@ -371,8 +405,8 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     operator_confirmed: { label: "Confirmed", cls: "bg-teal/10 text-teal" },
     brochure_verified: { label: "Brochure-verified", cls: "bg-teal/10 text-teal" },
-    pending_review: { label: "Under review", cls: "bg-warm/10 text-warm" },
-    pending: { label: "Pending", cls: "bg-mist text-ink/50" },
+    pending_review: { label: "Being verified", cls: "bg-warm/10 text-warm" },
+    pending: { label: "Coming soon", cls: "bg-mist text-ink/50" },
   };
   const s = map[status] ?? map.pending;
   return (

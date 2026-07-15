@@ -242,29 +242,27 @@ export { listings, type Listing } from "@/lib/listings";
 
 export const pillars = [
   {
-    title: "Truly Modern Buildings",
+    title: "Buildings chosen, not aggregated",
     points: [
-      "Handpicked for builder reputation and credibility",
-      "Spacious apartments and common areas",
-      "Prime locations and proximity",
-      "Top-notch modern amenities",
-      "Vibrant resident communities",
+      "Handpicked for builder reputation and build quality",
+      "Spacious apartments, generous common areas, well-run resident communities",
+      "Minutes from the metro, Link Road and SV Road",
     ],
   },
   {
-    title: "All Apartments on Offer",
+    title: "Every flat in our buildings",
     points: [
-      "Our dedicated team continually finds apartments for rent or sale",
-      "If it's on the market, we have it",
-      "Maximum choices for better negotiation and ideal layouts",
+      "We track each building unit by unit — for sale, for rent, and quietly available",
+      "If it's available in one of our four buildings, it's on our books",
+      "More options in the same tower means the right layout at the right floor",
     ],
   },
   {
-    title: "Best Deals for You",
+    title: "Negotiated end to end",
     points: [
-      "Negotiating the lowest prices and best layouts",
-      "Maximum negotiation room across floors and layouts",
-      "Relax and let us handle the documentation",
+      "We negotiate knowing the building's registration history, floor by floor",
+      "Price and layout weighed against what comparable flats actually closed at",
+      "Documentation handled for you, start to finish",
     ],
   },
 ];

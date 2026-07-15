@@ -4,7 +4,7 @@ import { listings } from "@/lib/site";
 
 export const metadata = {
   alternates: { canonical: "/rent" },
-  title: "Rent",
+  title: "Flats for Rent in Goregaon West & Andheri West",
   description:
     "Luxury apartments for rent in Imperial Heights, Ekta Tripolis & Kalpataru Radiance — Mumbai's prestigious Western Suburbs.",
 };

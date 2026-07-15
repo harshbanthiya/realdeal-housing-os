@@ -152,6 +152,14 @@ Editor sets `status = "published"` (+ `publishedAt`) on a BlogPosts item in the 
   File API only if the Test site is ever retired.
 
 ## Blockers
+- **www STILL on Wix after 2nd operator edit (checked 2026-07-15)**. Root cause is almost
+  certainly the **proxy status, not the record target**: Wix is a Cloudflare-for-SaaS
+  provider, so while the `www` record is **proxied (orange cloud)** Cloudflare routes it to
+  Wix's custom-hostname config regardless of what the CNAME points at. The record must be
+  **DNS only (grey cloud)**. Vercel alternative if the CNAME keeps fighting: a single
+  `A www 76.76.21.21` record, also grey-cloud (per `npx vercel domains inspect`).
+- Old-Wix-URL redirect map: DONE 2026-07-15 — all 29 old sitemap URLs (19 listings, 4
+  projects-1, 6 statics that share paths) 301 via `redirects()` in web/next.config.ts.
 - **www.realdealhousing.com still points at Wix** (checked again 2026-07-14 after operator
   edit: still resolves to Cloudflare proxy IPs 172.67.x/104.21.x and serves parastorage/Wix
   content). In Cloudflare DNS there must be exactly ONE `www` record: type CNAME, name

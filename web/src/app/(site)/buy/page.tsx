@@ -4,7 +4,7 @@ import { listings } from "@/lib/site";
 
 export const metadata = {
   alternates: { canonical: "/buy" },
-  title: "Buy",
+  title: "Flats for Sale in Goregaon West & Andheri West",
   description:
     "Buy premium apartments in Imperial Heights, Ekta Tripolis, Kalpataru Radiance and more across Mumbai's Western Suburbs.",
 };

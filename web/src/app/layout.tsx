@@ -21,9 +21,15 @@ export const metadata: Metadata = {
     siteName: "Real Deal Housing",
     type: "website",
     locale: "en_IN",
+    images: [
+      {
+        url: "https://static.wixstatic.com/media/77ab1a_d965c181dcb1416f823e2738604950c1~mv2.jpg",
+        alt: "The view over Goregaon West from Ekta Tripolis",
+      },
+    ],
   },
   title: {
-    default: "Real Deal Housing — Flats in Goregaon West & Andheri West | Ekta Tripolis, Imperial Heights, Kalpataru Radiance, DLF Westpark",
+    default: "Real Deal Housing — Flats in Goregaon West & Andheri West",
     template: "%s — Real Deal Housing",
   },
   description:

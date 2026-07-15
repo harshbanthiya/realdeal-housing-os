@@ -104,7 +104,7 @@ export default function Home() {
           <Reveal>
             <Eyebrow n="02" label="The buildings" />
             <h2 className="mt-6 max-w-3xl text-3xl font-bold tracking-tight text-teal md:text-5xl">
-              We don&rsquo;t cover Mumbai. We cover these four.
+              Four buildings, known floor by floor.
             </h2>
             <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink/65">
               Apartments for sale and rent in Goregaon West and Andheri West —

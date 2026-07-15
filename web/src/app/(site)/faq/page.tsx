@@ -11,6 +11,20 @@ export const metadata = {
 export default function Page() {
   return (
     <section className="mx-auto max-w-3xl px-6 py-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: siteFaqs.map((f) => ({
+              "@type": "Question",
+              name: f.q,
+              acceptedAnswer: { "@type": "Answer", text: f.a },
+            })),
+          }),
+        }}
+      />
       <Reveal>
         <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-warm">FAQ</p>
         <h1 className="text-4xl font-extrabold tracking-tight text-teal md:text-5xl">

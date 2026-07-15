@@ -3,7 +3,7 @@ import { company } from "@/lib/site";
 
 export const metadata = {
   alternates: { canonical: "/sell" },
-  title: "Sell",
+  title: "Sell Your Flat in Goregaon West & Andheri West",
   description:
     "Sell your apartment in the Western Suburbs of Mumbai with trusted agents — 15 years selling premium homes in Imperial Heights, Ekta Tripolis & Kalpataru Radiance.",
 };

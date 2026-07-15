@@ -48,7 +48,7 @@ export default function Page() {
               },
               {
                 title: "Few buildings, total depth",
-                body: "We don't cover Mumbai. We cover a handful of buildings in Goregaon and Andheri West and know them floor by floor — registrations, layouts, who's selling and what it last traded at.",
+                body: "Depth over breadth: a handful of buildings in Goregaon and Andheri West, known floor by floor — registrations, layouts, who's selling and what it last traded at.",
               },
               {
                 title: "A person, not a portal",
