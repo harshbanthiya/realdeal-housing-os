@@ -174,7 +174,8 @@ export const projects: Project[] = [
       "Interiors are finished to a consistent premium spec: imported marble flooring through the living, dining and bedrooms, gypsum-finished walls in low-VOC paint, laminate-finished doors, and smart lighting switches in the living areas and bedrooms. 3 BHKs add a servant's room with attached toilet.",
       "Kitchens come with granite flooring and platforms, a stainless-steel sink, exhaust and an enclosed utility balcony with PNG and heat detection. Master bathrooms are marble-clad with a rain shower and glass partition; every apartment gets a video door phone at the entrance.",
     ],
-    image: projectImages["imperial-heights"],
+    // Own footage: all four towers from the podium (IMG_3986 frame, graded).
+    image: { src: "/ih-towers-lookup.jpg", alt: "All four Imperial Heights towers rising from the podium, Goregaon West" },
     name: "Imperial Heights",
     location: "Goregaon West",
     meta: "44-storey tower · 2–4.5 BHK",
