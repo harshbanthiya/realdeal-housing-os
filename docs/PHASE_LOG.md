@@ -112,3 +112,19 @@ website-architecture pivot** (Next.js `web/` + Wix Headless, see ROADMAP §5).
   items + OAuth client 4dc6aca5…; amenities = `ProjectAmenities` there). Ambient loop on
   Wix CDN + VideoObject JSON-LD. Left: www CNAME (still old Wix), old-URL redirect map,
   push to origin. See LAUNCH_CONTEXT.
+
+- **2026-07-15 — Launch blockers cleared + lead capture + media pass** (f3c6a2c…ff5f14a…
+  latest): www LIVE on Vercel (root cause: operator edits had landed on apex row; www row
+  still cdn1.wixdns.net proxied — fixed to vercel-dns grey-cloud, cert issued). 29
+  old-Wix-URL 301s. Copy pass (negative "don't cover Mumbai" framing dropped, pillars
+  rewritten). SEO fixes (58-char title, og:image, FAQPage JSON-LD, keyworded buy/rent/sell).
+  DLF page overhaul (facts-ledger alignment, tokens humanized, location+RERA confirmed,
+  gallery 6→13, sell-worthy meta). 3D map buildings (fill-extrusion, zero network cost);
+  Kalpataru/Ekta pins corrected (2026-07-13 override was wrong — OSM footprint was
+  Kalpataru; Ekta triangulated from operator screenshot, PIN_VERIFY pending); POIs
+  regenerated (138). LIVE lead capture: POST /api/enquiry → Wix EnquiriesPreview
+  (itemInsert ANYONE, reads PRIVILEGED) + Resend email to PadminiJain1@gmail.com;
+  /contact + /sell forms real now; RESEND_API_KEY+EMAIL_FROM in Vercel prod. RDH-mark
+  favicon. Media from own archive: Ekta night-aerial chapter (banner1.jpg), IH pool-deck
+  ambient loop (IMG_1872 graded), IH all-four-towers page hero (IMG_3986 frame).
+  NOTE: GitHub repo NOT connected to Vercel — deploy via `cd web && npx vercel --prod`.

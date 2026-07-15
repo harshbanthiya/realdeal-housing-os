@@ -546,22 +546,37 @@ score — itself a key insight).
 
 ## 17. Resume here
 
-**State (2026-07-14):** Worker layer live + committed (a5ece2f). **SITE IS LIVE +
-INDEXED on realdealhousing.com** (Vercel; headless backend = premium Wix site — see
-LAUNCH_CONTEXT "DOMAIN LIVE" + migration sections). Media/social/funnel plan executed
-(migration 063: listing_content/subscribers/email_suppression; newsletter double-opt-in;
-/cockpit/content; ambient loop). UX de-generification essentially done.
+**State (2026-07-15):** Launch blockers CLEARED (www live on Vercel, 29 old-Wix 301s,
+pushed; see PHASE_LOG 2026-07-15). Live lead capture: /api/enquiry → Wix
+EnquiriesPreview + email to operator; /contact + /sell forms real. 3D maps, corrected
+pins (Ekta PIN_VERIFY pending operator eyeball), favicon, own-archive media on IH/Ekta.
+Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel).
 
 **Next task (in order):**
-1. LAUNCH_CONTEXT blockers: operator fixes www CNAME → Vercel; GSC redirect map for old
-   Wix URLs; push local commits to origin.
-2. Operator: grant Full Disk Access to /usr/bin/python3 so the 07:30 launchd run works unattended; drop first real files into `imports/market_inbox/`.
-3. Burn down the 5,981-item review backlog: add bulk-triage tooling for `import_review_items` (4,097 stale) — likely a guarded bulk script + NocoDB view, not one-by-one.
-4. Migration 064: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5
+1. **SEO LLM worker (content_scout) on ₹0 stack** — operator chose local/open-source over
+   API. Plan: (a) Ollama + qwen3:4b (~2.5GB, JSON-schema output via /v1 endpoint) for
+   mechanical tiers — review-backlog triage, extraction, dedupe hints; (b) Gemini free
+   tier (key in web/.env.local) for long-form SEO briefs + vision; (c) SKIP Langfuse for
+   now (v3 needs ClickHouse; 8GB M1 can't) — instead `llm_runs` trace table in local
+   Postgres + cockpit view. All outputs review-gated as usual. Extension: an
+   answers-engine worker drafting Reddit/Quora answers that reference our pages —
+   DRAFT-ONLY into a review queue, operator posts by hand from their own accounts
+   (platform ToS + authenticity; same Lane A discipline as WhatsApp).
+2. Listing detail pages: per-listing photo galleries (listings have more photos than the
+   single card image — source from per-flat folders in RDH ALL Footage via media_assets,
+   review-gated selection in /cockpit/media).
+3. Image privacy for owner-entrusted photos: right-click/drag/longpress suppression +
+   watermarking + low-res zoom tiles. (Screenshots CANNOT be technically blocked on the
+   web — document the honest limit; watermark + resolution-capping is the real control.)
+4. Media slots as "real estate": rotate hero/gallery footage by time/season/campaign —
+   slot schema (slot id → asset pool + schedule) instead of hardcoded paths; ties into
+   media_assets + /cockpit/media approvals.
+5. Operator: grant Full Disk Access to /usr/bin/python3 so the 07:30 launchd run works unattended; drop first real files into `imports/market_inbox/`.
+6. Burn down the 5,981-item review backlog with the Ollama triage tier from (1) — guarded bulk script + NocoDB view, review-gated.
+7. Migration 064: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5
    (063 is now media_social_funnel — listing_content/subscribers/email_suppression, 2026-07-14).
-5. First LLM worker (content_scout drafting SEO briefs for the 7 uncovered buildings) once ANTHROPIC_API_KEY is provisioned in `secrets/anthropic_api_key`; add Langfuse service at the same time.
-6. market_watch parse stage: XLS → existing IGR bulk parser; PDF → pdftotext/docling; screenshots → `_llm.py` vision.
-7. Inventory bootstrap: `inventory` has 0 rows — feed it from unit registry + owner outreach so listing_readiness has something to score.
+8. market_watch parse stage: XLS → existing IGR bulk parser; PDF → pdftotext/docling; screenshots → local vision model per (1).
+9. Inventory bootstrap: `inventory` has 0 rows — feed it from unit registry + owner outreach so listing_readiness has something to score.
 
 **Unresolved questions for operator:**
 - Provision ANTHROPIC_API_KEY for daily LLM workers (API billing ≠ Claude Code limits)?
