@@ -553,15 +553,17 @@ pins (Ekta PIN_VERIFY pending operator eyeball), favicon, own-archive media on I
 Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel).
 
 **Next task (in order):**
-1. **SEO LLM worker (content_scout) on ₹0 stack** — operator chose local/open-source over
-   API. Plan: (a) Ollama + qwen3:4b (~2.5GB, JSON-schema output via /v1 endpoint) for
-   mechanical tiers — review-backlog triage, extraction, dedupe hints; (b) Gemini free
-   tier (key in web/.env.local) for long-form SEO briefs + vision; (c) SKIP Langfuse for
-   now (v3 needs ClickHouse; 8GB M1 can't) — instead `llm_runs` trace table in local
-   Postgres + cockpit view. All outputs review-gated as usual. Extension: an
-   answers-engine worker drafting Reddit/Quora answers that reference our pages —
-   DRAFT-ONLY into a review queue, operator posts by hand from their own accounts
-   (platform ToS + authenticity; same Lane A discipline as WhatsApp).
+1. **SEO LLM worker (content_scout) on ₹0 stack — BUILT 2026-07-16.** Migration 064
+   (`llm_runs` + `seo_content_drafts` + `answer_opportunities`), `workers/_llm_tiers.py`
+   (gemini `gemini-flash-latest` via secrets/gemini_api_key → generic OpenAI-compat
+   fallback → local ollama qwen3:4b, JSON-schema verified), `workers/content_scout.py`
+   in the daily roster, review UI at /cockpit/seo (approve/reject via guarded
+   scripts/update_seo_item.py). First grounded blog draft (Imperial Heights) in queue.
+   REMAINING: (a) operator approves first draft in /cockpit/seo; (b) Reddit discovery
+   needs a free script app (reddit.com/prefs/apps → secrets/reddit_client_id +
+   reddit_client_secret) — anonymous .json is 403-blocked; worker skips + logs a
+   finding until then; (c) publish path for approved drafts (blog fixtures or Wix CMS);
+   (d) answers stay DRAFT-ONLY — operator posts by hand, records permalink (Lane A).
 2. Listing detail pages: per-listing photo galleries (listings have more photos than the
    single card image — source from per-flat folders in RDH ALL Footage via media_assets,
    review-gated selection in /cockpit/media).
@@ -573,8 +575,8 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
    media_assets + /cockpit/media approvals.
 5. Operator: grant Full Disk Access to /usr/bin/python3 so the 07:30 launchd run works unattended; drop first real files into `imports/market_inbox/`.
 6. Burn down the 5,981-item review backlog with the Ollama triage tier from (1) — guarded bulk script + NocoDB view, review-gated.
-7. Migration 064: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5
-   (063 is now media_social_funnel — listing_content/subscribers/email_suppression, 2026-07-14).
+7. Migration 065: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5
+   (064 is now llm_seo_worker — llm_runs/seo_content_drafts/answer_opportunities, 2026-07-16).
 8. market_watch parse stage: XLS → existing IGR bulk parser; PDF → pdftotext/docling; screenshots → local vision model per (1).
 9. Inventory bootstrap: `inventory` has 0 rows — feed it from unit registry + owner outreach so listing_readiness has something to score.
 

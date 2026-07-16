@@ -9,6 +9,7 @@ import sys
 
 from _lib import log_run
 
+import content_scout
 import data_quality
 import listing_readiness
 import market_watch
@@ -20,6 +21,7 @@ WORKERS = [
     ("data_quality", data_quality.run),
     ("listing_readiness", listing_readiness.run),
     ("seo_freshness", seo_freshness.run),
+    ("content_scout", content_scout.run),      # SEO drafts + answer queue (migration 064)
     ("review_inbox", review_inbox.run),        # snapshot last so it sees today's findings
 ]
 

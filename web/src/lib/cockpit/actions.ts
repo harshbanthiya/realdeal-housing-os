@@ -507,3 +507,56 @@ export async function setListingContentStatus(input: {
     raw: out,
   };
 }
+
+const SEO_TABLES: Record<string, Set<string>> = {
+  seo_content_drafts: new Set(["draft", "approved", "rejected", "published"]),
+  answer_opportunities: new Set(["found", "drafted", "approved", "rejected", "posted", "stale"]),
+};
+
+/** Approve/reject content_scout output via scripts/update_seo_item.py (migration 064). */
+export async function updateSeoItem(input: {
+  table: string;
+  id: string;
+  status: string;
+  reviewedBy: string;
+  notes?: string;
+  postedUrl?: string;
+  apply?: boolean;
+}): Promise<ActionResult> {
+  const apply = input.apply === true;
+  const base: ActionResult = { ok: false, applied: false, dryRun: !apply, message: "", fields: {}, raw: "" };
+
+  const allowed = SEO_TABLES[input.table];
+  if (!allowed) return { ...base, message: `Invalid table: ${input.table}` };
+  if (!UUID_RE.test(input.id)) return { ...base, message: "Invalid item id." };
+  if (!allowed.has(input.status)) return { ...base, message: `Invalid status: ${input.status}` };
+  const reviewedBy = (input.reviewedBy || "").trim();
+  if (!reviewedBy) return { ...base, message: "reviewedBy is required." };
+  if (input.postedUrl && !/^https?:\/\//.test(input.postedUrl)) return { ...base, message: "Invalid posted URL." };
+
+  const argv = [
+    "--table", input.table,
+    "--id", input.id,
+    "--status", input.status,
+    "--reviewed-by", reviewedBy,
+    "--notes", input.notes ?? "",
+  ];
+  if (input.postedUrl) argv.push("--posted-url", input.postedUrl);
+  if (apply) argv.push("--apply");
+
+  const { code, out } = await runScript("update_seo_item.py", argv);
+  const fields = parseLabeledOutput(out);
+  const ok = code === 0 && !/error:/i.test(out);
+  return {
+    ...base,
+    ok,
+    applied: ok && apply,
+    message: ok
+      ? apply
+        ? `Applied: ${fields.old_status ?? "?"} → ${input.status}`
+        : `Dry run: would set ${fields.old_status ?? "?"} → ${input.status}`
+      : out.split("\n")[0] || "Update failed.",
+    fields,
+    raw: out,
+  };
+}
