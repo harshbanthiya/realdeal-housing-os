@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -41,8 +42,7 @@ export function AmbientVideo({
 
   return (
     <div ref={ref} className={`relative overflow-hidden ${className}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={poster} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <Image src={poster} alt="" fill sizes="100vw" className="object-cover" />
       {showVideo && (
         <video
           src={src}
