@@ -27,7 +27,7 @@ index) mirrors `PHASE_LOG.md`; prefer whichever is already in context.
 - PAN never in web/Wix/LLM prompts unless the task needs it and it's access-logged.
 - No bulk WhatsApp/email to non-consented numbers (DPDP + number-ban risk); Lane A human-send only.
 - No portal bulk-scraping, no CAPTCHA bypass; manual/assisted capture with attribution.
-- Follow the Gallery White design system in `web/`. Next free migration number: **065**.
+- Follow the Gallery White design system in `web/`. Next free migration number: **066**.
 
 ## Prompt template (copy, fill the `<…>`)
 ```

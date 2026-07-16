@@ -1,14 +1,22 @@
 import { Card, PanelTitle, Mono } from "@/components/ui/primitives";
-import { DraftCard, AnswerCard } from "@/components/cockpit/seo-panel";
-import { getSeoDrafts, getAnswerOpportunities, getRecentLlmRuns } from "@/lib/cockpit/seo";
+import { DraftCard, AnswerCard, SocialPostCard } from "@/components/cockpit/seo-panel";
+import {
+  getSeoDrafts,
+  getAnswerOpportunities,
+  getRecentLlmRuns,
+  getSocialPostDrafts,
+  getVideoResearch,
+} from "@/lib/cockpit/seo";
 
 export const dynamic = "force-dynamic";
 
 export default async function SeoPage() {
-  const [drafts, answers, runs] = await Promise.all([
+  const [drafts, answers, runs, posts, research] = await Promise.all([
     getSeoDrafts(),
     getAnswerOpportunities(),
     getRecentLlmRuns(),
+    getSocialPostDrafts(),
+    getVideoResearch(),
   ]);
 
   return (
@@ -47,6 +55,44 @@ export default async function SeoPage() {
           </p>
         ) : (
           answers.map((a) => <AnswerCard key={a.id} row={a} />)
+        )}
+      </Card>
+
+      <Card className="mb-6 p-5">
+        <PanelTitle hint={`${posts.filter((p) => p.status === "draft").length} awaiting review`}>
+          Social post queue (YouTube / Shorts)
+        </PanelTitle>
+        {posts.length === 0 ? (
+          <p className="text-sm text-ink/45">
+            No post drafts yet — run <Mono>python3 workers/video_scout.py</Mono>.
+          </p>
+        ) : (
+          posts.map((p) => <SocialPostCard key={p.id} row={p} />)
+        )}
+        <p className="mt-4 font-mono text-[11px] text-ink/45">
+          approve → scripts/prep_short.sh renders → scripts/upload_youtube.py posts
+          (explicit, per item). Instagram drafts are posted by hand.
+        </p>
+      </Card>
+
+      <Card className="mb-6 p-5">
+        <PanelTitle hint="what performs and why — top by views">Video research</PanelTitle>
+        {research.length === 0 ? (
+          <p className="text-sm text-ink/45">Nothing analyzed yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {research.map((r, i) => (
+              <div key={i} className="border-t border-mist-deep pt-3 text-sm">
+                <a href={r.url} target="_blank" rel="noopener" className="font-semibold text-teal hover:underline">
+                  {r.title}
+                </a>
+                <span className="ml-2 font-mono text-[11px] text-ink/45">
+                  {r.channel} · {r.views?.toLocaleString()} views · {r.status}
+                </span>
+                {r.why_it_works && <p className="mt-1 text-ink/65">{r.why_it_works}</p>}
+              </div>
+            ))}
+          </div>
         )}
       </Card>
 

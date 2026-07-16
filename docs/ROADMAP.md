@@ -564,6 +564,14 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
    reddit_client_secret) — anonymous .json is 403-blocked; worker skips + logs a
    finding until then; (c) publish path for approved drafts (blog fixtures or Wix CMS);
    (d) answers stay DRAFT-ONLY — operator posts by hand, records permalink (Lane A).
+   ALSO BUILT 2026-07-16: **video_scout** (migration 065) — learns from high-view
+   real-estate YouTube videos (yt-dlp + transcripts + LLM analysis), drafts Shorts
+   posts from our media_assets into social_post_drafts; /cockpit/seo panels;
+   scripts/prep_short.sh (ffmpeg 9:16 + optional whisper captions) renders approved
+   posts; scripts/upload_youtube.py posts per item (needs free operator OAuth:
+   console.cloud.google.com → YouTube Data API v3 → Desktop client JSON →
+   secrets/youtube_client_secret.json). Instagram = manual post (Lane A).
+   NVIDIA Build free API wired as openai_compat drafting fallback.
 2. Listing detail pages: per-listing photo galleries (listings have more photos than the
    single card image — source from per-flat folders in RDH ALL Footage via media_assets,
    review-gated selection in /cockpit/media).
@@ -575,8 +583,9 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
    media_assets + /cockpit/media approvals.
 5. Operator: grant Full Disk Access to /usr/bin/python3 so the 07:30 launchd run works unattended; drop first real files into `imports/market_inbox/`.
 6. Burn down the 5,981-item review backlog with the Ollama triage tier from (1) — guarded bulk script + NocoDB view, review-gated.
-7. Migration 065: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5
-   (064 is now llm_seo_worker — llm_runs/seo_content_drafts/answer_opportunities, 2026-07-16).
+7. Migration 066: `consumer_cases` + `consent_records` + `building_facts`/`unit_facts` per §5
+   (064 = llm_seo_worker, 065 = video_intelligence — video_research/social_post_drafts,
+   both 2026-07-16).
 8. market_watch parse stage: XLS → existing IGR bulk parser; PDF → pdftotext/docling; screenshots → local vision model per (1).
 9. Inventory bootstrap: `inventory` has 0 rows — feed it from unit registry + owner outreach so listing_readiness has something to score.
 

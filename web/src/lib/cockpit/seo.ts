@@ -70,3 +70,47 @@ export async function getRecentLlmRuns(): Promise<LlmRunRow[]> {
     SELECT worker, tier, model, purpose, status, duration_ms, created_at::text
     FROM llm_runs ORDER BY created_at DESC LIMIT 25`);
 }
+
+export interface SocialPostRow {
+  id: string;
+  platform: string;
+  title: string;
+  description: string | null;
+  tags: string[];
+  edit_notes: string | null;
+  building_name: string | null;
+  asset_title: string | null;
+  status: string;
+  posted_url: string | null;
+  created_at: string;
+}
+
+export interface VideoResearchRow {
+  title: string;
+  channel: string | null;
+  views: number | null;
+  url: string;
+  status: string;
+  why_it_works: string | null;
+}
+
+export async function getSocialPostDrafts(): Promise<SocialPostRow[]> {
+  if (!isDbConfigured()) return [];
+  return readQuery<SocialPostRow>(`
+    SELECT d.id, d.platform, d.title, d.description, d.tags,
+           d.edit_spec->>'notes' AS edit_notes,
+           b.name AS building_name, m.title AS asset_title,
+           d.status, d.posted_url, d.created_at::text
+    FROM social_post_drafts d
+    LEFT JOIN buildings b ON b.id = d.building_id
+    LEFT JOIN media_assets m ON m.id = d.media_asset_id
+    ORDER BY d.status = 'draft' DESC, d.created_at DESC LIMIT 100`);
+}
+
+export async function getVideoResearch(): Promise<VideoResearchRow[]> {
+  if (!isDbConfigured()) return [];
+  return readQuery<VideoResearchRow>(`
+    SELECT title, channel, views, url, status,
+           analysis->>'why_it_works' AS why_it_works
+    FROM video_research ORDER BY views DESC NULLS LAST LIMIT 30`);
+}

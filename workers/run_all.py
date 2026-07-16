@@ -11,6 +11,7 @@ from _lib import log_run
 
 import content_scout
 import data_quality
+import video_scout
 import listing_readiness
 import market_watch
 import review_inbox
@@ -22,6 +23,7 @@ WORKERS = [
     ("listing_readiness", listing_readiness.run),
     ("seo_freshness", seo_freshness.run),
     ("content_scout", content_scout.run),      # SEO drafts + answer queue (migration 064)
+    ("video_scout", video_scout.run),          # video research + post drafts (migration 065)
     ("review_inbox", review_inbox.run),        # snapshot last so it sees today's findings
 ]
 

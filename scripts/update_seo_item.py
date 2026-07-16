@@ -17,6 +17,8 @@ from _db import run_psql, sql_literal
 TABLES = {
     "seo_content_drafts": {"draft", "approved", "rejected", "published"},
     "answer_opportunities": {"found", "drafted", "approved", "rejected", "posted", "stale"},
+    "social_post_drafts": {"draft", "approved", "rendered", "scheduled", "posted", "rejected"},
+    "video_research": {"found", "analyzed", "used", "ignored"},
 }
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
 
@@ -55,14 +57,17 @@ def main() -> int:
         return 0
 
     posted = (f", posted_url = {sql_literal(args.posted_url)}"
-              if args.table == "answer_opportunities" and args.posted_url else "")
+              if args.table in ("answer_opportunities", "social_post_drafts")
+              and args.posted_url else "")
+    # video_research is a research log, not a review item — no reviewer columns
+    reviewer_cols = ("" if args.table == "video_research" else f"""
+    reviewed_by = {sql_literal(args.reviewed_by)},
+    reviewed_at = now(),
+    decision_notes = {sql_literal(args.notes)},""")
     code, out = run_psql(f"""
 BEGIN;
 UPDATE {args.table}
-SET status = {sql_literal(args.status)},
-    reviewed_by = {sql_literal(args.reviewed_by)},
-    reviewed_at = now(),
-    decision_notes = {sql_literal(args.notes)},
+SET status = {sql_literal(args.status)},{reviewer_cols}
     updated_at = now(){posted}
 WHERE id = {sql_literal(args.id)};
 INSERT INTO review_action_log (old_status, new_status, action_type, reviewed_by,

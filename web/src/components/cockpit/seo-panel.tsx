@@ -134,3 +134,43 @@ export function AnswerCard({ row }: { row: AnswerRow }) {
     </div>
   );
 }
+
+export function SocialPostCard({ row }: { row: import("@/lib/cockpit/seo").SocialPostRow }) {
+  const [open, setOpen] = useState(false);
+  const [msg, setMsg] = useState("");
+  const reviewable = row.status === "draft";
+
+  return (
+    <div className="border-t border-mist-deep py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <span className={badge(row.status)}>{row.status}</span>
+          <button onClick={() => setOpen(!open)} className="ml-3 text-left text-sm font-semibold text-teal hover:underline">
+            {row.title}
+          </button>
+          <div className="mt-1 font-mono text-[11px] text-ink/45">
+            {row.platform}
+            {row.building_name ? ` · ${row.building_name}` : ""}
+            {row.asset_title ? ` · asset: ${row.asset_title}` : ""}
+          </div>
+        </div>
+        {reviewable && (
+          <ReviewButtons table="social_post_drafts" id={row.id} approveAs="approved" onDone={setMsg} />
+        )}
+      </div>
+      {msg && <p className="mt-2 font-mono text-[11px] text-warm">{msg}</p>}
+      {open && (
+        <div className="mt-3 rounded-lg bg-mist/50 p-4 text-sm leading-relaxed text-ink/75">
+          <p className="whitespace-pre-wrap">{row.description}</p>
+          {row.edit_notes && (
+            <p className="mt-2 font-mono text-[11px] text-ink/55">EDIT PLAN: {row.edit_notes}</p>
+          )}
+          <p className="mt-2 font-mono text-[11px] text-ink/45">tags: {row.tags.join(", ")}</p>
+          {row.posted_url && (
+            <p className="mt-1 font-mono text-[11px] text-teal">{row.posted_url}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
