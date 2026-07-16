@@ -4,20 +4,30 @@
  * (operator-approved typography/overlays), executed with proper cover-cropped
  * footage. Scene-driven data model so the worker can parameterize every post.
  */
-import { loadFont } from "@remotion/google-fonts/Manrope";
 import {
   AbsoluteFill,
   Easing,
   Img,
   OffthreadVideo,
   Sequence,
+  continueRender,
+  delayRender,
   interpolate,
   staticFile,
   useCurrentFrame,
 } from "remotion";
 import { z } from "zod";
 
-const { fontFamily } = loadFont();
+// Manrope is a variable-weight file served from public/ — no font CDN dep
+const fontFamily = "Manrope, sans-serif";
+const fontHandle = delayRender("load Manrope");
+new FontFace("Manrope", `url(${staticFile("Manrope-Bold.ttf")})`)
+  .load()
+  .then((f) => {
+    document.fonts.add(f);
+    continueRender(fontHandle);
+  })
+  .catch(() => continueRender(fontHandle));
 
 // tokens — lockstep with web/src/app/globals.css
 const TEAL = "#1f3d4d";
@@ -88,11 +98,11 @@ const Eyebrow: React.FC<{ text: string; light?: boolean; delay?: number }> = ({
   );
 };
 
-/** stacked uppercase headline, one line per row, staggered rise */
+/** stacked sentence-case headline (minimal v2), one line per row, staggered rise */
 const Headline: React.FC<{ lines: string[]; light?: boolean; size?: number; delay?: number }> = ({
   lines,
   light,
-  size = 96,
+  size = 88,
   delay = 3,
 }) => {
   const frame = useCurrentFrame();
@@ -105,10 +115,9 @@ const Headline: React.FC<{ lines: string[]; light?: boolean; size?: number; dela
           fontFamily,
           fontWeight: 800,
           fontSize: size,
-          lineHeight: 1.08,
-          letterSpacing: "-0.01em",
-          textTransform: "uppercase",
-          color: light ? MIST : TEAL,
+          lineHeight: 1.12,
+          letterSpacing: "-0.015em",
+          color: light ? "#ffffff" : TEAL,
           ...rise(frame, delay + i * 3),
         }}
       >
@@ -116,6 +125,28 @@ const Headline: React.FC<{ lines: string[]; light?: boolean; size?: number; dela
       </div>
     ))}
   </div>
+  );
+};
+
+/** minimal v2: tiny translucent pill chip, top-left */
+const Chip: React.FC<{ text: string; dark?: boolean }> = ({ text, dark }) => {
+  const frame = useCurrentFrame();
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 64,
+        left: 64,
+        background: dark ? "rgba(26,26,26,0.45)" : "rgba(238,241,239,0.22)",
+        border: "1px solid rgba(238,241,239,0.35)",
+        backdropFilter: "blur(6px)",
+        borderRadius: 999,
+        padding: "16px 30px",
+        ...rise(frame, 2),
+      }}
+    >
+      <span style={{ ...eyebrowStyle, fontSize: 21, color: "#ffffff" }}>{text}</span>
+    </div>
   );
 };
 
@@ -150,18 +181,17 @@ const FullScene: React.FC<Props["scenes"][number]> = (s) => {
           "linear-gradient(to top, rgba(26,26,26,0.82) 0%, rgba(26,26,26,0.3) 34%, transparent 58%)",
       }}
     />
+    <Chip text={s.eyebrow} />
     <AbsoluteFill style={{ justifyContent: "flex-end", padding: 72, paddingBottom: 230 }}>
-      <Eyebrow text={s.eyebrow} light />
-      <div style={{ height: 26 }} />
       <Headline lines={s.headline} light />
       {s.body && (
         <div
           style={{
             fontFamily,
             fontWeight: 400,
-            fontSize: 37,
-            color: "rgba(238,241,239,0.85)",
-            marginTop: 26,
+            fontSize: 35,
+            color: "rgba(255,255,255,0.82)",
+            marginTop: 22,
             ...rise(frame, 12),
           }}
         >
@@ -178,35 +208,29 @@ const EditorialScene: React.FC<Props["scenes"][number]> = (s) => {
   const frame = useCurrentFrame();
   const card = rise(frame, 8);
   return (
-    <AbsoluteFill style={{ background: MIST, padding: "150px 64px 170px" }}>
-      <Eyebrow text={s.eyebrow} />
-      <div style={{ height: 34 }} />
-      <Headline lines={s.headline} size={88} />
-      {s.body && (
-        <div
-          style={{
-            fontFamily,
-            fontWeight: 400,
-            fontSize: 37,
-            color: "rgba(26,26,26,0.7)",
-            marginTop: 30,
-            ...rise(frame, 10),
-          }}
-        >
-          {s.body}
-        </div>
-      )}
-      <RedRule />
-      <div
-        style={{
-          flex: 1,
-          marginTop: 48,
-          borderRadius: 24,
-          overflow: "hidden",
-          border: `1px solid ${MIST_DEEP}`,
-          ...card,
-        }}
-      >
+    <AbsoluteFill style={{ background: MIST }}>
+      {/* minimal v2: white editorial band on top, footage flush full-width below */}
+      <div style={{ padding: "110px 64px 64px", borderBottom: `1px solid ${MIST_DEEP}` }}>
+        <Eyebrow text={s.eyebrow} />
+        <div style={{ height: 26 }} />
+        <Headline lines={s.headline} size={76} />
+        {s.body && (
+          <div
+            style={{
+              fontFamily,
+              fontWeight: 400,
+              fontSize: 35,
+              color: "rgba(26,26,26,0.7)",
+              marginTop: 22,
+              ...rise(frame, 10),
+            }}
+          >
+            {s.body}
+          </div>
+        )}
+        <RedRule />
+      </div>
+      <div style={{ flex: 1, overflow: "hidden", ...card }}>
         <Video src={s.source} startFrom={s.sourceStart} />
       </div>
       {s.footer && (
@@ -215,7 +239,7 @@ const EditorialScene: React.FC<Props["scenes"][number]> = (s) => {
             ...eyebrowStyle,
             fontSize: 21,
             color: "rgba(26,26,26,0.5)",
-            marginTop: 40,
+            padding: "36px 64px 120px",
             ...rise(frame, 14),
           }}
         >

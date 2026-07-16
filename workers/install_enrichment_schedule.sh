@@ -20,7 +20,7 @@ cat > "$PLIST" <<EOF
   <array>
     <string>/bin/bash</string>
     <string>-c</string>
-    <string>export PATH="/usr/local/bin:/opt/homebrew/bin:\$HOME/miniforge3/bin:\$PATH"; "${PY}" "${ROOT}/workers/photo_captioner.py"; "${PY}" "${ROOT}/workers/video_transcriber.py"</string>
+    <string>[ -d "${ROOT}/workers" ] || exit 0; export PATH="/usr/local/bin:/opt/homebrew/bin:\$HOME/miniforge3/bin:\$PATH"; "${PY}" "${ROOT}/workers/photo_captioner.py"; "${PY}" "${ROOT}/workers/video_transcriber.py"</string>
   </array>
   <key>StartInterval</key><integer>1800</integer>
   <key>StandardOutPath</key><string>${LOG}</string>

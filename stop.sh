@@ -10,3 +10,7 @@ pkill -f "resend_webhook_server.py" 2>/dev/null && echo "Stopped Resend webhook 
 
 cd "$DOCKER_DIR"
 docker compose --env-file .env down
+
+# Stop the media-enrichment loop with the stack (drive may be unplugged next).
+launchctl unload "$HOME/Library/LaunchAgents/com.rdh.media-enrichment.plist" 2>/dev/null \
+  && echo "Media-enrichment loop unloaded." || true

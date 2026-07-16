@@ -378,3 +378,9 @@ fi
 # Daily workers (worker_runs / worker_findings → /cockpit/inbox). launchd runs
 # them at 07:30; this fallback guarantees a run on any day the stack starts.
 bash "$PROJECT_ROOT/workers/run_if_due.sh" || echo "Workers run failed — check manually: python3 workers/run_all.py"
+
+# Always-on media enrichment (photo captions + video transcripts every 30 min).
+# Loaded here — not at login — so it only runs while the external drive stack is up.
+launchctl load "$HOME/Library/LaunchAgents/com.rdh.media-enrichment.plist" 2>/dev/null \
+  && echo "Media-enrichment loop loaded (every 30 min)." \
+  || echo "Media-enrichment loop already loaded."

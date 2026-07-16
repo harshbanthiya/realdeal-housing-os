@@ -572,6 +572,18 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
    console.cloud.google.com → YouTube Data API v3 → Desktop client JSON →
    secrets/youtube_client_secret.json). Instagram = manual post (Lane A).
    NVIDIA Build free API wired as openai_compat drafting fallback.
+   MEDIA ENRICHMENT (2026-07-16 PM): photo_captioner (Gemini vision alt-text,
+   15/cycle, 200/day cap, 429 backoff) + video_transcriber (whisper.cpp, 3/cycle)
+   run every 30 min via com.rdh.media-enrichment launchd, now loaded/unloaded by
+   start.sh/stop.sh (drive-mount guard in plist). scripts/brand_video.sh = ffmpeg
+   branded renders (edge-tts en-IN VO, music ducking, drawtext captions, logo).
+   REMOTION TEMPLATE (video/): Gallery White editorial Short — operator-approved
+   typography from imports/chatgptYoutubeShortTemplate/ (v2 minimal: sentence-case
+   stacked headlines, pill chips, white band + flush footage, end card with CTA
+   pill). Code complete (video/src/Short.tsx, scene-driven props). BLOCKED: npm
+   install times out (slow network to registry.npmjs.org); retry
+   `cd video && npm install --no-audit --fetch-retries=6 zod` then
+   `npm run render -- --output ../exports/renders/remotion-sample.mp4`.
 2. Listing detail pages: per-listing photo galleries (listings have more photos than the
    single card image — source from per-flat folders in RDH ALL Footage via media_assets,
    review-gated selection in /cockpit/media).
