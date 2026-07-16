@@ -11,7 +11,9 @@ from _lib import log_run
 
 import content_scout
 import data_quality
+import photo_captioner
 import video_scout
+import video_transcriber
 import listing_readiness
 import market_watch
 import review_inbox
@@ -24,6 +26,8 @@ WORKERS = [
     ("seo_freshness", seo_freshness.run),
     ("content_scout", content_scout.run),      # SEO drafts + answer queue (migration 064)
     ("video_scout", video_scout.run),          # video research + post drafts (migration 065)
+    ("photo_captioner", photo_captioner.run),  # 15 SEO alt-texts/day via Gemini vision
+    ("video_transcriber", video_transcriber.run),  # 3 whisper transcripts/day, local
     ("review_inbox", review_inbox.run),        # snapshot last so it sees today's findings
 ]
 

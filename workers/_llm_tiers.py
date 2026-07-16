@@ -147,3 +147,47 @@ def draft(worker: str, purpose: str, prompt: str, system: str = "") -> tuple[str
     if text:
         return text, run_id2
     return ollama(worker, purpose, prompt, system)
+
+
+def gemini_vision(worker: str, purpose: str, prompt: str,
+                  image_path: str) -> tuple[str | None, str | None]:
+    """Free-tier Gemini vision call on one image. Downscales to ≤1280px first
+    (keeps request small + free-tier friendly). Returns (text, llm_run_id)."""
+    import base64
+    import subprocess
+    import tempfile
+    key = gemini_key()
+    if not key:
+        run_id = _log(worker, "gemini", GEMINI_MODEL, purpose, prompt, None, 0,
+                      "skipped", "no GEMINI_API_KEY")
+        return None, run_id
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        small = tmp.name
+    try:
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", image_path,
+                        "-vf", "scale='min(1280,iw)':-2", "-q:v", "7", small],
+                       check=True, timeout=60)
+        b64 = base64.b64encode(open(small, "rb").read()).decode()
+    except Exception as e:
+        run_id = _log(worker, "gemini", GEMINI_MODEL, purpose, prompt, None, 0,
+                      "error", f"image prep: {e}")
+        return None, run_id
+    finally:
+        Path(small).unlink(missing_ok=True)
+    url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+           f"{GEMINI_MODEL}:generateContent")
+    body = {"contents": [{"parts": [
+        {"inline_data": {"mime_type": "image/jpeg", "data": b64}},
+        {"text": prompt}]}]}
+    t0 = time.time()
+    try:
+        data = _post_json(url, body, {"x-goog-api-key": key})
+        text = "".join(p.get("text", "")
+                       for p in data["candidates"][0]["content"]["parts"])
+        run_id = _log(worker, "gemini", GEMINI_MODEL, purpose, prompt, text,
+                      int((time.time() - t0) * 1000), "ok")
+        return text, run_id
+    except Exception as e:
+        run_id = _log(worker, "gemini", GEMINI_MODEL, purpose, prompt, None,
+                      int((time.time() - t0) * 1000), "error", str(e))
+        return None, run_id
