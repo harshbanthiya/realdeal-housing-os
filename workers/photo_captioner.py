@@ -69,7 +69,7 @@ Return ONLY JSON: {{"alt_text": "...", "seo_title": "...",
         text, run_id = gemini_vision(WORKER, "photo_caption", prompt, path)
         if not text:
             skipped += 1
-            time.sleep(5)
+            time.sleep(45)  # free tier throttles per-minute — back off, item retries next cycle
             continue
         try:
             p = parse_llm_json(text)
@@ -87,7 +87,7 @@ Return ONLY JSON: {{"alt_text": "...", "seo_title": "...",
                 updated_at = now()
               where id = '{mid}' and coalesce(alt_text,'') = ''""")
         captioned += 1
-        time.sleep(2)
+        time.sleep(8)  # ~7 RPM keeps us under the free-tier per-minute limit
     remaining = q("""select count(*) from media_assets
                      where media_type='photo' and coalesce(alt_text,'')=''""")[0][0]
     return (f"{captioned} captioned, {skipped} skipped, {remaining} remaining",
