@@ -25,6 +25,8 @@ from _db import jsonb_lit, sql_literal  # noqa: E402
 
 WORKER = "photo_captioner"
 PHOTOS_PER_RUN = 15  # gentle on the shared Gemini free-tier daily quota
+DAILY_CAP = 200      # hard stop so the 30-min launchd loop can't exhaust the
+                     # free tier that content_scout/video_scout also depend on
 
 
 def parse_llm_json(text: str) -> dict:
@@ -35,6 +37,12 @@ def parse_llm_json(text: str) -> dict:
 
 
 def run() -> tuple[str, int, dict]:
+    today = q("""select count(*) from llm_runs
+                 where worker='photo_captioner' and status='ok'
+                   and created_at >= date_trunc('day', now())""")[0][0]
+    if int(today) >= DAILY_CAP:
+        return (f"daily cap reached ({today}/{DAILY_CAP}) — resumes tomorrow",
+                0, {"capped": True})
     rows = q(f"""
         select m.id, m.file_path, replace(coalesce(b.name,''),'|','-'),
                replace(coalesce(m.configuration_type,''),'|','-'),
