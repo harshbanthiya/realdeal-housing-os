@@ -52,11 +52,10 @@ export const mapBuildings: MapBuilding[] = [
     name: "Ekta Tripolis",
     location: "Goregaon West",
     status: "Ready to move",
-    // 8 Siddharth Nagar Rd, Motilal Nagar I — triangulated from operator's Google
-    // Maps screenshot (2026-07-15), ±100m; operator to eyeball-confirm the pin.
+    // 8 Siddharth Nagar Rd, Motilal Nagar I — operator eyeball-confirmed 2026-07-17.
     lat: 19.1544,
     lng: 72.8421,
-    coordsVerified: false,
+    coordsVerified: true,
     facts: ["36 storeys × 3 towers", "2, 2.5 & 3 BHK · smart homes", "RERA-approved"],
     href: "/projects/ekta-tripolis",
   },
