@@ -61,8 +61,10 @@ def main() -> int:
         return 1
 
     body_html = md_to_html(d["body_md"] or "")
-    tags = (d.get("target_keywords") or "").strip("{}").split(",")[:3]
-    tags = [t.strip().strip('"').title() for t in tags if t.strip()]
+    kw = d.get("target_keywords") or []
+    if isinstance(kw, str):  # pg array literal, e.g. {a,b}
+        kw = kw.strip("{}").split(",")
+    tags = [t.strip().strip('"').title() for t in kw if t.strip()][:3]
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
     body_esc = (body_html.replace("\\", "\\\\").replace("`", "\\`")
