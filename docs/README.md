@@ -11,6 +11,7 @@ workers in `workers/`. Mumbai market, MahaRERA + IGR are the authoritative regis
 | **Master plan, current state, next TODOs** | `ROADMAP.md` (§2 state, §5 architecture, §14C work order, **§17 resume/todos**) |
 | **Website/Wix launch state + blockers/TODOs** | `LAUNCH_CONTEXT.md` |
 | **What's been done (history, 1 line/phase + SHAs)** | `PHASE_LOG.md` |
+| **YouTube channel: render → schedule → post (human-gated)** | `YOUTUBE-WORKFLOW.md` |
 | **How a subsystem works** | `reference/` (schema, contacts/merge, relationships, RERA/IGR, review UIs, growth, media) |
 
 TODOs live in the working docs (ROADMAP §17, LAUNCH_CONTEXT), not here — this file

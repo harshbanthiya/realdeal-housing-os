@@ -577,13 +577,19 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
    run every 30 min via com.rdh.media-enrichment launchd, now loaded/unloaded by
    start.sh/stop.sh (drive-mount guard in plist). scripts/brand_video.sh = ffmpeg
    branded renders (edge-tts en-IN VO, music ducking, drawtext captions, logo).
-   REMOTION TEMPLATE (video/): Gallery White editorial Short — operator-approved
-   typography from imports/chatgptYoutubeShortTemplate/ (v2 minimal: sentence-case
-   stacked headlines, pill chips, white band + flush footage, end card with CTA
-   pill). Code complete (video/src/Short.tsx, scene-driven props). BLOCKED: npm
-   install times out (slow network to registry.npmjs.org); retry
-   `cd video && npm install --no-audit --fetch-retries=6 zod` then
-   `npm run render -- --output ../exports/renders/remotion-sample.mp4`.
+   REMOTION PIPELINE LIVE (2026-07-17, commit c523bd4 + follow-up): npm unblocked
+   (was a cold install + VPN, not zod; zod pinned 4.3.6 exactly). Two Shorts
+   operator-approved (Ekta Tripolis 3BHK ₹4.10Cr, Imperial Heights 3.5BHK
+   ₹5.15Cr). END-TO-END WIRED: social_post_drafts.edit_spec (= Remotion props)
+   → scripts/render_short.py --draft-id --apply (renders, sets output_path,
+   status='rendered') → scripts/upload_youtube.py --draft-id --publish-at
+   <ISO> --apply (private upload, YouTube publishes on schedule; sets
+   posted_url). Both dry-run by default; flat-number privacy guard enforced in
+   template AND render_short.py. Full channel workflow + posting cadence
+   (Tue/Thu/Sat 7:30pm IST): docs/YOUTUBE-WORKFLOW.md. Export library
+   (~39 pre-edited videos, RDH DATA 2024/RDH/Export) registers straight to
+   upload with output_path set. ONLY BLOCKER to first live post:
+   secrets/youtube_client_secret.json (operator, 5 min, steps in workflow doc).
 2. Listing detail pages: per-listing photo galleries (listings have more photos than the
    single card image — source from per-flat folders in RDH ALL Footage via media_assets,
    review-gated selection in /cockpit/media).

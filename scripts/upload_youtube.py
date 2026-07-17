@@ -57,6 +57,10 @@ def main() -> int:
     ap.add_argument("--draft-id", required=True)
     ap.add_argument("--privacy", default="public",
                     choices=["public", "unlisted", "private"])
+    ap.add_argument("--publish-at", metavar="ISO8601",
+                    help="schedule publish time, e.g. 2026-07-18T14:00:00Z "
+                         "(= 7:30pm IST). Uploads private now; YouTube flips "
+                         "it public at that hour. Human still runs the upload.")
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
 
@@ -87,18 +91,26 @@ def main() -> int:
 
     yt = get_service()
     from googleapiclient.http import MediaFileUpload
+    status_body = {"privacyStatus": args.privacy,
+                   "selfDeclaredMadeForKids": False}
+    if args.publish_at:
+        # YouTube requires private + publishAt for scheduled publishing
+        status_body["privacyStatus"] = "private"
+        status_body["publishAt"] = args.publish_at
     body = {"snippet": {"title": title[:100], "description": description,
                         "tags": [t for t in tags.split(",") if t][:15],
                         "categoryId": "26"},
-            "status": {"privacyStatus": args.privacy,
-                       "selfDeclaredMadeForKids": False}}
+            "status": status_body}
     req = yt.videos().insert(part="snippet,status", body=body,
                              media_body=MediaFileUpload(path, resumable=True))
     resp = req.execute()
     url = f"https://www.youtube.com/watch?v={resp['id']}"
+    sched = (f", scheduled_for={sql_literal(args.publish_at)}"
+             if args.publish_at else "")
     run_psql(f"""
         UPDATE social_post_drafts
-        SET status='posted', posted_url={sql_literal(url)}, updated_at=now()
+        SET status='posted', posted_url={sql_literal(url)},
+            updated_at=now(){sched}
         WHERE id = {sql_literal(args.draft_id)};
         INSERT INTO review_action_log (old_status, new_status, action_type,
                                        reviewed_by, raw_context)
