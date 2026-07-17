@@ -1,0 +1,84 @@
+{
+  "building": "Imperial Heights",
+  "config": "3.5 BHK",
+  "area": "Goregaon West",
+  "phone": "+91 829 129 3889",
+  "music": "music-oneday.mp3",
+  "musicVolume": 0.3,
+  "scenes": [
+    {
+      "source": "ih-exterior.mp4",
+      "sourceStart": 0.3,
+      "duration": 4.6,
+      "eyebrow": "IMPERIAL HEIGHTS · GOREGAON WEST",
+      "headline": [
+        "Twin towers",
+        "over the green."
+      ],
+      "body": "Imperial Heights, from across Goregaon West.",
+      "layout": "full"
+    },
+    {
+      "source": "ih-d2205.mp4",
+      "sourceStart": 11.3,
+      "duration": 5.4,
+      "playbackRate": 0.55,
+      "eyebrow": "3.5 BHK · FURNISHED",
+      "headline": [
+        "Fully done.",
+        "Lived in."
+      ],
+      "body": "Furniture, fittings and a projector wall already in place.",
+      "footer": "OCCUPIED FLAT / UNSTAGED",
+      "layout": "editorial"
+    },
+    {
+      "source": "ih-d2205.mp4",
+      "sourceStart": 14.8,
+      "duration": 5.2,
+      "eyebrow": "01 / KITCHEN",
+      "headline": [
+        "A kitchen",
+        "already",
+        "working."
+      ],
+      "body": "Fitted, stocked and in daily use.",
+      "footer": "IMPERIAL HEIGHTS · GOREGAON WEST",
+      "layout": "editorial"
+    },
+    {
+      "source": "ih-d2205.mp4",
+      "sourceStart": 68.5,
+      "duration": 5.2,
+      "focus": "50% 72%",
+      "eyebrow": "02 / BEDROOM",
+      "headline": [
+        "Bedrooms",
+        "already",
+        "dressed."
+      ],
+      "body": "Nothing brought in for the camera.",
+      "footer": "OCCUPIED FLAT / UNSTAGED",
+      "layout": "editorial"
+    },
+    {
+      "source": "ih-pool-amenity2.mp4",
+      "sourceStart": 0.2,
+      "duration": 5.0,
+      "focus": "50% 60%",
+      "eyebrow": "03 / DOWNSTAIRS",
+      "headline": [
+        "The pool,",
+        "between the",
+        "towers."
+      ],
+      "body": "Imperial Heights · Goregaon West",
+      "layout": "full"
+    }
+  ],
+  "ctaText": "WHATSAPP PADMINI · 8291293889",
+  "trustLine": "Specific facts. Real footage.\nNo brochure language.",
+  "price": "₹5.15 Cr",
+  "priceNote": "COMES FURNISHED",
+  "positioning": []
+}

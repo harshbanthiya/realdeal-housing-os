@@ -6,6 +6,7 @@
  */
 import {
   AbsoluteFill,
+  Audio,
   Easing,
   Img,
   OffthreadVideo,
@@ -20,7 +21,12 @@ import { z } from "zod";
 
 // Manrope is a variable-weight file served from public/ — no font CDN dep
 const fontFamily = "Manrope, sans-serif";
-const fontHandle = delayRender("load Manrope");
+// ponytail: 28s default timed out on ~1 frame in 900 under 4x concurrency;
+// generous timeout + retries beats restructuring the load. Raise if it recurs.
+const fontHandle = delayRender("load Manrope", {
+  timeoutInMilliseconds: 120000,
+  retries: 2,
+});
 new FontFace("Manrope", `url(${staticFile("Manrope-Bold.ttf")})`)
   .load()
   .then((f) => {
@@ -41,8 +47,18 @@ const FPS = 30;
 
 export const shortSchema = z.object({
   building: z.string(),
-  unit: z.string(),
+  /**
+   * Public-facing configuration ONLY — "3.5 BHK", never a unit/flat number.
+   * Operator rule: we do not expose which flat the footage is from.
+   */
+  config: z.string(),
   area: z.string(),
+  /** persistent on-screen contact, whole duration */
+  phone: z.string(),
+  /** headline price on the end card, e.g. "₹4.10 Cr" */
+  price: z.string().optional(),
+  /** qualifier under the price, e.g. "SOLD FURNISHED" */
+  priceNote: z.string().optional(),
   scenes: z.array(
     z.object({
       source: z.string(),
@@ -53,12 +69,59 @@ export const shortSchema = z.object({
       body: z.string().optional(),
       footer: z.string().optional(),
       layout: z.enum(["full", "editorial"]),
+      /**
+       * CSS object-position for the cover crop, e.g. "50% 80%" to bias low.
+       * Landscape footage in a 1080x1920 frame loses ~68% of its width, so the
+       * subject is often outside a centre crop. Defaults to centre.
+       */
+      focus: z.string().optional(),
+      /** slow a reveal down (1 = realtime). Lets a short pan fill a longer scene. */
+      playbackRate: z.number().optional(),
+      /**
+       * CSS filter, e.g. "brightness(1.3) contrast(1.1)" — lifts the dark 480p
+       * night footage. Grades what was shot; does not invent detail.
+       */
+      filter: z.string().optional(),
     })
   ),
   ctaText: z.string(),
   trustLine: z.string(),
-  positioning: z.array(z.string()),
+  /** optional stacked statement on the end card; omit to drop it */
+  positioning: z.array(z.string()).optional(),
+  /** filename in public/ — footage is muted, so this is the only audio */
+  music: z.string().optional(),
+  musicVolume: z.number().optional(),
 });
+
+/**
+ * Flat numbers must never reach a public video. Matches "B-4005", "B 4005",
+ * "Flat 402", "#1203". Deliberately at the schema boundary, not in a comment:
+ * step 2 feeds these props from the DB, where unit numbers genuinely live.
+ * ponytail: regex, not a parser — widen it if a real caption trips it.
+ */
+export const UNIT_NUMBER =
+  /(\b(flat|unit|apt|apartment)\s*(no\.?|number)?\s*#?\s*[a-z]?-?\s*\d{2,4}\b)|(\b[a-z]\s*-\s*\d{3,4}\b)|(#\s*\d{3,4}\b)/i;
+
+const scrubbed = (label: string) => (v: string, ctx: z.RefinementCtx) => {
+  const hit = v.match(UNIT_NUMBER);
+  if (hit)
+    ctx.addIssue({
+      code: "custom",
+      message: `${label} exposes a flat number ("${hit[0]}"). Use the configuration ("3.5 BHK") instead.`,
+    });
+};
+
+export const shortSchemaChecked = shortSchema.superRefine((p, ctx) => {
+  scrubbed("config")(p.config, ctx);
+  scrubbed("ctaText")(p.ctaText, ctx);
+  p.scenes.forEach((s, i) => {
+    scrubbed(`scene ${i} eyebrow`)(s.eyebrow, ctx);
+    scrubbed(`scene ${i} body`)(s.body ?? "", ctx);
+    scrubbed(`scene ${i} footer`)(s.footer ?? "", ctx);
+    s.headline.forEach((h) => scrubbed(`scene ${i} headline`)(h, ctx));
+  });
+});
+
 export type Props = z.infer<typeof shortSchema>;
 
 /** spec motion token: 220ms fade, 16px rise — pure, hook-safe anywhere */
@@ -150,6 +213,40 @@ const Chip: React.FC<{ text: string; dark?: boolean }> = ({ text, dark }) => {
   );
 };
 
+/**
+ * Persistent brand lockup — logo + phone, every frame of every scene.
+ * Rides above all Sequences, so it must read on both dark footage and the
+ * light MIST editorial band: hence the translucent ink pill behind the number.
+ */
+const Watermark: React.FC<{ phone: string }> = ({ phone }) => {
+  const frame = useCurrentFrame();
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      <Img
+        src={staticFile("rdh-mark.png")}
+        style={{ position: "absolute", top: 52, right: 60, width: 96, ...rise(frame, 2) }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          bottom: 54,
+          right: 60,
+          background: "rgba(26,26,26,0.55)",
+          border: "1px solid rgba(238,241,239,0.30)",
+          backdropFilter: "blur(6px)",
+          borderRadius: 999,
+          padding: "14px 28px",
+          ...rise(frame, 4),
+        }}
+      >
+        <span style={{ ...eyebrowStyle, fontSize: 20, color: "#ffffff", letterSpacing: "0.12em" }}>
+          {phone}
+        </span>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 const RedRule: React.FC<{ delay?: number }> = ({ delay = 10 }) => {
   const frame = useCurrentFrame();
   const w = interpolate(frame - delay, [0, 10], [0, 88], {
@@ -160,12 +257,25 @@ const RedRule: React.FC<{ delay?: number }> = ({ delay = 10 }) => {
   return <div style={{ height: 6, width: w, background: WARM, marginTop: 28 }} />;
 };
 
-const Video: React.FC<{ src: string; startFrom: number }> = ({ src, startFrom }) => (
+const Video: React.FC<{
+  src: string;
+  startFrom: number;
+  focus?: string;
+  playbackRate?: number;
+  filter?: string;
+}> = ({ src, startFrom, focus, playbackRate, filter }) => (
   <OffthreadVideo
     muted
     src={staticFile(src)}
     startFrom={Math.round(startFrom * FPS)}
-    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+    playbackRate={playbackRate}
+    style={{
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+      objectPosition: focus ?? "center",
+      filter,
+    }}
   />
 );
 
@@ -174,7 +284,7 @@ const FullScene: React.FC<Props["scenes"][number]> = (s) => {
   const frame = useCurrentFrame();
   return (
   <AbsoluteFill style={{ background: INK }}>
-    <Video src={s.source} startFrom={s.sourceStart} />
+    <Video src={s.source} startFrom={s.sourceStart} focus={s.focus} playbackRate={s.playbackRate} filter={s.filter} />
     <AbsoluteFill
       style={{
         background:
@@ -231,7 +341,7 @@ const EditorialScene: React.FC<Props["scenes"][number]> = (s) => {
         <RedRule />
       </div>
       <div style={{ flex: 1, overflow: "hidden", ...card }}>
-        <Video src={s.source} startFrom={s.sourceStart} />
+        <Video src={s.source} startFrom={s.sourceStart} focus={s.focus} playbackRate={s.playbackRate} filter={s.filter} />
       </div>
       {s.footer && (
         <div
@@ -261,22 +371,48 @@ const EndCard: React.FC<Props> = (p) => {
       style={{
         fontFamily,
         fontWeight: 800,
-        fontSize: 200,
+        // ponytail: 168 not 200 — "3.5 BHK" is wider than "B-4005" and would
+        // overrun the 952px text column at 200.
+        fontSize: 168,
         letterSpacing: "-0.03em",
         color: TEAL,
         marginTop: 90,
         lineHeight: 1,
+        whiteSpace: "nowrap",
         ...rise(frame, 6),
       }}
     >
-      {p.unit}
+      {p.config}
     </div>
     <div style={{ ...eyebrowStyle, color: INK, marginTop: 18, ...rise(frame, 9) }}>
       {p.building.toUpperCase()}
     </div>
-    <div style={{ marginTop: 100 }}>
-      <Headline lines={p.positioning} size={96} delay={12} />
-    </div>
+    {p.price && (
+      <div style={{ marginTop: 44, ...rise(frame, 11) }}>
+        <div
+          style={{
+            fontFamily,
+            fontWeight: 800,
+            fontSize: 92,
+            letterSpacing: "-0.02em",
+            color: WARM,
+            lineHeight: 1,
+          }}
+        >
+          {p.price}
+        </div>
+        {p.priceNote && (
+          <div style={{ ...eyebrowStyle, fontSize: 22, color: "rgba(26,26,26,0.6)", marginTop: 14 }}>
+            {p.priceNote}
+          </div>
+        )}
+      </div>
+    )}
+    {p.positioning && p.positioning.length > 0 && (
+      <div style={{ marginTop: p.price ? 56 : 100 }}>
+        <Headline lines={p.positioning} size={96} delay={12} />
+      </div>
+    )}
     <div style={{ flex: 1 }} />
     <div
       style={{
@@ -306,14 +442,31 @@ const EndCard: React.FC<Props> = (p) => {
     <div style={{ ...eyebrowStyle, fontSize: 21, color: "rgba(26,26,26,0.5)", marginTop: 60, ...rise(frame, 24) }}>
       {p.area.toUpperCase()} · MUMBAI
     </div>
-    <AbsoluteFill style={{ alignItems: "flex-end", padding: "104px 64px", pointerEvents: "none" }}>
-      <Img src={staticFile("rdh-mark.png")} style={{ width: 110, ...rise(frame, 2) }} />
-    </AbsoluteFill>
   </AbsoluteFill>
   );
 };
 
 export const Short: React.FC<Props> = (p) => {
+  // Remotion validates `schema` only in the Studio props editor — it does NOT
+  // check --props at render time. So the flat-number rule is enforced HERE, the
+  // one gate every render passes through. Fails the render loudly, by design.
+  const leak = [
+    p.config,
+    p.ctaText,
+    p.priceNote ?? "",
+    ...p.scenes.flatMap((s) => [s.eyebrow, s.body ?? "", s.footer ?? "", ...s.headline]),
+  ]
+    .map((t) => t.match(UNIT_NUMBER)?.[0])
+    .find(Boolean);
+  if (leak) {
+    throw new Error(
+      `Short: refusing to render — "${leak}" looks like a flat number. ` +
+        `Public videos show the configuration ("3.5 BHK"), never the unit.`
+    );
+  }
+
+  const total = totalFrames(p);
+  const vol = p.musicVolume ?? 0.32;
   let at = 0;
   const seqs = p.scenes.map((s, i) => {
     const from = at;
@@ -331,6 +484,19 @@ export const Short: React.FC<Props> = (p) => {
       <Sequence from={at} durationInFrames={140}>
         <EndCard {...p} />
       </Sequence>
+      <Watermark phone={p.phone} />
+      {p.music && (
+        <Audio
+          src={staticFile(p.music)}
+          // fade in off the top, duck out under the end card
+          volume={(f) =>
+            interpolate(f, [0, 18, total - 45, total - 5], [0, vol, vol, 0], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            })
+          }
+        />
+      )}
     </AbsoluteFill>
   );
 };

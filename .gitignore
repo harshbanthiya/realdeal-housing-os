@@ -183,3 +183,6 @@ scripts/__pycache__/
 
 # Raw MyGate HTTP session captures — contain live auth JWTs, never commit
 captures/mygate_flows/
+
+# video source media (lives in RDH DATA 2024, not git)
+video/public/*.mp3

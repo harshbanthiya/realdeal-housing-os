@@ -1,12 +1,15 @@
 import { Composition } from "remotion";
-import { Short, shortSchema, totalFrames, type Props } from "./Short";
+import { Short, shortSchemaChecked, totalFrames, type Props } from "./Short";
 
 // Scene plan adapted from the operator-approved spec
 // (imports/chatgptYoutubeShortTemplate/RDH_SHORT_TEMPLATE_SPEC.md)
 const defaultProps: Props = {
   building: "Imperial Heights",
-  unit: "B-4005",
+  // Public-facing config, never the flat number — operator rule.
+  config: "3.5 BHK",
   area: "Goregaon West",
+  phone: "+91 829 129 3889", // canonical, from web/src/lib/site.ts
+
   scenes: [
     {
       source: "ekta-view-loop.mp4",
@@ -21,7 +24,7 @@ const defaultProps: Props = {
       source: "walkthrough.mp4",
       sourceStart: 42,
       duration: 5.5,
-      eyebrow: "IMPERIAL HEIGHTS · B-4005",
+      eyebrow: "IMPERIAL HEIGHTS · 3.5 BHK",
       headline: ["One room.", "Three daily", "zones."],
       body: "Living, dining and kitchen stay connected.",
       footer: "OCCUPIED FLAT / UNSTAGED",
@@ -69,7 +72,7 @@ export const RemotionRoot: React.FC = () => (
     fps={30}
     width={1080}
     height={1920}
-    schema={shortSchema}
+    schema={shortSchemaChecked}
     defaultProps={defaultProps}
   />
 );

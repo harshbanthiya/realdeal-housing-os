@@ -1,0 +1,79 @@
+{
+  "building": "Ekta Tripolis",
+  "config": "3 BHK",
+  "area": "Goregaon West",
+  "phone": "+91 829 129 3889",
+  "music": "music-clouds.mp3",
+  "musicVolume": 0.3,
+  "scenes": [
+    {
+      "source": "ekta-exterior.mp4",
+      "sourceStart": 0.3,
+      "duration": 4.6,
+      "eyebrow": "EKTA TRIPOLIS · GOREGAON WEST",
+      "headline": [
+        "Three towers.",
+        "One address."
+      ],
+      "body": "Ekta Tripolis, from across Goregaon West.",
+      "layout": "full"
+    },
+    {
+      "source": "ekta-b1702.mp4",
+      "sourceStart": 28.8,
+      "duration": 5.4,
+      "playbackRate": 0.8,
+      "eyebrow": "3 BHK · VACANT",
+      "headline": [
+        "One long",
+        "living room."
+      ],
+      "body": "Marble floors, glass wall to the balcony. Nothing staged.",
+      "layout": "full"
+    },
+    {
+      "source": "ekta-b1702.mp4",
+      "sourceStart": 5.0,
+      "duration": 5.2,
+      "playbackRate": 0.8,
+      "eyebrow": "01 / KITCHEN",
+      "headline": [
+        "Fitted kitchen.",
+        "Daylight at",
+        "the end."
+      ],
+      "body": "Counters both sides, balcony door ahead.",
+      "layout": "full"
+    },
+    {
+      "source": "ekta-view-loop.mp4",
+      "sourceStart": 0,
+      "duration": 5.0,
+      "eyebrow": "02 / THE VIEW",
+      "headline": [
+        "Then you",
+        "get home."
+      ],
+      "body": "The skyline from an Ekta Tripolis living room.",
+      "layout": "full"
+    },
+    {
+      "source": "ekta-b1702.mp4",
+      "sourceStart": 41.2,
+      "duration": 5.2,
+      "playbackRate": 0.7,
+      "eyebrow": "03 / DOWNSTAIRS",
+      "headline": [
+        "The podium,",
+        "straight down."
+      ],
+      "body": "Pool and deck, from this flat's own balcony.",
+      "layout": "full"
+    }
+  ],
+  "ctaText": "WHATSAPP PADMINI · 8291293889",
+  "trustLine": "Specific facts. Real footage.\nNo brochure language.",
+  "price": "₹4.10 Cr",
+  "priceNote": "VACANT · UNFURNISHED",
+  "positioning": []
+}
