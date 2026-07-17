@@ -128,3 +128,14 @@ website-architecture pivot** (Next.js `web/` + Wix Headless, see ROADMAP §5).
   favicon. Media from own archive: Ekta night-aerial chapter (banner1.jpg), IH pool-deck
   ambient loop (IMG_1872 graded), IH all-four-towers page hero (IMG_3986 frame).
   NOTE: GitHub repo NOT connected to Vercel — deploy via `cd web && npx vercel --prod`.
+
+2026-07-17 — YouTube pipeline live, first Short posted (c523bd4, e8a084c + this).
+  Remotion unblocked (cold install + VPN, zod pinned 4.3.6): two operator-approved
+  Shorts (Ekta Tripolis 3BHK ₹4.10Cr all-vertical after rotation-flag fix; IH 3.5BHK
+  ₹5.15Cr w/ 4K exterior + amenity pool). Template: persistent logo+phone watermark,
+  music bed, price end card, flat-number guard enforced in-component (schema= does NOT
+  gate --props). E2E wired: social_post_drafts.edit_spec → render_short.py →
+  upload_youtube.py --publish-at. FIRST POST: Ekta Short scheduled Sat 7:30pm IST —
+  youtube.com/watch?v=zv223NRCZw8 (draft 3375f706, status=posted). OAuth done
+  (test-user gotcha: add channel gmail under Audience→Test users). IH draft 2d402c35
+  rendered, queued for Tue slot. Workflow + cadence: docs/YOUTUBE-WORKFLOW.md.

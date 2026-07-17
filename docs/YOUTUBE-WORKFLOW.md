@@ -21,13 +21,14 @@ scripts/upload_youtube.py --draft-id X --publish-at <ISO> --apply
 
 Dry-run is the default for both scripts — omit `--apply` to preview.
 
-## One-time operator setup (free, ~5 min) — BLOCKING upload
-1. console.cloud.google.com → new project → enable **YouTube Data API v3**
-2. OAuth consent screen (external; add yourself as test user)
-3. Credentials → OAuth client ID → **Desktop app** → download JSON
-   → save as `secrets/youtube_client_secret.json`
-4. `pip3 install google-api-python-client google-auth-oauthlib`
-5. First `--apply` opens a browser once; token cached in secrets/.
+## One-time operator setup — DONE 2026-07-17 (token cached in secrets/)
+Steps were: Cloud project + YouTube Data API v3 → Desktop OAuth client JSON
+→ `secrets/youtube_client_secret.json` → pip install google-api-python-client
+google-auth-oauthlib → first `--apply` browser sign-in.
+Gotcha hit: "Error 403 access_denied / has not completed verification" =
+the signing-in gmail wasn't under OAuth consent screen → **Test users**.
+Add the channel gmail there; "Testing" mode is fine permanently.
+First post: youtube.com/watch?v=zv223NRCZw8 (Ekta, draft 3375f706).
 
 ## Posting schedule (growth cadence)
 - **3×/week: Tue / Thu / Sat, published 7:30 PM IST** (= `--publish-at` in UTC:

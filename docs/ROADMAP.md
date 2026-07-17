@@ -588,8 +588,12 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
    template AND render_short.py. Full channel workflow + posting cadence
    (Tue/Thu/Sat 7:30pm IST): docs/YOUTUBE-WORKFLOW.md. Export library
    (~39 pre-edited videos, RDH DATA 2024/RDH/Export) registers straight to
-   upload with output_path set. ONLY BLOCKER to first live post:
-   secrets/youtube_client_secret.json (operator, 5 min, steps in workflow doc).
+   upload with output_path set. FIRST POST LIVE 2026-07-17: Ekta Short
+   scheduled Sat 7:30pm IST (youtube.com/watch?v=zv223NRCZw8, draft 3375f706).
+   OAuth done + token cached (gotcha: channel gmail must be under OAuth
+   consent → Test users). NEXT: IH draft 2d402c35 (rendered) → Tue slot
+   `--publish-at 2026-07-21T14:00:00Z`; then weekly loop per
+   docs/YOUTUBE-WORKFLOW.md; register Export-library videos as drafts.
 2. Listing detail pages: per-listing photo galleries (listings have more photos than the
    single card image — source from per-flat folders in RDH ALL Footage via media_assets,
    review-gated selection in /cockpit/media).
