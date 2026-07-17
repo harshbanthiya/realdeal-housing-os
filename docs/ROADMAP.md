@@ -562,9 +562,9 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
    REMAINING: (a) operator approves first draft in /cockpit/seo; (b) Reddit discovery
    needs a free script app (reddit.com/prefs/apps → secrets/reddit_client_id +
    reddit_client_secret) — anonymous .json is 403-blocked; worker skips + logs a
-   finding until then; (c) publish path BUILT 2026-07-17: scripts/publish_seo_draft.py
-   (approved draft → blog-fixtures.ts entry via markdown lib, sets published_url;
-   dry-run default; then `cd web && npx vercel --prod`) — waiting only on (a);
+   finding until then; (c) publish path LIVE 2026-07-17: scripts/publish_seo_draft.py —
+   FIRST POST /blog/kalpataru-radiance-mumbai published (draft 1720de99, HTTP 200);
+   drafts 6bb3ac20 (IH) + 31375de8 (Oberoi) still await /cockpit/seo approval;
    (d) answers stay DRAFT-ONLY — operator posts by hand, records permalink (Lane A).
    GSC MONITOR: scripts/gsc_report.py — building-name query positions/impressions,
    top queries/pages; reuses the YouTube OAuth client (enable "Google Search Console
