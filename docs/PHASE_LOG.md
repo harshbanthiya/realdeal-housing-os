@@ -139,3 +139,11 @@ website-architecture pivot** (Next.js `web/` + Wix Headless, see ROADMAP §5).
   youtube.com/watch?v=zv223NRCZw8 (draft 3375f706, status=posted). OAuth done
   (test-user gotcha: add channel gmail under Audience→Test users). IH draft 2d402c35
   rendered, queued for Tue slot. Workflow + cadence: docs/YOUTUBE-WORKFLOW.md.
+
+2026-07-17 (later) — SEO/GSC loop closed (fa91418, 9417083 + this). IH Short posted
+  for Tue 7:30pm IST (watch?v=1RxWsKWGJsQ); Ekta map pin verified+deployed; blog
+  publish path scripts/publish_seo_draft.py — FIRST POST LIVE:
+  /blog/kalpataru-radiance-mumbai (draft 1720de99, HTTP 200); gsc_report.py
+  building-name scorecard (needs GSC API enabled + site verified, own token).
+  Shorts gotcha: description links non-clickable — channel link + burned-in phone
+  are the CTAs. Remaining drafts 6bb3ac20 (IH), 31375de8 (Oberoi) await approval.
