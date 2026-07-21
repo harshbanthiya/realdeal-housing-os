@@ -154,10 +154,13 @@ rules apply to any outward surface.
 - [x] Beeper installed, her WA linked, token minted, audit green
       (scripts/beeper_audit.py, scripts/beeper_get_token.py, commits 5e59b07,
       622dd77)
-- [ ] Migration 066 written + applied
-- [ ] workers/beeper_ingest.py first full sweep (expect few-thousand messages)
-- [ ] scripts/update_wa_item.py
-- [ ] web lib + /cockpit/whatsapp + contact timeline panel + nav
+- [x] Migration 066 written + applied
+- [x] workers/beeper_ingest.py first sweep DONE: 598 chats (35 groups), 6,483 msgs,
+      363 auto-matched to contacts, 358 in confirm queue, 145 roster matches;
+      registered in run_all.py roster
+- [x] scripts/update_wa_item.py (classify-chat|confirm-number|complete-task)
+- [x] web lib + /cockpit/whatsapp (Today|Confirm|Groups|Activity) + contact
+      WA-timeline panel + ⌂-draft buttons + sidebar nav (tsc clean)
 - [ ] Operator: classify groups, flip personal chats off, burn confirm queue
 - [ ] LATER queue: media download, vCard parse, LLM layer (§7), digest email,
       Beeper native reminders, docs/YOUTUBE-WORKFLOW-style ops doc
