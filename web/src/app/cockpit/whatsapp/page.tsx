@@ -103,13 +103,22 @@ export default async function WhatsAppPage({ searchParams }: {
             {results.length === 0 && <p className="mt-2 text-[13px] text-ink/50">No matches. Try fewer words or a partial word.</p>}
             <ul className="mt-1 divide-y divide-mist">
               {results.map((r) => (
-                <li key={r.id} className="py-2.5">
+                <li key={r.id} className={`py-2.5 pl-3 ${r.direction === "outbound" ? "border-l-2 border-teal bg-teal/[0.04]" : "border-l-2 border-transparent"}`}>
                   <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink/50">
+                    <span
+                      className={`inline-block h-2 w-2 shrink-0 rounded-full ${r.direction === "outbound" ? "bg-teal" : "bg-ink/25"}`}
+                      title={r.direction === "outbound" ? "she sent this" : "received"}
+                    />
                     <span>{fmt(r.occurredAt)}</span>
                     <span className={r.direction === "outbound" ? "font-medium text-teal" : "font-medium text-ink/70"}>
                       {r.direction === "outbound" ? "she sent" : r.sender || "received"}
                     </span>
-                    {r.senderPhone && <Mono>{r.senderPhone}</Mono>}
+                    {r.senderPhone && (
+                      <>
+                        <Mono>{r.senderPhone}</Mono>
+                        <a href={waLink(r.senderPhone)} target="_blank" className="font-medium text-teal/80 hover:text-teal">wa.me ↗</a>
+                      </>
+                    )}
                     <span className="text-ink/40">in</span>
                     <Pill tone={KIND_TONE[r.kind] ?? "neutral"}>{r.isGroup ? r.chatTitle : (r.kind || "chat")}</Pill>
                     {r.contactId && (
@@ -119,7 +128,17 @@ export default async function WhatsAppPage({ searchParams }: {
                     )}
                     {r.messageType !== "TEXT" && <Mono>{r.messageType.toLowerCase()}</Mono>}
                   </div>
-                  <Snippet text={r.snippet} />
+                  {r.body.length > r.snippet.replace(/[⟦⟧]/g, "").length + 20 ? (
+                    <details>
+                      <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <Snippet text={r.snippet} />
+                        <span className="text-[11px] text-teal/70 hover:text-teal">show full text ▾</span>
+                      </summary>
+                      <p className="mt-1 whitespace-pre-wrap rounded-md bg-mist/50 p-2.5 text-[13px] text-ink/85">{r.body}</p>
+                    </details>
+                  ) : (
+                    <Snippet text={r.snippet} />
+                  )}
                 </li>
               ))}
             </ul>

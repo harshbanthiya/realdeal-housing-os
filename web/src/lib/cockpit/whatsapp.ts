@@ -114,7 +114,7 @@ export async function getWaContactTimeline(contactId: string, limit = 60): Promi
 export interface WaSearchRow {
   id: string; occurredAt: string; direction: string; chatTitle: string; kind: string;
   isGroup: boolean; sender: string; senderPhone: string; contactId: string | null;
-  contactName: string; messageType: string; snippet: string;
+  contactName: string; messageType: string; snippet: string; body: string;
 }
 
 /**
@@ -140,7 +140,8 @@ export async function searchWaMessages(qtext: string, opts?: {
             COALESCE(c.full_name,'') AS contact_name, i.message_type,
             ts_headline('simple', COALESCE(i.body_text,''),
                         websearch_to_tsquery('simple', $1),
-                        'StartSel=⟦, StopSel=⟧, MaxWords=40, MinWords=15') AS snippet
+                        'StartSel=⟦, StopSel=⟧, MaxWords=40, MinWords=15') AS snippet,
+            COALESCE(i.body_text,'') AS body
      FROM interactions i
      LEFT JOIN wa_chats w ON w.beeper_chat_id = i.beeper_chat_id
      LEFT JOIN contacts c ON c.id = i.contact_id
@@ -151,7 +152,7 @@ export async function searchWaMessages(qtext: string, opts?: {
     chatTitle: str(r.chat_title), kind: str(r.kind), isGroup: !!r.is_group_msg,
     sender: str(r.sender_display_name), senderPhone: str(r.sender_phone),
     contactId: r.contact_id ? str(r.contact_id) : null, contactName: str(r.contact_name),
-    messageType: str(r.message_type), snippet: str(r.snippet),
+    messageType: str(r.message_type), snippet: str(r.snippet), body: str(r.body),
   }));
 }
 
