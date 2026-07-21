@@ -164,3 +164,9 @@ rules apply to any outward surface.
 - [ ] Operator: classify groups, flip personal chats off, burn confirm queue
 - [ ] LATER queue: media download, vCard parse, LLM layer (§7), digest email,
       Beeper native reminders, docs/YOUTUBE-WORKFLOW-style ops doc
+- [x] 2026-07-21 PM: search (067: FTS 'simple' + pg_trgm over interactions;
+      search bar w/ kind/direction/days filters on /cockpit/whatsapp) and
+      broker market (068: wa_market_offers regex parser EN+Devanagari,
+      workers/wa_offer_parser.py in roster; /cockpit/whatsapp/market —
+      our-buildings box IH/Kalpataru/Ekta + rent/sale × BHK boxes; first
+      parse: 311 offers, 165 our-building mentions). Commits 6c1d2a0, 700e5da.
