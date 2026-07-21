@@ -615,6 +615,29 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
    both 2026-07-16).
 8. market_watch parse stage: XLS → existing IGR bulk parser; PDF → pdftotext/docling; screenshots → local vision model per (1).
 9. Inventory bootstrap: `inventory` has 0 rows — feed it from unit registry + owner outreach so listing_readiness has something to score.
+10. **Beeper WhatsApp ingest → contact timelines (STARTED 2026-07-21).** Decision:
+    Beeper Desktop (installed, logged in, API live on localhost:23373) is the
+    READ-ONLY ingest layer for the salesperson's WhatsApp (clients + broker
+    community). SENDING NEVER goes through Beeper/API — cockpit renders
+    `wa.me/<phone>?text=` deep links; she taps send in official WhatsApp
+    (Lane A, zero ban surface). Beeper Cloud holds messages while this Mac
+    sleeps; worker catches up on wake.
+    Plan: (a) operator: link her WhatsApp in Beeper (+ -> WhatsApp -> QR) and
+    create Desktop API token -> secrets/beeper_access_token; audit via
+    scripts/beeper_audit.py (BUILT). (b) Migration (next free number):
+    `interactions` (contact_id, chat_id, network, direction, body, media_ref,
+    occurred_at, beeper_message_id UNIQUE for idempotent re-ingest) + `tasks`
+    (due_at, contact_id?, note, done_at) + provisional-contact staging for
+    unknown numbers (review-gated, existing pattern). (c) workers/beeper_ingest.py:
+    cursor-based sweep of /v1/messages, phone→canonical contact match
+    (1,310 canonicals), unknown → pending_review provisional. (d) Cockpit:
+    timeline panel on /cockpit/contacts detail, /cockpit/today (due tasks,
+    gone-quiet clients, recent activity feed), confirm-queue to verify client
+    phone numbers/socials seen in chats. (e) LATER: review-gated LLM afterwork
+    (buyer_requirements extraction → unit-registry matching, owner-listing
+    leads → listing_content drafts) on the existing _llm_tiers.py stack.
+    Privacy: DPDP-aware — chats transit Beeper (Automattic) cloud; operator
+    accepted for pilot; masked views for any shared surface.
 
 **Unresolved questions for operator:**
 - Provision ANTHROPIC_API_KEY for daily LLM workers (API billing ≠ Claude Code limits)?
