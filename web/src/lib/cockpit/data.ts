@@ -640,27 +640,30 @@ export async function getUnitRegistry(slug: string): Promise<URegistry | null> {
     if (!igrContactByUnit.has(m.building_unit_id)) igrContactByUnit.set(m.building_unit_id, m.contact_id);
   }
 
-  // Current residents from MyGate (owner/tenant + family), keyed by building_unit_id.
-  // These are directly unit-linked (not name-guessed), so they render as strong matches
-  // with phone + WhatsApp actions. building_unit_id is globally unique, so no per-building filter needed.
-  const mgRel = await readQuery<{ unit_id: string; wing: string | null; unit_number: string | null; role: string; mrole: string; name: string; phone: string | null; contact_id: string }>(
+  // Current residents/owners from ANY unit-linked relationship (MyGate, Ekta owner
+  // sheet, registration matches, …), keyed by building_unit_id. Directly unit-linked
+  // (not name-guessed) so they render with phone + WhatsApp actions. active rels are
+  // "strong"; pending_review rels show as "probable" — verify before relying on them.
+  const mgRel = await readQuery<{ unit_id: string; wing: string | null; unit_number: string | null; role: string; mrole: string; name: string; phone: string | null; contact_id: string; rel_status: string }>(
     `select r.building_unit_id::text unit_id, bu.wing, bu.unit_number, r.relationship_type role,
             coalesce(r.raw_context->>'mygate_role', r.relationship_type) mrole,
-            c.full_name name, coalesce(c.whatsapp_number, c.phone_primary) phone, c.id::text contact_id
+            c.full_name name, coalesce(c.whatsapp_number, c.phone_primary) phone, c.id::text contact_id,
+            r.relationship_status rel_status
        from contact_property_relationships r
        join contacts c on c.id = r.contact_id
        join building_units bu on bu.id = r.building_unit_id
        join buildings bg on bg.id = bu.building_id
-      where c.metadata->>'mygate_unit' is not null and r.building_unit_id is not null
+      where r.building_unit_id is not null
+        and r.relationship_status in ('active','pending_review')
         and bg.name = $1
-      order by (r.relationship_type='owner') desc, c.full_name`, [b.name]);
+      order by (r.relationship_status='active') desc, (r.relationship_type='owner') desc, c.full_name`, [b.name]);
   const mygateByUnit = new Map<string, ProbableContact[]>();     // keyed by building_unit_id
   const mygateByWingUnit = new Map<string, ProbableContact[]>(); // keyed by "wing|unit_number"
   for (const m of mgRel) {
     const pc: ProbableContact = {
       name: /_family$/.test(m.mrole) ? `${m.name} · family` : m.name,
       role: m.role === "owner" ? "owner" : "tenant",
-      confidence: "strong", source: "contact",
+      confidence: m.rel_status === "active" ? "strong" : "probable", source: "contact",
       phone: m.phone ?? undefined, contactId: m.contact_id, unitMatch: true,
     };
     (mygateByUnit.get(m.unit_id) ?? mygateByUnit.set(m.unit_id, []).get(m.unit_id)!).push(pc);
