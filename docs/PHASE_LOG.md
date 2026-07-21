@@ -147,3 +147,20 @@ website-architecture pivot** (Next.js `web/` + Wix Headless, see ROADMAP §5).
   building-name scorecard (needs GSC API enabled + site verified, own token).
   Shorts gotcha: description links non-clickable — channel link + burned-in phone
   are the CTAs. Remaining drafts 6bb3ac20 (IH), 31375de8 (Oberoi) await approval.
+
+2026-07-21 — WhatsApp intelligence layer LIVE (5e59b07…4e1fae9). Salesperson's
+  WhatsApp linked via Beeper Desktop (read-only OAuth token; sends stay wa.me
+  deep links — zero API sends, zero ban surface). Migrations 066/067/068:
+  interactions extended (beeper_message_id idempotent), wa_chats/members/
+  number_queue + FTS('simple')+pg_trgm search + wa_market_offers regex parser
+  (EN/Hinglish/Devanagari). First sweep: 598 chats (35 groups), 5,709 msgs,
+  363 auto-matched, 358-number confirm queue; parser: 311 broker offers, 165
+  our-building mentions (IH 131). UI: /cockpit/whatsapp (search w/ full-text
+  expand + sent-msg teal dot/tint + wa.me links, Today tasks, gone-quiet,
+  confirm queue, group classify w/ personal skip+purge), /cockpit/whatsapp/
+  market (our-buildings box + rent/sale × BHK boxes), WA timeline + ⌂-draft
+  buttons on contact pages. ⌂-codes (⌂V/⌂F/⌂N/⌂L) parsed from sent texts →
+  tasks/notes. Workers beeper_ingest + wa_offer_parser in 30-min roster.
+  Master plan + resume state: docs/BEEPER-ASSISTANT-PLAN.md. NEXT: operator
+  classifies groups + flips personal chats off; §7 LLM layer (offer-vs-
+  requirement, buyer_requirements → unit matching) still pending.

@@ -615,7 +615,9 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
    both 2026-07-16).
 8. market_watch parse stage: XLS → existing IGR bulk parser; PDF → pdftotext/docling; screenshots → local vision model per (1).
 9. Inventory bootstrap: `inventory` has 0 rows — feed it from unit registry + owner outreach so listing_readiness has something to score.
-10. **Beeper WhatsApp ingest → contact timelines (STARTED 2026-07-21).** Decision:
+10. **Beeper WhatsApp ingest → contact timelines (SHIPPED 2026-07-21 — see
+    PHASE_LOG + docs/BEEPER-ASSISTANT-PLAN.md; migrations 066/067/068; operator
+    group-classification + §7 LLM layer remaining).** Decision:
     Beeper Desktop (installed, logged in, API live on localhost:23373) is the
     READ-ONLY ingest layer for the salesperson's WhatsApp (clients + broker
     community). SENDING NEVER goes through Beeper/API — cockpit renders
