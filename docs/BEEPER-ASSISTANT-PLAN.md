@@ -170,3 +170,65 @@ rules apply to any outward surface.
       workers/wa_offer_parser.py in roster; /cockpit/whatsapp/market —
       our-buildings box IH/Kalpataru/Ekta + rent/sale × BHK boxes; first
       parse: 311 offers, 165 our-building mentions). Commits 6c1d2a0, 700e5da.
+
+## 9. REMAINING WORK (for next session — read §0–§8 above first, state is real)
+
+Everything below is unbuilt. Ordered by value. Shipped so far: migrations
+066/067/068 applied; workers beeper_ingest + wa_offer_parser in the 30-min
+roster; /cockpit/whatsapp (search/today/confirm/groups) + /market + unit-
+registry probable contacts + contact WA timelines all live and pushed.
+
+### A. Operator manual steps (blocking some of B — nag until done)
+- [ ] Classify the 35 groups in /cockpit/whatsapp Groups panel (kind selector);
+      flip personal chats OFF (purges their stored msgs). Until then everything
+      is 'unclassified' and tenant-group→building enrichment can't run.
+- [ ] Set building_id on tenant groups (Radiance Ladies=Kalpataru etc.) —
+      needs a small building dropdown ADDED to the Groups panel (only kind +
+      ingest toggle wired now; update_wa_item.py --building-id already works).
+- [ ] Burn the 358-row confirm-number queue (attach/create/ignore).
+- [ ] Test one ⌂V / ⌂N from her phone end-to-end (parser is live but UNTESTED
+      with real sent messages; also VERIFY her "Message Yourself" chat actually
+      ingests — assumed, never observed).
+
+### B. AI/enrichment layer (§7 detail, all review-gated, use workers/_llm_tiers.py)
+- [ ] Offer-vs-REQUIREMENT split in wa_market_offers ("Required 2bhk" currently
+      pollutes offer boxes). Cheap LLM classify or 'required|want|need' regex tier.
+- [ ] buyer_requirements table + extraction from client chats → match against
+      building_units/IGR prices → "line up flats" panel on contact page.
+- [ ] Owner-lead detection ("selling my flat") → listing_content draft rows.
+- [ ] Cross-group dedup of same-flat offers (same phone+bhk+price ≈ dupe).
+- [ ] Price normalization (₹1.65 Cr / 55k / 1.2cr → numeric) for sorting/comps.
+- [ ] Group-roster enrichment: after operator sets building_id on tenant groups,
+      match wa_chat_members phones ↔ contacts per building; unmatched → provisional
+      contacts tagged w/ building (Radiance Ladies = 565 phones waiting).
+- [ ] Saved-name parsing → contact_property_hints ("Neha C Wing Kalpataru",
+      "Ajay yadav EBD Tenant" — her phonebook encodes role+building).
+- [ ] Broker specialization map (who posts what where — data already in
+      wa_market_offers.sender_phone).
+
+### C. Plumbing / robustness
+- [ ] Health check: worker finding if 0 new interactions in 24h (= Beeper
+      session dropped; re-link via QR). _lib.finding() exists for this.
+- [ ] Media download: attachments store metadata only; wire POST /v1/assets/
+      download for images/PDFs → media_assets pipeline. vCard (.vcf) parse.
+- [ ] Voice notes → whisper.cpp transcription (video_transcriber pattern).
+- [ ] wa_market_offers status actions (seen/archived) — schema has status,
+      UI is read-only; add to update_wa_item.py + market page buttons.
+- [ ] Morning digest 07:30 email via Resend (new offers, due tasks, gone-quiet,
+      our-building mentions).
+- [ ] Timeline pagination + media rendering on contact WA timeline (60-row cap now).
+- [ ] MAX_PAGES_PER_CHAT=25 backfill cap: big groups still hold older history;
+      loop worker runs (cursor resumes) if deeper backfill wanted.
+
+### D. Known gotchas for the next Claude
+- readQuery (web) returns rows[] directly, is READ ONLY; all writes via guarded
+  scripts + server actions (wa-actions.ts pattern).
+- run_psql = docker exec psql, ~100ms/call — BATCH multi-row VALUES always.
+- Group senderID is LID; resolve via wa_chat_members (phone may be NULL for
+  lid-only members; senderName often the raw +91… then).
+- 'simple' FTS config on purpose (Hinglish); don't "fix" to 'english'.
+- Beeper API: /v1/chats/search & per-chat /messages paginate via cursor=
+  (oldestCursor, newest-first); limit param mostly ignored (~20/page).
+- Ekta owner sheet loaded 2026-07-21 (scripts/load_ekta_owner_sheet.py,
+  442 units, 345 pending_review owner rels, exports/ekta_owner_outreach_*.csv);
+  unit-registry boxes now show ALL unit-linked rels w/ phones+WA (data.ts).
