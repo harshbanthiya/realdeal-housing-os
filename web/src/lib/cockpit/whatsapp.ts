@@ -111,6 +111,50 @@ export async function getWaContactTimeline(contactId: string, limit = 60): Promi
   }));
 }
 
+export interface WaSearchRow {
+  id: string; occurredAt: string; direction: string; chatTitle: string; kind: string;
+  isGroup: boolean; sender: string; senderPhone: string; contactId: string | null;
+  contactName: string; messageType: string; snippet: string;
+}
+
+/**
+ * Search every ingested message. FTS ('simple' config — Hinglish-safe) OR
+ * trigram partial match, so "2bhk andheri" and "kalpat" both work.
+ * Filters: kind (chat classification), direction, sinceDays.
+ */
+export async function searchWaMessages(qtext: string, opts?: {
+  kind?: string; direction?: string; sinceDays?: number; limit?: number;
+}): Promise<WaSearchRow[]> {
+  const query = qtext.trim();
+  if (!query) return [];
+  const params: unknown[] = [query, `%${query}%`];
+  let where = `(i.search_tsv @@ websearch_to_tsquery('simple', $1) OR i.body_text ILIKE $2)`;
+  if (opts?.kind) { params.push(opts.kind); where += ` AND w.kind = $${params.length}`; }
+  if (opts?.direction) { params.push(opts.direction); where += ` AND i.direction = $${params.length}`; }
+  if (opts?.sinceDays) { params.push(opts.sinceDays); where += ` AND i.occurred_at > NOW() - ($${params.length} || ' days')::interval`; }
+  params.push(opts?.limit ?? 60);
+  const res = await readQuery(
+    `SELECT i.id, i.occurred_at, i.direction, COALESCE(w.title,'') AS chat_title,
+            COALESCE(w.kind,'') AS kind, i.is_group_msg, i.sender_display_name,
+            COALESCE(i.sender_phone,'') AS sender_phone, i.contact_id,
+            COALESCE(c.full_name,'') AS contact_name, i.message_type,
+            ts_headline('simple', COALESCE(i.body_text,''),
+                        websearch_to_tsquery('simple', $1),
+                        'StartSel=⟦, StopSel=⟧, MaxWords=40, MinWords=15') AS snippet
+     FROM interactions i
+     LEFT JOIN wa_chats w ON w.beeper_chat_id = i.beeper_chat_id
+     LEFT JOIN contacts c ON c.id = i.contact_id
+     WHERE i.source = 'beeper' AND COALESCE(w.ingest_enabled, TRUE) AND ${where}
+     ORDER BY i.occurred_at DESC LIMIT $${params.length}`, params);
+  return res.map((r) => ({
+    id: str(r.id), occurredAt: str(r.occurred_at), direction: str(r.direction),
+    chatTitle: str(r.chat_title), kind: str(r.kind), isGroup: !!r.is_group_msg,
+    sender: str(r.sender_display_name), senderPhone: str(r.sender_phone),
+    contactId: r.contact_id ? str(r.contact_id) : null, contactName: str(r.contact_name),
+    messageType: str(r.message_type), snippet: str(r.snippet),
+  }));
+}
+
 /** wa.me deep link with optional ⌂-code template prefix (send = official WhatsApp only). */
 export function waLink(phone: string, text?: string): string {
   const p = phone.replace(/[^\d]/g, "");

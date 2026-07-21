@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, Pill, Mono, PanelTitle, type Tone } from "@/components/ui/primitives";
 import {
-  getWaToday, getWaActivity, getWaGroups, getWaConfirmQueue, waLink,
+  getWaToday, getWaActivity, getWaGroups, getWaConfirmQueue, searchWaMessages, waLink,
 } from "@/lib/cockpit/whatsapp";
 import { GroupKindControl, ConfirmNumberControl, TaskDoneControl } from "@/components/cockpit/wa-controls";
 
@@ -20,14 +20,43 @@ function fmt(ts: string | null): string {
   return d.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
-export default async function WhatsAppPage() {
-  const [{ tasks, quiet }, activity, groups, confirm] = await Promise.all([
+const SEARCH_KINDS = [
+  ["", "All chats"], ["client", "Clients"], ["broker", "Brokers"],
+  ["broker_group", "Broker groups"], ["tenant_group", "Tenant groups"],
+  ["community_ours", "Our community"],
+] as const;
+
+function Snippet({ text }: { text: string }) {
+  // ts_headline marks matches with ⟦…⟧ — render them highlighted
+  const parts = text.split(/(⟦[^⟧]*⟧)/g);
+  return (
+    <p className="mt-1 text-[13px] text-ink/80">
+      {parts.map((p, i) =>
+        p.startsWith("⟦")
+          ? <mark key={i} className="rounded bg-amber/25 px-0.5 text-ink">{p.slice(1, -1)}</mark>
+          : <span key={i}>{p}</span>
+      )}
+    </p>
+  );
+}
+
+export default async function WhatsAppPage({ searchParams }: {
+  searchParams: Promise<{ q?: string; kind?: string; dir?: string; days?: string }>;
+}) {
+  const sp = await searchParams;
+  const q = (sp.q ?? "").trim();
+  const [{ tasks, quiet }, activity, groups, confirm, results] = await Promise.all([
     getWaToday(), getWaActivity(), getWaGroups(), getWaConfirmQueue(),
+    q ? searchWaMessages(q, {
+      kind: sp.kind || undefined,
+      direction: sp.dir || undefined,
+      sinceDays: sp.days ? Number(sp.days) : undefined,
+    }) : Promise.resolve([]),
   ]);
 
   return (
     <div className="px-6 py-7">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-teal">WhatsApp</h1>
           <p className="mt-1 text-[13px] text-ink/60">
@@ -36,6 +65,62 @@ export default async function WhatsAppPage() {
         </div>
         <Mono className="text-[11px]">⌂V viewing · ⌂F follow-up · ⌂N note · ⌂L listing</Mono>
       </div>
+
+      {/* Search every message */}
+      <Card className="mb-6 p-4">
+        <form method="GET" className="flex flex-wrap items-center gap-2">
+          <input
+            type="search" name="q" defaultValue={q}
+            placeholder='Search all messages… ("2bhk andheri", "rent", a name, a price)'
+            className="min-w-[240px] flex-1 rounded-lg border border-mist-deep bg-white px-3 py-2 text-[13px] text-ink placeholder:text-ink/35"
+          />
+          <select name="kind" defaultValue={sp.kind ?? ""} className="rounded-lg border border-mist-deep bg-white px-2 py-2 text-[12px] text-ink">
+            {SEARCH_KINDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+          <select name="dir" defaultValue={sp.dir ?? ""} className="rounded-lg border border-mist-deep bg-white px-2 py-2 text-[12px] text-ink">
+            <option value="">In + out</option>
+            <option value="inbound">Received</option>
+            <option value="outbound">Sent</option>
+          </select>
+          <select name="days" defaultValue={sp.days ?? ""} className="rounded-lg border border-mist-deep bg-white px-2 py-2 text-[12px] text-ink">
+            <option value="">Any time</option>
+            <option value="1">24h</option>
+            <option value="7">7 days</option>
+            <option value="30">30 days</option>
+          </select>
+          <button type="submit" className="rounded-lg bg-teal px-4 py-2 text-[13px] font-medium text-white">Search</button>
+          {q && <Link href="/cockpit/whatsapp" className="text-[12px] text-ink/50 hover:text-teal">Clear</Link>}
+        </form>
+
+        {q && (
+          <div className="mt-4">
+            <PanelTitle hint={`${results.length}${results.length === 60 ? "+" : ""}`}>Results for “{q}”</PanelTitle>
+            {results.length === 0 && <p className="mt-2 text-[13px] text-ink/50">No matches. Try fewer words or a partial word.</p>}
+            <ul className="mt-1 divide-y divide-mist">
+              {results.map((r) => (
+                <li key={r.id} className="py-2.5">
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink/50">
+                    <span>{fmt(r.occurredAt)}</span>
+                    <span className={r.direction === "outbound" ? "font-medium text-teal" : "font-medium text-ink/70"}>
+                      {r.direction === "outbound" ? "she sent" : r.sender || "received"}
+                    </span>
+                    {r.senderPhone && <Mono>{r.senderPhone}</Mono>}
+                    <span className="text-ink/40">in</span>
+                    <Pill tone={KIND_TONE[r.kind] ?? "neutral"}>{r.isGroup ? r.chatTitle : (r.kind || "chat")}</Pill>
+                    {r.contactId && (
+                      <Link href={`/cockpit/contacts/c/${r.contactId}`} className="text-teal hover:underline">
+                        {r.contactName} →
+                      </Link>
+                    )}
+                    {r.messageType !== "TEXT" && <Mono>{r.messageType.toLowerCase()}</Mono>}
+                  </div>
+                  <Snippet text={r.snippet} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Today */}
