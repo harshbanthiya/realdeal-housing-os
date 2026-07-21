@@ -63,7 +63,12 @@ export default async function WhatsAppPage({ searchParams }: {
             Read-only Beeper ingest · sends only via official WhatsApp (wa.me links)
           </p>
         </div>
-        <Mono className="text-[11px]">⌂V viewing · ⌂F follow-up · ⌂N note · ⌂L listing</Mono>
+        <div className="flex items-center gap-3">
+          <Link href="/cockpit/whatsapp/market" className="rounded-lg bg-teal px-3 py-1.5 text-[12px] font-medium text-white">
+            Broker market →
+          </Link>
+          <Mono className="text-[11px]">⌂V viewing · ⌂F follow-up · ⌂N note · ⌂L listing</Mono>
+        </div>
       </div>
 
       {/* Search every message */}

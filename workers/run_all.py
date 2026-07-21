@@ -10,6 +10,7 @@ import sys
 from _lib import log_run
 
 import beeper_ingest
+import wa_offer_parser
 import content_scout
 import data_quality
 import photo_captioner
@@ -23,6 +24,7 @@ import seo_freshness
 WORKERS = [
     ("market_watch", market_watch.run),        # intake first so counts include new files
     ("beeper_ingest", beeper_ingest.run),      # WhatsApp read-only ingest (migration 066)
+    ("wa_offer_parser", wa_offer_parser.run),  # broker offers from ingested texts (068)
     ("data_quality", data_quality.run),
     ("listing_readiness", listing_readiness.run),
     ("seo_freshness", seo_freshness.run),

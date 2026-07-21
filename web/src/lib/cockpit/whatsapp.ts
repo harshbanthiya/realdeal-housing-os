@@ -155,6 +155,44 @@ export async function searchWaMessages(qtext: string, opts?: {
   }));
 }
 
+export interface WaOffer {
+  id: string; occurredAt: string; transaction: string; bhk: number | null;
+  buildingName: string; buildingHit: string; priceText: string; areaText: string;
+  furnished: string; locality: string; senderName: string; senderPhone: string;
+  chatTitle: string; body: string; contactId: string | null;
+}
+
+function mapOffer(r: Record<string, unknown>): WaOffer {
+  return {
+    id: str(r.id), occurredAt: str(r.occurred_at), transaction: str(r.transaction),
+    bhk: r.bhk == null ? null : Number(r.bhk), buildingName: str(r.building_name),
+    buildingHit: str(r.building_hit), priceText: str(r.price_text),
+    areaText: str(r.area_text), furnished: str(r.furnished), locality: str(r.locality),
+    senderName: str(r.sender_name), senderPhone: str(r.sender_phone),
+    chatTitle: str(r.chat_title), body: str(r.body),
+    contactId: r.contact_id ? str(r.contact_id) : null,
+  };
+}
+
+/** Offers mentioning OUR buildings (Ekta Tripolis / Imperial Heights / Kalpataru Radiance). */
+export async function getOurBuildingOffers(days = 90): Promise<WaOffer[]> {
+  const res = await readQuery(
+    `SELECT *, NULL AS area_text, NULL AS furnished, NULL AS locality
+     FROM vw_wa_offers_our_buildings
+     WHERE occurred_at > NOW() - ($1 || ' days')::interval
+     ORDER BY occurred_at DESC LIMIT 200`, [days]);
+  return res.map(mapOffer);
+}
+
+/** The transaction × BHK matrix (rent 2BHK box, sale 3BHK box, …). */
+export async function getOfferMatrix(days = 30): Promise<WaOffer[]> {
+  const res = await readQuery(
+    `SELECT *, NULL AS building_name FROM vw_wa_offers_matrix
+     WHERE occurred_at > NOW() - ($1 || ' days')::interval
+     ORDER BY occurred_at DESC LIMIT 500`, [days]);
+  return res.map(mapOffer);
+}
+
 /** wa.me deep link with optional ⌂-code template prefix (send = official WhatsApp only). */
 export function waLink(phone: string, text?: string): string {
   const p = phone.replace(/[^\d]/g, "");
