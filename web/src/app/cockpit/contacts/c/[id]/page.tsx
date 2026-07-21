@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Card, Pill, Mono, PanelTitle, type Tone } from "@/components/ui/primitives";
 import { getContactDetail } from "@/lib/cockpit/contacts";
 import { getContactActivity, getContactGroups } from "@/lib/cockpit/outreach";
+import { getWaContactTimeline, waLink } from "@/lib/cockpit/whatsapp";
 import { ContactOutreachControls } from "@/components/cockpit/contact-outreach-controls";
 import { ContactNoteForm } from "@/components/cockpit/contact-note-form";
 import { roleLabel, statusLabel, type ContactMethodDetail } from "@/lib/cockpit/contacts-types";
@@ -16,14 +17,16 @@ const TIER_TONE: Record<string, Tone> = { hot: "ready", warm: "active", cold: "r
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [c, activity, groups] = await Promise.all([
+  const [c, activity, groups, waTimeline] = await Promise.all([
     getContactDetail(id),
     getContactActivity(id),
     getContactGroups(),
+    getWaContactTimeline(id),
   ]);
   if (!c) notFound();
 
   const phones = c.methods.filter((m) => m.methodType === "mobile" || m.methodType === "phone");
+  const waPhone = phones.find((m) => m.isPrimary)?.value || phones[0]?.value || "";
   const emails = c.methods.filter((m) => m.methodType === "email");
   const others = c.methods.filter((m) => !["mobile", "phone", "email"].includes(m.methodType));
 
@@ -111,6 +114,38 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           )}
         </Card>
       </div>
+
+      {/* WhatsApp timeline (Beeper ingest, migration 066) */}
+      <Card className="mt-6 p-5">
+        <PanelTitle hint={`${waTimeline.length}`}>WhatsApp timeline</PanelTitle>
+        {waTimeline.length === 0 ? (
+          <p className="text-sm text-ink/45">No WhatsApp messages linked yet.</p>
+        ) : (
+          <ul className="divide-y divide-mist">
+            {waTimeline.map((m) => (
+              <li key={m.id} className="py-2">
+                <div className="flex items-center gap-2 text-[11px] text-ink/50">
+                  <span>{new Date(m.occurredAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                  <span className={m.direction === "outbound" ? "text-teal" : ""}>
+                    {m.direction === "outbound" ? "→ sent" : m.direction === "internal" ? "note" : "← received"}
+                  </span>
+                  {m.isGroup && <Mono>{m.chatTitle}</Mono>}
+                  {m.hasMedia && <Mono>media</Mono>}
+                  {m.rdhCode && <Mono className="text-amber">⌂{m.rdhCode}</Mono>}
+                </div>
+                {m.body && <p className="mt-0.5 line-clamp-3 text-[13px] text-ink/80">{m.body}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+        {waPhone && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a href={waLink(waPhone)} target="_blank" className="rounded-md bg-teal/10 px-2.5 py-1.5 text-[12px] font-medium text-teal">Open chat ↗</a>
+            <a href={waLink(waPhone, "⌂V ")} target="_blank" className="rounded-md bg-mist px-2.5 py-1.5 text-[12px] text-ink/70">Draft viewing (⌂V) ↗</a>
+            <a href={waLink(waPhone, "⌂F ")} target="_blank" className="rounded-md bg-mist px-2.5 py-1.5 text-[12px] text-ink/70">Draft follow-up (⌂F) ↗</a>
+          </div>
+        )}
+      </Card>
 
       {/* Activity interaction dashboard */}
       <Card className="mt-6 p-5">

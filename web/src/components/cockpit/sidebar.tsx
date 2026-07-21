@@ -55,6 +55,12 @@ export function Sidebar({ buildings }: { buildings: Building[] }) {
           Outreach
         </Link>
         <Link
+          href="/cockpit/whatsapp"
+          className={`mt-0.5 flex items-center gap-2 rounded-lg px-3 py-2 font-medium ${path === "/cockpit/whatsapp" ? "bg-white text-teal shadow-[0_0_0_1px_var(--color-mist-deep)]" : "text-ink/65 hover:bg-white/60"}`}
+        >
+          WhatsApp
+        </Link>
+        <Link
           href="/cockpit/media"
           className={`mt-0.5 flex items-center gap-2 rounded-lg px-3 py-2 font-medium ${path === "/cockpit/media" ? "bg-white text-teal shadow-[0_0_0_1px_var(--color-mist-deep)]" : "text-ink/65 hover:bg-white/60"}`}
         >
