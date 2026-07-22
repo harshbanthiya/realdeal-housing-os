@@ -70,6 +70,18 @@ First post: youtube.com/watch?v=zv223NRCZw8 (Ekta, draft 3375f706).
 4. Done. Check posted_url rows next Monday; note view counts in decision_notes
    if anything over/under-performs (feeds video_scout's learning loop).
 
+## Channel SEO + attribution (pass done 2026-07-22 via API)
+- Channel description/keywords/country/trailer set programmatically (token in
+  secrets/ now has FULL youtube scope — can update/delete videos + channel).
+- **UTM convention**: every site link in video descriptions is
+  `https://www.realdealhousing.com/?utm_source=youtube&utm_medium=video&utm_campaign=<building-slug>`
+  (channel about uses `utm_medium=channel_about`). Keep this exact shape in new
+  drafts so PostHog building-level attribution stays consistent.
+- PostHog snippet lives in `web/src/instrumentation-client.ts` (EU cloud, free
+  tier) — inert until NEXT_PUBLIC_POSTHOG_KEY is set.
+- Real handle is @realdealhousing01; channel title has a trailing space only
+  Studio can fix. Trailer = intro video 7nMpi5T4rCU.
+
 ## Status legend (social_post_drafts)
 draft → approved (operator, /cockpit/seo) → rendered (render_short.py)
 → posted (upload_youtube.py; posted_url + scheduled_for set).

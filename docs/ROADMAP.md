@@ -299,7 +299,7 @@ the bottleneck, and today reviews are scattered across many tables/views.
 2. Migration 062: `building_facts` + `unit_facts` + source_files registry columns; backfill IH + Kalpataru facts from existing staged data.
 3. Install pgmq; wire one ingestion queue (file drop → parse → staging).
 4. Langfuse self-host (docker-compose into existing stack); wrap all LLM call sites.
-5. PostHog snippet on web/ (cloud free tier).
+5. ~~PostHog snippet on web/ (cloud free tier).~~ DONE 2026-07-22 — `web/src/instrumentation-client.ts` (posthog-js, EU cloud, env-guarded; needs NEXT_PUBLIC_POSTHOG_KEY from a free eu.posthog.com project).
 6. Screenshot vision parser v1 (WhatsApp/MyGate → staging → review).
 7. AI concierge v1 (Vercel AI SDK) for ONE building (Imperial Heights or Kalpataru Radiance), answering from building_facts only, logging questions to consumer_cases.
 8. Unified review inbox in cockpit.
@@ -535,7 +535,7 @@ score — itself a key insight).
   market_inbox (next step, not yet installed).
 - Langfuse: add as docker service when the first `_llm.py`-using worker goes live.
 - Vercel AI SDK: concierge (30d item), unchanged.
-- PostHog: still pending snippet on web/.
+- PostHog: snippet DONE (2026-07-22, `web/src/instrumentation-client.ts`, EU cloud free tier); operator must create the eu.posthog.com project and set NEXT_PUBLIC_POSTHOG_KEY in web/.env.local + Vercel env. All YouTube video/channel links already carry UTMs (utm_source=youtube, utm_campaign=<building-slug>).
 
 ## 16. Tests run this session
 
@@ -643,7 +643,7 @@ Deploys are MANUAL: `cd web && npx vercel --prod` (repo not connected to Vercel)
 
 **Unresolved questions for operator:**
 - Provision ANTHROPIC_API_KEY for daily LLM workers (API billing ≠ Claude Code limits)?
-- PostHog cloud (free tier, data leaves machine) vs self-host (heavy)? Doc assumes cloud.
+- ~~PostHog cloud (free tier, data leaves machine) vs self-host (heavy)?~~ RESOLVED 2026-07-22: cloud free tier, EU region; snippet shipped, key pending operator signup.
 - Which building first for concierge v1: Imperial Heights or Kalpataru Radiance?
 - Confirm retention window for raw WhatsApp/MyGate screenshots (proposal: review-or-delete in 30 days).
 
