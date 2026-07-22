@@ -263,21 +263,34 @@ const Video: React.FC<{
   focus?: string;
   playbackRate?: number;
   filter?: string;
-}> = ({ src, startFrom, focus, playbackRate, filter }) => (
-  <OffthreadVideo
-    muted
-    src={staticFile(src)}
-    startFrom={Math.round(startFrom * FPS)}
-    playbackRate={playbackRate}
-    style={{
-      width: "100%",
-      height: "100%",
-      objectFit: "cover",
-      objectPosition: focus ?? "center",
-      filter,
-    }}
-  />
-);
+}> = ({ src, startFrom, focus, playbackRate, filter }) => {
+  const frame = useCurrentFrame();
+  const fill: React.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    objectPosition: focus ?? "center",
+    filter,
+  };
+  if (/\.(jpe?g|png)$/i.test(src)) {
+    // still image: slow Ken Burns push-in so photo scenes read as footage
+    return (
+      <Img
+        src={staticFile(src)}
+        style={{ ...fill, transform: `scale(${1.04 + frame * 0.0011})` }}
+      />
+    );
+  }
+  return (
+    <OffthreadVideo
+      muted
+      src={staticFile(src)}
+      startFrom={Math.round(startFrom * FPS)}
+      playbackRate={playbackRate}
+      style={fill}
+    />
+  );
+};
 
 /** full-bleed footage, dark lower gradient, text block bottom-left */
 const FullScene: React.FC<Props["scenes"][number]> = (s) => {

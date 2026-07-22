@@ -1,0 +1,78 @@
+{
+  "building": "Ekta Tripolis",
+  "config": "PENTHOUSE",
+  "area": "Goregaon West",
+  "phone": "+91 829 129 3889",
+  "music": "music-oneday.mp3",
+  "musicVolume": 0.3,
+  "scenes": [
+    {
+      "source": "ekta-penthouse.mp4",
+      "sourceStart": 26.6,
+      "duration": 3.6,
+      "eyebrow": "EKTA TRIPOLIS · GOREGAON WEST",
+      "headline": [
+        "The top of",
+        "the tower."
+      ],
+      "body": "A penthouse shell at Ekta Tripolis.",
+      "layout": "full",
+      "playbackRate": 0.35
+    },
+    {
+      "source": "ekta-penthouse.mp4",
+      "sourceStart": 30.5,
+      "duration": 5.2,
+      "playbackRate": 0.9,
+      "eyebrow": "3,661 SQ FT CARPET",
+      "headline": [
+        "One floor.",
+        "Zero walls."
+      ],
+      "body": "Bare shell — you decide where every room goes.",
+      "layout": "full"
+    },
+    {
+      "source": "ekta-penthouse.mp4",
+      "sourceStart": 60.0,
+      "duration": 5.0,
+      "playbackRate": 0.9,
+      "eyebrow": "01 / DUPLEX",
+      "headline": [
+        "Stairs to",
+        "your own roof."
+      ],
+      "body": "Two levels, connected inside the flat.",
+      "layout": "full"
+    },
+    {
+      "source": "ekta-penthouse.mp4",
+      "sourceStart": 53.5,
+      "duration": 5.0,
+      "eyebrow": "02 / THE VIEW",
+      "headline": [
+        "Goregaon,",
+        "floor to ceiling."
+      ],
+      "body": "The skyline from the main room.",
+      "layout": "full"
+    },
+    {
+      "source": "ekta-penthouse.mp4",
+      "sourceStart": 91.9,
+      "duration": 4.2,
+      "eyebrow": "03 / DOWNSTAIRS",
+      "headline": [
+        "The podium",
+        "under you."
+      ],
+      "body": "Pool and gardens between the three towers.",
+      "layout": "full",
+      "playbackRate": 0.6
+    }
+  ],
+  "ctaText": "WHATSAPP PADMINI · 8291293889",
+  "trustLine": "Specific facts. Real footage.\nNo brochure language.",
+  "priceNote": "PENTHOUSE · BARE SHELL",
+  "positioning": []
+}

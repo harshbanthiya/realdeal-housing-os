@@ -1,0 +1,86 @@
+{
+  "building": "DLF The Westpark",
+  "config": "SHOW APARTMENT",
+  "area": "Andheri West",
+  "phone": "+91 829 129 3889",
+  "music": "music-clouds.mp3",
+  "musicVolume": 0.3,
+  "scenes": [
+    {
+      "source": "dlf-building-cover-exterior-p1.jpg",
+      "sourceStart": 0,
+      "duration": 4.6,
+      "eyebrow": "DLF THE WESTPARK · ANDHERI WEST",
+      "headline": [
+        "DLF is back",
+        "in Mumbai."
+      ],
+      "body": "The Westpark, Andheri West. Phase 2 is open.",
+      "layout": "full"
+    },
+    {
+      "source": "dlf-show-apartment-living-1.jpg",
+      "sourceStart": 0,
+      "duration": 5.0,
+      "eyebrow": "SHOW APARTMENT · SHOT ON SITE",
+      "headline": [
+        "This is the",
+        "show flat."
+      ],
+      "body": "Living room, photographed in the apartment itself.",
+      "layout": "full"
+    },
+    {
+      "source": "dlf-show-apartment-dining.jpg",
+      "sourceStart": 0,
+      "duration": 4.8,
+      "eyebrow": "01 / DINING",
+      "headline": [
+        "Eight seats.",
+        "City behind."
+      ],
+      "body": "Dining opens straight onto the living room.",
+      "layout": "full"
+    },
+    {
+      "source": "dlf-show-apartment-kitchen-1.jpg",
+      "sourceStart": 0,
+      "duration": 4.8,
+      "eyebrow": "02 / KITCHEN",
+      "headline": [
+        "A working",
+        "galley kitchen."
+      ],
+      "body": "Built-in ovens, counters both sides.",
+      "layout": "full"
+    },
+    {
+      "source": "dlf-show-apartment-master-bedroom.jpg",
+      "sourceStart": 0,
+      "duration": 4.8,
+      "eyebrow": "03 / MASTER BEDROOM",
+      "headline": [
+        "The master,",
+        "with the view."
+      ],
+      "body": "Corner windows over Andheri West.",
+      "layout": "full"
+    },
+    {
+      "source": "dlf-building-eco-deck-pool-p46.jpg",
+      "sourceStart": 0,
+      "duration": 5.0,
+      "eyebrow": "04 / ECO-DECK · PROJECT RENDER",
+      "headline": [
+        "1.46 acres,",
+        "no cars."
+      ],
+      "body": "6,000 sq m eco-deck planned over the podium. Render, not photo.",
+      "layout": "full"
+    }
+  ],
+  "ctaText": "WHATSAPP PADMINI · 8291293889",
+  "trustLine": "Specific facts. Real footage.\nNo brochure language.",
+  "priceNote": "3, 4 & 5 BHK · PHASE 2 OPEN",
+  "positioning": []
+}
