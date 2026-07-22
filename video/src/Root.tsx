@@ -69,6 +69,9 @@ export const RemotionRoot: React.FC = () => (
     id="Short"
     component={Short}
     durationInFrames={totalFrames(defaultProps)}
+    // duration must follow the RENDERED props, not defaultProps — else long
+    // scene lists crop the end card and short ones leave black tail
+    calculateMetadata={({ props }) => ({ durationInFrames: totalFrames(props) })}
     fps={30}
     width={1080}
     height={1920}

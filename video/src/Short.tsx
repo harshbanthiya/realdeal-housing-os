@@ -414,11 +414,19 @@ const EndCard: React.FC<Props> = (p) => {
         >
           {p.price}
         </div>
-        {p.priceNote && (
-          <div style={{ ...eyebrowStyle, fontSize: 22, color: "rgba(26,26,26,0.6)", marginTop: 14 }}>
-            {p.priceNote}
-          </div>
-        )}
+      </div>
+    )}
+    {p.priceNote && (
+      <div
+        style={{
+          ...eyebrowStyle,
+          fontSize: 22,
+          color: "rgba(26,26,26,0.6)",
+          marginTop: p.price ? 14 : 44,
+          ...rise(frame, 11),
+        }}
+      >
+        {p.priceNote}
       </div>
     )}
     {p.positioning && p.positioning.length > 0 && (
