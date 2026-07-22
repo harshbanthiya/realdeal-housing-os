@@ -58,11 +58,12 @@ _SEGMENT_WHERE = {
 def build_queue(template: str, segment: str, limit: int) -> list[dict]:
     seg_where = _SEGMENT_WHERE.get(segment, _SEGMENT_WHERE["all"])
     _, out = run_psql(f"""
-        SELECT c.id, c.full_name, cm.normalized_value AS email
+        SELECT DISTINCT ON (c.id) c.id, c.full_name, cm.normalized_value AS email
         FROM contacts c
         JOIN contact_methods cm ON cm.contact_id = c.id
           AND cm.method_type = 'email'
           AND cm.validation_status IN ('valid','unverified')
+          AND cm.normalized_value ~ '^[^@[:space:]]+@[^@[:space:]]+\\.[A-Za-z]{{2,}}$'
         WHERE {seg_where}
           AND NOT EXISTS (
             SELECT 1 FROM email_drip_state ds
@@ -70,7 +71,7 @@ def build_queue(template: str, segment: str, limit: int) -> list[dict]:
               AND ds.template_key = '{template}'
               AND (ds.sent_at IS NOT NULL OR ds.unsubscribed_at IS NOT NULL)
           )
-        ORDER BY (cm.validation_status <> 'valid'), c.full_name
+        ORDER BY c.id, (cm.validation_status <> 'valid')
         LIMIT {limit}
     """)
     rows = []

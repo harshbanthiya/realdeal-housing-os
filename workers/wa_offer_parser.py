@@ -44,8 +44,10 @@ def run() -> tuple[str, int, dict]:
     # ponytail: IH has a known duplicate anchor; first row per name wins (0e72db71 sorts via name query order)
 
     rows = q("""
-        SELECT i.id, i.beeper_chat_id, i.occurred_at, COALESCE(i.sender_display_name,''),
-               COALESCE(i.sender_phone,''), REPLACE(COALESCE(i.body_text,''), '|', ' ')
+        SELECT i.id, i.beeper_chat_id, i.occurred_at,
+               REPLACE(COALESCE(i.sender_display_name,''), '|', ' '),
+               REPLACE(COALESCE(i.sender_phone,''), '|', ' '),
+               REPLACE(COALESCE(i.body_text,''), '|', ' ')
         FROM interactions i
         LEFT JOIN wa_market_offers o ON o.interaction_id = i.id
         WHERE i.source = 'beeper' AND o.id IS NULL AND i.message_type = 'TEXT'
@@ -56,7 +58,8 @@ def run() -> tuple[str, int, dict]:
     for r in rows:
         if len(r) < 6:
             continue
-        iid, chat_id, occurred, sname, sphone, body = r
+        iid, chat_id, occurred, sname, sphone, *rest = r
+        body = "|".join(rest)  # ponytail: body is pipe-sanitized in SQL; join guards stray splits
         bhk_m = BHK_RE.search(body)
         bhk = None
         if bhk_m:
