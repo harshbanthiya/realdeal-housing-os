@@ -276,6 +276,11 @@ def _pick_sro(page, sro_text: str) -> str | None:
     locality = m_loc.group(1) if m_loc else ""
 
     options = _load_sro_options(page)
+    for _ in range(10):  # district postback can take a few seconds to fill the dropdown
+        if options:
+            break
+        page.wait_for_timeout(1000)
+        options = _load_sro_options(page)
     if not options:
         print(f"  [sro] dropdown empty or not loaded yet")
         return None
@@ -394,11 +399,11 @@ def save_page(context, page, out_dir: Path, prefix: str, written: list, captures
         idx2_prefix = f"{prefix}_r{btn_idx}"
         try:
             btn = live.locator(INDEX2_BTN_SEL).nth(btn_idx)
-            with context.expect_page(timeout=15000) as popup_info:
+            with context.expect_page(timeout=60000) as popup_info:
                 btn.click()
             popup = popup_info.value
             try:
-                popup.wait_for_load_state('networkidle', timeout=15000)
+                popup.wait_for_load_state('networkidle', timeout=30000)
             except Exception:
                 pass
             for ext, fn in [
