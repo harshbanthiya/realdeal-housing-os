@@ -34,10 +34,56 @@ SOURCE = "igr_index2_ekta_targeted"
 PHASE = "6.28"
 
 
+_EN_PARTY_RE = re.compile(
+    r"Name:\s*(.+?)\s+Age:\s*(\d+)\s+Address:\s*(.+?)\s*PAN:\s*([A-Z]{5}\d{4}[A-Z])", re.S)
+
+
+def parse_capture_english(text: str, fname: str) -> dict | None:
+    """eSearch English Index-2 (eRegistration docs): rent schedule, deposit,
+    'Leave and License Months:NN', PAN parties."""
+    m = re.search(r"Doc No\.?\s*:\s*(\d+)\s*/\s*(\d{4})", text)
+    if not m:
+        return None
+    if not EKTA_RE.search(text):
+        return {"doc_no": m.group(1), "year": m.group(2), "file": fname, "_not_ekta": True}
+    art = re.search(r"\(1\)\s*Article\s*(.+)", text)
+    cat = "tenancy" if art and re.search(r"leave and licen", art.group(1), re.I) else "other"
+    dep = re.search(r"\(2\)\s*Deposit\s*Rs\.?\s*([\d,]+)", text)
+    rent = re.search(r"\(3\)\s*Rent.{0,40}?Rs\.?\s*([\d,]+)", text, re.S)
+    months = re.search(r"Leave and License Months\s*:\s*(\d+)", text)
+    de = re.search(r"\(9\)\s*Date of Execution\s*([0-3]?\d/[01]?\d/\d{4})", text)
+    stamp = re.search(r"\(12\)\s*Stamp Duty\s*Rs\.?\s*([\d,]+)", text)
+    fee = re.search(r"\(13\)\s*Registration Fee\s*Rs\.?\s*([\d,]+)", text)
+    flat_m = re.search(r"Apartment/Flat No\s*:\s*([A-C])[\s\-/]*(\d{2,4})", text, re.I)
+    d_exec = iso(de.group(1)) if de else None
+
+    def sect(n): return re.search(rf"\({n}\)[^\n]*\n(.*?)(?=\(\d+\)|\Z)", text, re.S)
+    parties = {"sellers": [], "purchasers": []}
+    for key, n in (("sellers", 7), ("purchasers", 8)):
+        s = sect(n)
+        if s:
+            for nm, age, addr, pan in _EN_PARTY_RE.findall(s.group(1)):
+                parties[key].append({"name": nm.strip(), "age": age,
+                                     "address": addr.strip()[:300], "pan": pan})
+    return {
+        "doc_no": m.group(1), "year": m.group(2), "file": fname, "cat": cat,
+        "rent": rent.group(1).replace(",", "") if rent else None,
+        "deposit": dep.group(1).replace(",", "") if dep else None,
+        "start": d_exec,
+        "end": end_date_from_start_and_months(d_exec, months.group(1) if months else None),
+        "tenure_months": months.group(1) if months else None,
+        "stamp": stamp.group(1).replace(",", "") if stamp else None,
+        "regfee": fee.group(1).replace(",", "") if fee else None,
+        "wing": flat_m.group(1).upper() if flat_m else None,
+        "flat": flat_m.group(2) if flat_m else None,
+        "sellers": parties["sellers"], "purchasers": parties["purchasers"],
+    }
+
+
 def parse_capture(path: Path) -> dict | None:
     text = path.read_text(encoding="utf-8", errors="replace")
     if "दस्त क्रमांक" not in text and "सूची" not in text:
-        return None
+        return parse_capture_english(text, path.name)
     m = re.search(r"दस्त क्रमांक\s*[:：]?\s*([0-9]+)\s*/\s*([0-9]{4})", text)
     if not m:
         return None
@@ -56,6 +102,7 @@ def parse_capture(path: Path) -> dict | None:
         "start": d_exec,
         "end": end_date_from_start_and_months(d_exec, prop["tenure_months"]),
         "tenure_months": prop["tenure_months"],
+        "wing": None, "flat": None,
         "stamp": num(f.get(12, "")), "regfee": num(f.get(13, "")),
         "sellers": parse_parties(f.get(7, "")), "purchasers": parse_parties(f.get(8, "")),
     }
@@ -101,8 +148,17 @@ def main() -> int:
     stmts = ["BEGIN;"]
     for r in parsed:
         tag = {"source": SOURCE, "phase": PHASE, "src_file": r["file"]}
+        unit_fix = ""
+        if r.get("wing") and r.get("flat"):
+            unit_fix = (
+                f"building_unit_id = COALESCE(building_unit_id, "
+                f"(SELECT id FROM building_units WHERE building_id={EKTA_SUB} "
+                f"AND unit_number={q(r['wing'] + '-' + r['flat'])} LIMIT 1)), "
+                f"wing_text = COALESCE(wing_text, {q(r['wing'])}), "
+                f"unit_text = COALESCE(unit_text, {q(r['flat'])}), ")
         stmts.append(
             "UPDATE unit_registration_records SET "
+            f"{unit_fix}"
             f"tenancy_monthly_rent = COALESCE(tenancy_monthly_rent, {q(r['rent'])}), "
             f"tenancy_deposit = COALESCE(tenancy_deposit, {q(r['deposit'])}), "
             f"tenancy_start_date = COALESCE(tenancy_start_date, {q(r['start'])}), "
