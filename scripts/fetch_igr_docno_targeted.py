@@ -56,10 +56,12 @@ _SEL_SEARCH       = "button:शोध / Search"
 _BUILDING_FILTER = {
     "kalpataru": "b.name ILIKE '%kalpataru%radiance%'",
     "imperial_heights": "b.id = '0e72db71-8b93-4ecd-879c-17d8d8f2b206'",
+    "ekta": "b.id = '2032514a-adef-4d2f-a12c-6ecf06853243'",
 }
 _SNAPSHOT_DIR = {
     "kalpataru": "igr_index2_snapshots",
     "imperial_heights": "igr_index2_snapshots_imperial_heights",
+    "ekta": "igr_index2_snapshots_ekta",
 }
 
 
@@ -439,7 +441,7 @@ def main() -> int:
                     help='skip first N docs in the queue (use to resume a session)')
     ap.add_argument('--output-label', default='docno_targeted')
     ap.add_argument('--building', default='kalpataru',
-                    choices=['kalpataru', 'imperial_heights'],
+                    choices=['kalpataru', 'imperial_heights', 'ekta'],
                     help='which building to queue (default: kalpataru)')
     ap.add_argument('--sro', default=None, metavar='NAME',
                     help='filter queue to a specific SRO (partial match, e.g. "Mumbai 18")')
