@@ -11,9 +11,11 @@ from _lib import log_run
 
 import beeper_ingest
 import wa_offer_parser
+import contact_reconcile
 import content_scout
 import data_quality
 import photo_captioner
+import shorts_scout
 import video_scout
 import video_transcriber
 import listing_readiness
@@ -30,6 +32,8 @@ WORKERS = [
     ("seo_freshness", seo_freshness.run),
     ("content_scout", content_scout.run),      # SEO drafts + answer queue (migration 064)
     ("video_scout", video_scout.run),          # video research + post drafts (migration 065)
+    ("contact_reconcile", contact_reconcile.run),  # drive contact sheets → DB or review (071)
+    ("shorts_scout", shorts_scout.run),        # keep next week's Shorts drafted (reviewed media only)
     ("photo_captioner", photo_captioner.run),  # 15 SEO alt-texts/day via Gemini vision
     ("video_transcriber", video_transcriber.run),  # 3 whisper transcripts/day, local
     ("review_inbox", review_inbox.run),        # snapshot last so it sees today's findings

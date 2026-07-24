@@ -105,6 +105,21 @@ QUEUES: dict[str, dict] = {
         "approve": "match_status = 'matched', updated_at = now()",
         "reject": "match_status = 'rejected', updated_at = now()",
     },
+    "drive_contacts": {
+        "label": "Drive contact sheets — name near-misses",
+        "table": "contact_sheet_rows",
+        "join": "LEFT JOIN contact_sheet_files f ON f.id = t.sheet_file_id",
+        "pending": "t.review_status = 'pending'",
+        "cohort": ("coalesce(f.doc_kind, '(unknown)') || ' · ' || "
+                   "regexp_replace(coalesce(f.file_path, ''), '^.*/', '')"),
+        "sample": ("concat_ws(' → ', t.parsed_name, t.candidate_name) || ' (sim ' || "
+                   "coalesce(round(t.name_similarity::numeric, 2)::text, '?') || ')'"),
+        "approve": ("review_status = 'approved', resolution = 'matched_phone', "
+                    "contact_id = candidate_contact_id, reviewed_by = {by}, "
+                    "reviewed_at = now(), decision_notes = {note}"),
+        "reject": ("review_status = 'rejected', resolution = 'pending', "
+                   "reviewed_by = {by}, reviewed_at = now(), decision_notes = {note}"),
+    },
     "worker_findings": {
         "label": "Worker findings inbox",
         "table": "worker_findings",

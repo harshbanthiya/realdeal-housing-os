@@ -15,6 +15,7 @@ const QUEUE_TONE: Record<string, Tone> = {
   property_rels: "blocked",
   contact_dupes: "review",
   party_matches: "active",
+  drive_contacts: "review",
   worker_findings: "neutral",
 };
 
@@ -26,6 +27,7 @@ const EFFECT: Record<string, string> = {
   property_rels: "sets the link ACTIVE — the contact becomes targetable for outreach",
   contact_dupes: "marks the duplicate candidate approved for merging",
   party_matches: "confirms the registration party is this contact",
+  drive_contacts: "links the sheet row to the existing contact it resembles",
   worker_findings: "acknowledges the finding (reject = dismiss)",
 };
 
