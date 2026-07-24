@@ -194,6 +194,12 @@ export async function getOfferMatrix(days = 30): Promise<WaOffer[]> {
   return res.map(mapOffer);
 }
 
+/** Buildings to offer when linking a tenant/community group to its building. */
+export async function getBuildingOptions(): Promise<{ id: string; name: string }[]> {
+  const res = await readQuery(`SELECT id, name FROM buildings ORDER BY name`);
+  return res.map((r) => ({ id: str(r.id), name: str(r.name) }));
+}
+
 /** wa.me deep link with optional ⌂-code template prefix (send = official WhatsApp only). */
 export function waLink(phone: string, text?: string): string {
   const p = phone.replace(/[^\d]/g, "");

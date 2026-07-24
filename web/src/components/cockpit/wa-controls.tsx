@@ -10,11 +10,16 @@ const KINDS = [
   ["community_ours", "Our community"], ["personal", "Personal (skip)"], ["other", "Other"],
 ] as const;
 
-export function GroupKindControl({ chatId, kind, ingestEnabled }: {
+export function GroupKindControl({ chatId, kind, ingestEnabled, buildingId, buildings = [] }: {
   chatId: string; kind: string; ingestEnabled: boolean;
+  buildingId?: string | null;
+  buildings?: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  // A tenant/community group maps to one building — that link is what lets the
+  // roster match members to contacts, so only offer it where it means something.
+  const showBuilding = buildings.length > 0 && (kind === "tenant_group" || kind === "community_ours");
   return (
     <span className="flex items-center gap-2">
       <select
@@ -25,6 +30,22 @@ export function GroupKindControl({ chatId, kind, ingestEnabled }: {
       >
         {KINDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
+      {showBuilding && (
+        <select
+          defaultValue={buildingId ?? ""}
+          disabled={pending}
+          onChange={(e) => {
+            const id = e.target.value;
+            if (!id) return;
+            start(async () => { await classifyChat({ chatId, buildingId: id }); router.refresh(); });
+          }}
+          title="Link this group to a building so its roster can match contacts"
+          className={`rounded-md border px-2 py-1 text-[12px] ${buildingId ? "border-mist-deep bg-white text-ink" : "border-amber/40 bg-amber/5 text-ink/70"}`}
+        >
+          <option value="">Set building…</option>
+          {buildings.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+      )}
       <button
         disabled={pending}
         onClick={() => start(async () => { await classifyChat({ chatId, ingest: ingestEnabled ? "off" : "on" }); router.refresh(); })}

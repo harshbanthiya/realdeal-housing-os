@@ -182,9 +182,12 @@ registry probable contacts + contact WA timelines all live and pushed.
 - [ ] Classify the 35 groups in /cockpit/whatsapp Groups panel (kind selector);
       flip personal chats OFF (purges their stored msgs). Until then everything
       is 'unclassified' and tenant-group→building enrichment can't run.
-- [ ] Set building_id on tenant groups (Radiance Ladies=Kalpataru etc.) —
-      needs a small building dropdown ADDED to the Groups panel (only kind +
-      ingest toggle wired now; update_wa_item.py --building-id already works).
+- [x] 2026-07-24: group classify DONE by operator (21 personal, 10 broker_group,
+      4 tenant_group, 1 community_ours). Building dropdown now SHIPPED in the
+      Groups panel — appears for tenant_group/community_ours rows only, amber
+      until set. Operator still has to pick the building on those 5 rows.
+- [ ] Set building_id on tenant groups (Radiance Ladies=Kalpataru etc.) — the
+      dropdown exists now; 0 of 5 set. Blocks the 565-phone roster enrichment.
 - [ ] Burn the 358-row confirm-number queue (attach/create/ignore).
 - [ ] Test one ⌂V / ⌂N from her phone end-to-end (parser is live but UNTESTED
       with real sent messages; also VERIFY her "Message Yourself" chat actually

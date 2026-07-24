@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, Pill, Mono, PanelTitle, type Tone } from "@/components/ui/primitives";
 import {
   getWaToday, getWaActivity, getWaGroups, getWaConfirmQueue, searchWaMessages, waLink,
+  getBuildingOptions,
 } from "@/lib/cockpit/whatsapp";
 import { GroupKindControl, ConfirmNumberControl, TaskDoneControl } from "@/components/cockpit/wa-controls";
 
@@ -45,8 +46,8 @@ export default async function WhatsAppPage({ searchParams }: {
 }) {
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
-  const [{ tasks, quiet }, activity, groups, confirm, results] = await Promise.all([
-    getWaToday(), getWaActivity(), getWaGroups(), getWaConfirmQueue(),
+  const [{ tasks, quiet }, activity, groups, confirm, buildings, results] = await Promise.all([
+    getWaToday(), getWaActivity(), getWaGroups(), getWaConfirmQueue(), getBuildingOptions(),
     q ? searchWaMessages(q, {
       kind: sp.kind || undefined,
       direction: sp.dir || undefined,
@@ -253,7 +254,8 @@ export default async function WhatsAppPage({ searchParams }: {
                   </td>
                   <td className="py-2 pr-3 text-ink/50">{fmt(g.lastActivity)}</td>
                   <td className="py-2">
-                    <GroupKindControl chatId={g.chatId} kind={g.kind} ingestEnabled={g.ingestEnabled} />
+                    <GroupKindControl chatId={g.chatId} kind={g.kind} ingestEnabled={g.ingestEnabled}
+                      buildingId={g.buildingId} buildings={buildings} />
                   </td>
                 </tr>
               ))}
