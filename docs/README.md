@@ -1,5 +1,9 @@
 # Real Deal Housing OS — docs map
 
+**Start here: [NORTH-STAR.md](NORTH-STAR.md)** — what we are building, the four
+loops everything must serve, and the guardrails. Read it before proposing work.
+
+
 Human-operated, review-gated real-estate intelligence OS. Local Postgres is the
 source of truth (62 migrations, `schemas/001–062`); `web/` is Next.js 16 + Wix
 Headless with a cockpit at `/cockpit/*`; Python parsers in `scripts/`, daily
