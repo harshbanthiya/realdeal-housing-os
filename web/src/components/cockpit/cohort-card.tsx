@@ -16,6 +16,8 @@ const QUEUE_TONE: Record<string, Tone> = {
   contact_dupes: "review",
   party_matches: "active",
   drive_contacts: "review",
+  phonebook_rename: "active",
+  phonebook_to_db: "blocked",
   worker_findings: "neutral",
 };
 
@@ -28,6 +30,8 @@ const EFFECT: Record<string, string> = {
   contact_dupes: "marks the duplicate candidate approved for merging",
   party_matches: "confirms the registration party is this contact",
   drive_contacts: "links the sheet row to the existing contact it resembles",
+  phonebook_rename: "queues the card for renaming on her phone (nothing writes to the phone yet)",
+  phonebook_to_db: "accepts her phonebook as the source for this unit’s contact — ‘low’ means competing phones, check the sample",
   worker_findings: "acknowledges the finding (reject = dismiss)",
 };
 

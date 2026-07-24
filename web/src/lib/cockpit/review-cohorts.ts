@@ -41,7 +41,7 @@ export interface CohortResult {
 
 const QUEUES = new Set([
   "contact_import", "unit_registration", "media",
-  "property_rels", "contact_dupes", "party_matches", "drive_contacts", "worker_findings",
+  "property_rels", "contact_dupes", "party_matches", "drive_contacts", "phonebook_rename", "phonebook_to_db", "worker_findings",
 ]);
 
 function root(): string {

@@ -120,6 +120,32 @@ QUEUES: dict[str, dict] = {
         "reject": ("review_status = 'rejected', resolution = 'pending', "
                    "reviewed_by = {by}, reviewed_at = now(), decision_notes = {note}"),
     },
+    "phonebook_rename": {
+        "label": "Sales phone — rename to canonical",
+        "table": "phonebook_proposals",
+        "join": "",
+        "pending": "t.status = 'pending' AND t.direction = 'to_phone'",
+        "cohort": "coalesce(t.role, '(no role)') || ' · ' || t.confidence",
+        "sample": "t.current_value || '  →  ' || t.proposed_value",
+        "approve": ("status = 'approved', reviewed_by = {by}, reviewed_at = now(), "
+                    "decision_notes = {note}"),
+        "reject": ("status = 'rejected', reviewed_by = {by}, reviewed_at = now(), "
+                   "decision_notes = {note}"),
+    },
+    "phonebook_to_db": {
+        "label": "Sales phone → DB (unit links her phone knows)",
+        "table": "phonebook_proposals",
+        "join": "",
+        "pending": "t.status = 'pending' AND t.direction = 'to_db'",
+        # Confidence leads the cohort key: the 'low' rows are units with more
+        # than one competing phone and must never be bulk-approved blind.
+        "cohort": "t.confidence || ' · ' || coalesce(t.role, '(no role)') || ' · ' || t.change_type",
+        "sample": "t.proposed_value || '  ←  ' || coalesce(t.note_block, '')",
+        "approve": ("status = 'approved', reviewed_by = {by}, reviewed_at = now(), "
+                    "decision_notes = {note}"),
+        "reject": ("status = 'rejected', reviewed_by = {by}, reviewed_at = now(), "
+                   "decision_notes = {note}"),
+    },
     "worker_findings": {
         "label": "Worker findings inbox",
         "table": "worker_findings",
