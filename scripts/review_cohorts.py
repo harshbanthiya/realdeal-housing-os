@@ -74,15 +74,17 @@ QUEUES: dict[str, dict] = {
     "media": {
         "label": "Media library review",
         "table": "media_assets",
-        "question": ("Is this file fit to publish? Approving marks it reviewed, which makes it "
-                     "usable in Shorts and on building pages."),
+        "question": ("Is this file fit to publish? Approving marks it reviewed. NOTE: for an "
+                     "'(untagged)' cohort this alone does NOT make the files usable in Shorts — "
+                     "shorts_scout also needs an asset_type, which is set in /cockpit/media. "
+                     "Reject archives the file."),
         "join": "LEFT JOIN buildings b ON b.id = t.building_id",
         "pending": "t.reviewed IS FALSE",
         "cohort": "coalesce(t.source, '(no source)') || ' · ' || coalesce(t.asset_type, '(untagged)')",
         "sample": ("regexp_replace(t.file_path, '^.*/', '') || '   [' || "
                    "coalesce(b.name, 'no building') || ']'"),
         "approve": "reviewed = TRUE, review_notes = {note}, updated_at = now()",
-        "reject": "reviewed = TRUE, status = 'rejected', review_notes = {note}, updated_at = now()",
+        "reject": "reviewed = TRUE, status = 'archived', review_notes = {note}, updated_at = now()",
     },
     "property_rels": {
         "label": "Contact → property links",

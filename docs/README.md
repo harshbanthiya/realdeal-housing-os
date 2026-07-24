@@ -6,6 +6,9 @@ loops everything must serve, and the guardrails. Read it before proposing work.
 **Each day: [DAILY-START.md](DAILY-START.md)** — the prompt to paste when you open
 Claude, plus `python3 scripts/daily_brief.py` for live state.
 
+**Review gate: [REVIEW-SYSTEM.md](REVIEW-SYSTEM.md)** — how /cockpit/review works
+and the known gaps (§4) before extending it.
+
 
 Human-operated, review-gated real-estate intelligence OS. Local Postgres is the
 source of truth (62 migrations, `schemas/001–062`); `web/` is Next.js 16 + Wix
