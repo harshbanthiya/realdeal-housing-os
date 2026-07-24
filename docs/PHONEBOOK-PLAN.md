@@ -138,22 +138,28 @@ The allowlist is stored, so "did we touch this card?" is always answerable.
 
 ## 5. The iPhone problem, and the only safe way round it
 
-**She is on iPhone. Re-importing a .vcf does NOT update existing cards — it
-creates a second copy.** Importing 929 enriched cards on top of her phonebook
-would roughly double the mess. This is the central constraint of the whole job.
+**RESOLVED 2026-07-24: contacts are in iCloud, and the exports are unusable
+for writing.**
 
-So we update **in place**, and the channel depends on one fact to check on her
-phone first:
+Every one of her 10 `.vcf` exports contains **zero UID properties** — Apple
+strips the UID on share-sheet export. Verified across all files (9 are
+`VERSION:3.0` from Apple iOS/macOS, `contacts.vcf` is `VERSION:2.1`). Without a
+UID there is no way to map an exported card back to the card on the server, so:
 
-> **Settings → Contacts → Accounts / Default Account** — are contacts in
-> **iCloud**, or "On My iPhone", or a Google account?
+- The exports are **read-only source material**. They were the right input for
+  the snapshot and the proposals, and nothing more.
+- Re-importing an enriched `.vcf` would create a **second copy of every
+  contact** — doubling the mess we are trying to fix.
 
-| If contacts live in… | How we write |
-|---|---|
-| **iCloud** (most likely) | Sign that iCloud into **Contacts.app on a Mac**, update cards in place there (scriptable), let iCloud sync to her phone. Cleanest, fully reversible, no third-party access. |
-| **iCloud, no Mac available** | CardDAV to iCloud using an **app-specific password**. Programmatic and reliable, but fiddlier to set up. |
-| **Google account** | Google People API `batchUpdateContacts` — updates in place by resource id. We already have the OAuth pattern from YouTube. |
-| **"On My iPhone" only** | Nothing can write in place. First move the contacts into iCloud, then use row 1. |
+**The write path is iCloud CardDAV** (`scripts/icloud_contacts.py`): pull the
+live cards with their `href`/`etag`/`UID`, modify only `FN`/`N`/`NOTE`, and
+`PUT` back with `If-Match`. Every other property (phone, email, photo, groups)
+is preserved untouched, and the pre-write body is stored in
+`icloud_cards.original_vcard` so `--rollback` restores exactly.
+
+Needs one credential: an **app-specific password** from appleid.apple.com
+(Sign-In and Security → App-Specific Passwords), stored in `secrets/icloud.env`
+(gitignored). Her normal Apple ID password will not work and should not be used.
 
 **Never** the delete-and-reimport route. One bad batch and her working tool is
 gone.
