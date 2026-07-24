@@ -21,19 +21,6 @@ const QUEUE_TONE: Record<string, Tone> = {
   worker_findings: "neutral",
 };
 
-/** What "approve" actually writes — the operator should see this before clicking. */
-const EFFECT: Record<string, string> = {
-  contact_import: "marks the review item approved (does not itself merge contacts)",
-  unit_registration: "marks the registration record reviewed and accepted",
-  media: "marks the asset reviewed — it becomes publishable",
-  property_rels: "sets the link ACTIVE — the contact becomes targetable for outreach",
-  contact_dupes: "marks the duplicate candidate approved for merging",
-  party_matches: "confirms the registration party is this contact",
-  drive_contacts: "links the sheet row to the existing contact it resembles",
-  phonebook_rename: "queues the card for renaming on her phone (nothing writes to the phone yet)",
-  phonebook_to_db: "accepts her phonebook as the source for this unit’s contact — ‘low’ means competing phones, check the sample",
-  worker_findings: "acknowledges the finding (reject = dismiss)",
-};
 
 export function CohortCard({ c }: { c: Cohort }) {
   const router = useRouter();
@@ -98,9 +85,12 @@ export function CohortCard({ c }: { c: Cohort }) {
           </div>
           <div className="mt-1 text-[11px] text-ink/45">
             {c.oldest === c.newest ? c.oldest : `${c.oldest} → ${c.newest}`}
-            {" · approve "}
-            <span className="text-ink/60">{EFFECT[c.queue]}</span>
           </div>
+          {c.question && (
+            <p className="mt-2 max-w-2xl rounded-md bg-mist/40 px-3 py-2 text-[12px] leading-relaxed text-ink/70">
+              {c.question}
+            </p>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">

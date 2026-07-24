@@ -20,6 +20,10 @@ const exec = promisify(execFile);
 export interface Cohort {
   queue: string;
   label: string;
+  /** Plain-English statement of what this cohort is asking. Comes from the
+   *  engine's QUEUES registry so the page can never describe it differently
+   *  from what the write actually does. */
+  question: string;
   cohort: string;
   pending: number;
   oldest: string;

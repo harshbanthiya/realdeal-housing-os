@@ -39,17 +39,23 @@ from _db import run_psql, sql_literal as lit  # noqa: E402
 # substituted with already-quoted literals.
 QUEUES: dict[str, dict] = {
     "contact_import": {
-        "label": "Contact import review",
+        "label": "Legacy import stubs — NO reviewable content",
+        "question": ("These Phase 5.4 rows have no entity attached and a title that just "
+                     "repeats their own type. There is nothing to judge. Closing them only "
+                     "clears the counter — the real decisions are in the queues below."),
         "table": "import_review_items",
         "join": "LEFT JOIN import_batches ib ON ib.id = t.import_batch_id",
         "pending": "t.status = 'pending'",
         "cohort": "t.review_type || ' · ' || coalesce(ib.metadata->>'batch_label', '(no batch)')",
-        "sample": "coalesce(nullif(t.title, ''), nullif(t.summary, ''), t.review_type)",
+        "sample": ("'(no content recorded — stub for ' || t.review_type || ', batch ' || "
+                   "coalesce(ib.metadata->>'batch_label','?') || ')'"),
         "approve": "status = 'approved', reviewed_by = {by}, reviewed_at = now(), decision_notes = {note}",
         "reject": "status = 'rejected', reviewed_by = {by}, reviewed_at = now(), decision_notes = {note}",
     },
     "unit_registration": {
         "label": "Unit registration review",
+        "question": ("Is this a real registration for this flat? The sample shows unit, "
+                     "document type, date and price as parsed from the IGR record."),
         "table": "unit_registration_review_items",
         "join": ("LEFT JOIN buildings b ON b.id = t.building_id "
                  "LEFT JOIN unit_registration_records rec ON rec.id = t.unit_registration_record_id"),
@@ -68,45 +74,70 @@ QUEUES: dict[str, dict] = {
     "media": {
         "label": "Media library review",
         "table": "media_assets",
-        "join": "",
+        "question": ("Is this file fit to publish? Approving marks it reviewed, which makes it "
+                     "usable in Shorts and on building pages."),
+        "join": "LEFT JOIN buildings b ON b.id = t.building_id",
         "pending": "t.reviewed IS FALSE",
         "cohort": "coalesce(t.source, '(no source)') || ' · ' || coalesce(t.asset_type, '(untagged)')",
-        "sample": "regexp_replace(t.file_path, '^.*/', '')",
+        "sample": ("regexp_replace(t.file_path, '^.*/', '') || '   [' || "
+                   "coalesce(b.name, 'no building') || ']'"),
         "approve": "reviewed = TRUE, review_notes = {note}, updated_at = now()",
         "reject": "reviewed = TRUE, status = 'rejected', review_notes = {note}, updated_at = now()",
     },
     "property_rels": {
         "label": "Contact → property links",
         "table": "contact_property_relationships",
-        "join": "LEFT JOIN buildings b ON b.id = t.building_id",
+        "question": ("Does this person really hold this flat, in this role? Approving makes "
+                     "them targetable for outreach about that unit."),
+        "join": ("LEFT JOIN buildings b ON b.id = t.building_id "
+                 "LEFT JOIN contacts c ON c.id = t.contact_id "
+                 "LEFT JOIN building_units u ON u.id = t.building_unit_id"),
         "pending": "t.relationship_status = 'pending_review'",
         "cohort": "coalesce(b.name, '(no building)') || ' · ' || t.relationship_type",
-        "sample": "coalesce(t.confidence::text, 'n/a') || ' · ' || coalesce(t.notes, t.relationship_type)",
+        "sample": ("concat_ws(' · ', coalesce(c.full_name, '(unnamed contact)'), "
+                   "coalesce(nullif(u.unit_number,''), '(no unit)'), "
+                   "coalesce(c.phone_primary, 'no phone'), "
+                   "'from ' || coalesce(split_part(t.notes, ':', 1), 'unknown source'))"),
         "approve": "relationship_status = 'active', updated_at = now()",
         "reject": "relationship_status = 'rejected', updated_at = now()",
     },
     "contact_dupes": {
         "label": "Duplicate contact candidates",
         "table": "contact_duplicate_candidates",
-        "join": "",
+        "question": ("Are these two rows the same person? Approving marks them safe to merge "
+                     "into one contact."),
+        "join": ("LEFT JOIN contact_import_rows r1 ON r1.id = t.contact_import_row_id_1 "
+                 "LEFT JOIN contact_import_rows r2 ON r2.id = t.contact_import_row_id_2"),
         "pending": "t.status = 'pending_review'",
         "cohort": "t.candidate_type || ' · ' || coalesce(t.duplicate_strength, '(no strength)')",
-        "sample": "coalesce(t.reason, t.candidate_type)",
+        "sample": ("left(coalesce(r1.cleaned_display_name, r1.raw_name, '?'), 48) || '   ==   ' || "
+                   "left(coalesce(r2.cleaned_display_name, r2.raw_name, '?'), 48) || "
+                   "'   [' || coalesce(r1.phone_normalized, '?') || ']'"),
         "approve": "status = 'approved'",
         "reject": "status = 'rejected'",
     },
     "party_matches": {
         "label": "Registration party → contact matches",
         "table": "registration_party_contact_matches",
-        "join": "LEFT JOIN buildings b ON b.id = t.building_id",
+        "question": ("The registry names one person; our DB has another. Same human? Approving "
+                     "links the registration to that contact."),
+        "join": ("LEFT JOIN buildings b ON b.id = t.building_id "
+                 "LEFT JOIN unit_registration_parties p ON p.id = t.unit_registration_party_id "
+                 "LEFT JOIN contacts c ON c.id = t.contact_id "
+                 "LEFT JOIN building_units u ON u.id = t.building_unit_id"),
         "pending": "t.match_status = 'needs_review'",
         "cohort": "coalesce(b.name, '(no building)') || ' · ' || coalesce(t.match_strength, '(no strength)')",
-        "sample": "coalesce(t.match_reason, '') || ' · sim ' || coalesce(round(t.name_similarity_score::numeric, 2)::text, 'n/a')",
+        "sample": ("'registry: ' || left(coalesce(p.party_name_english, p.party_name_raw, '?'), 40) || "
+                   "'   ==   ours: ' || left(coalesce(c.full_name, '?'), 40) || "
+                   "'   [' || coalesce(nullif(u.unit_number,''), 'no unit') || "
+                   "' · sim ' || coalesce(round(t.name_similarity_score::numeric, 2)::text, '?') || ']'"),
         "approve": "match_status = 'matched', updated_at = now()",
         "reject": "match_status = 'rejected', updated_at = now()",
     },
     "drive_contacts": {
         "label": "Drive contact sheets — name near-misses",
+        "question": ("A name on a drive sheet closely resembles an existing contact, but the "
+                     "phone differs. Same person? Sample reads: sheet name → our contact (similarity)."),
         "table": "contact_sheet_rows",
         "join": "LEFT JOIN contact_sheet_files f ON f.id = t.sheet_file_id",
         "pending": "t.review_status = 'pending'",
@@ -122,6 +153,8 @@ QUEUES: dict[str, dict] = {
     },
     "phonebook_rename": {
         "label": "Sales phone — rename to canonical",
+        "question": ("Rename this card on her phone. Sample reads: current name → proposed name. "
+                     "Approving only queues it; nothing writes to the phone yet."),
         "table": "phonebook_proposals",
         "join": "",
         "pending": "t.status = 'pending' AND t.direction = 'to_phone'",
@@ -134,6 +167,9 @@ QUEUES: dict[str, dict] = {
     },
     "phonebook_to_db": {
         "label": "Sales phone → DB (unit links her phone knows)",
+        "question": ("Her phonebook claims this number belongs to this flat, and we have no "
+                     "phone for it. Accept her phone as the source? 'low' = more than one "
+                     "number claims the same flat — check the sample before approving."),
         "table": "phonebook_proposals",
         "join": "",
         "pending": "t.status = 'pending' AND t.direction = 'to_db'",
@@ -148,6 +184,7 @@ QUEUES: dict[str, dict] = {
     },
     "worker_findings": {
         "label": "Worker findings inbox",
+        "question": "A worker flagged this. Approve = acknowledged, Reject = dismiss.",
         "table": "worker_findings",
         "join": "",
         "pending": "t.status = 'pending'",
@@ -174,12 +211,13 @@ def list_cohorts() -> list[dict]:
     for name, cfg in QUEUES.items():
         parts.append(f"""
         SELECT {lit(name)} AS queue, {lit(cfg['label'])} AS label,
+               {lit(cfg.get('question', ''))} AS question,
                ({cfg['cohort']}) AS cohort, count(*) AS pending,
                min(t.created_at)::date::text AS oldest,
                max(t.created_at)::date::text AS newest
           FROM {cfg['table']} t {cfg['join']}
          WHERE {cfg['pending']}
-         GROUP BY 3
+         GROUP BY 3, 4
         """)
     union = " UNION ALL ".join(parts)
     return q_json(f"SELECT coalesce(json_agg(x ORDER BY x.pending DESC), '[]'::json) FROM ({union}) x")
